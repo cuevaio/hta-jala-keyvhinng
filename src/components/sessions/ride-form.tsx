@@ -144,8 +144,6 @@ export function RideForm({
           onChange={changeOrigin}
           onActivate={() => setActive("origin")}
           onFocusPoint={setFocus}
-          locate
-          autoSearch
         />
         <LocationPicker
           id="destination"
@@ -154,7 +152,6 @@ export function RideForm({
           onChange={setDestination}
           onActivate={() => setActive("destination")}
           onFocusPoint={setFocus}
-          autoSearch
         />
       </div>
 
