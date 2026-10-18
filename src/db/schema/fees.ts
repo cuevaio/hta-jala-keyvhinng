@@ -24,7 +24,7 @@ export const feeLedgerEntries = pgTable(
       .notNull()
       .references(() => rides.id, { onDelete: "cascade" }),
     entryType: feeEntryType("entry_type").notNull(),
-    /** Amount in minor units (céntimos). PEN 0.10 = 10. Zero for waivers. */
+    /** Amount in minor units (céntimos). PEN 1.00 = 100. Zero for waivers. */
     amountMinor: integer("amount_minor").notNull(),
     currency: text("currency").notNull().default("PEN"),
     ...timestamps,

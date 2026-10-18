@@ -122,7 +122,7 @@ describe.skipIf(!url)("ride groups and shared sessions", () => {
       .from(schema.users)
       .where(eq(schema.users.id, userIds[2]));
     expect(fresh.creditBalanceMinor).toBe(500);
-    await credit(9);
+    await credit(99);
     try {
       await expect(
         repo.join(sessionId, userIds[2], input),

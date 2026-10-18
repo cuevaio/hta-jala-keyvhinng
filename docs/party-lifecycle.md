@@ -11,7 +11,7 @@ and matching. No migration: statuses already existed in the schema.
 | `forming`     | Matched, waiting for every confirmation  | `confirmed`, `cancelled`      |
 | `confirmed`   | Everyone agreed; `rides` row is `pending`| `in_progress`, `cancelled`    |
 | `in_progress` | Delegate started the trip                | `completed`                   |
-| `completed`   | Delegate finished; members `dropped_off`, each user's `completed_rides` +1, passengers debited PEN 0.10 | – |
+| `completed`   | Delegate finished; members `dropped_off`, each user's `completed_rides` +1, passengers debited PEN 1.00 | – |
 | `cancelled`   | Someone left (ADR 0005) or a deadline passed (ADR 0009) | – |
 
 - `confirm`: idempotent. The last confirmation moves the party to `confirmed`.

@@ -6,10 +6,10 @@ import {
 } from "@/modules/payments/domain/fees";
 
 describe("calculatePlatformFee", () => {
-  it("charges passengers PEN 0.10 per ride", () => {
+  it("charges passengers PEN 1.00 per ride", () => {
     expect(calculatePlatformFee({ role: "passenger" })).toEqual({
       entryType: "platform_fee",
-      amountMinor: 10,
+      amountMinor: 100,
     });
   });
 
@@ -23,8 +23,8 @@ describe("calculatePlatformFee", () => {
 
 describe("canAffordRide", () => {
   it("requires at least one fee of credit", () => {
-    expect(canAffordRide(10)).toBe(true);
-    expect(canAffordRide(9)).toBe(false);
+    expect(canAffordRide(100)).toBe(true);
+    expect(canAffordRide(99)).toBe(false);
   });
 });
 

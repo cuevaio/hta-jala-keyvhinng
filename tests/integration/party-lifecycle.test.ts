@@ -188,10 +188,10 @@ describe.skipIf(!url)("party lifecycle", () => {
         ),
       );
     expect(photos.every((p) => p.selfie === null)).toBe(true);
-    // `a` is the delegate and rides free; passengers pay S/ 0.10 each.
+    // `a` is the delegate and rides free; passengers pay S/ 1.00 each.
     expect(after.get(a)).toBe(before.get(a));
-    expect(after.get(b)).toBe(before.get(b)! - 10);
-    expect(after.get(c)).toBe(before.get(c)! - 10);
+    expect(after.get(b)).toBe(before.get(b)! - 100);
+    expect(after.get(c)).toBe(before.get(c)! - 100);
     const party = (await room(s.id, 2)).party!;
     expect(party.status).toBe("completed");
     const [ride] = await db

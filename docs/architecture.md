@@ -35,7 +35,7 @@ Rules:
 | `matching`     | implemented            | Bounded road matching, saved route plans and atomic participant assignment                            |
 | `routing`      | contract + OSRM    | `RoutingProvider` contract, `RoutingError`, OSRM adapter (`ROUTING_BASE_URL`)     |
 | `parties`      | implemented        | Group lifecycle (confirm, leave, start, complete); `RideProviderAdapter` boundary |
-| `payments`     | implemented        | Fare split in soles; PEN 5.00 welcome credit, PEN 0.10 passenger fee debited on completion |
+| `payments`     | implemented        | Fare split in soles; PEN 5.00 welcome credit, PEN 1.00 passenger fee debited on completion |
 | `notifications` | implemented       | Web Push to subscribed browsers and `roomEvents`: side effects run after commit (background matching, notifications); see [notifications](notifications.md) |
 | `verification` | not created        | QR verification; add when there is code to put in it                              |
 

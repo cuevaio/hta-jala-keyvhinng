@@ -1,8 +1,8 @@
 /** Credit every new account starts with: PEN 5.00, in minor units (céntimos). */
 export const WELCOME_CREDIT_MINOR = 500;
 
-/** Platform fee per completed ride: PEN 0.10, in minor units (céntimos). */
-export const PLATFORM_FEE_MINOR = 10;
+/** Platform fee per completed ride: PEN 1.00, in minor units (céntimos). */
+export const PLATFORM_FEE_MINOR = 100;
 
 export const FEE_ENTRY_TYPES = ["platform_fee", "free_ride_waiver"] as const;
 export type FeeEntryType = (typeof FEE_ENTRY_TYPES)[number];
@@ -13,7 +13,7 @@ export interface FeeDecision {
   amountMinor: number;
 }
 
-/** Platform fee for one completed ride. Delegates never pay; passengers pay PEN 0.10. */
+/** Platform fee for one completed ride. Delegates never pay; passengers pay PEN 1.00. */
 export function calculatePlatformFee(input: {
   role: "delegate" | "passenger";
 }): FeeDecision {

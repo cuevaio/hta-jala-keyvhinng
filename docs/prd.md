@@ -53,7 +53,7 @@ Critical assumptions to test:
 Out of MVP scope: operating vehicles, driver dispatch, taxi-provider integration,
 payment collection, guaranteed fares or savings, live vehicle tracking, identity
 verification, a safety guarantee, emissions estimates and a commission business model.
-A prepaid credit model is in place (PEN 5.00 welcome credit, PEN 0.10 per passenger
+A prepaid credit model is in place (PEN 5.00 welcome credit, PEN 1.00 per passenger
 ride, delegates free; see `docs/domain-model.md`), but there is no top-up or real payment.
 
 ## 3. Current journey and terminology

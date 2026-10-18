@@ -43,7 +43,7 @@ inside it. `/api/groups` and `GroupMatch` keep their names; they mean pools.
 
 ## Numeric conventions
 
-- Money: integer minor units (`amount_minor`; PEN 0.10 = 10).
+- Money: integer minor units (`amount_minor`; PEN 1.00 = 100).
 - Fare shares: integer basis points, 10,000 = 100% (`fare_share_bps`, 0–10,000 check constraint).
   `weightsToBasisPoints` uses largest remainder so shares always sum to exactly 10,000.
 - Coordinates: WGS84 `double precision`, range-checked. No floating point for persisted money.
@@ -51,7 +51,7 @@ inside it. `/api/groups` and `GroupMatch` keep their names; they mean pools.
 ## Business rules (encoded so far)
 
 - Every account starts with PEN 5.00 of prepaid credit (`users.credit_balance_minor`, default 500).
-- When a ride completes, each passenger is debited PEN 0.10; the delegate rides free
+- When a ride completes, each passenger is debited PEN 1.00; the delegate rides free
   (`payments/domain/fees.ts`). Every member gets a `fee_ledger_entries` row (`platform_fee` or
   `free_ride_waiver`), written in the same transaction as the debit.
 - Joining a sala requires credit for at least one ride (`402 insufficient_credit`), because
