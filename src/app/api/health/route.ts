@@ -27,6 +27,8 @@ export async function GET() {
     status: "ok",
     database: "up",
     schema: schema.expected,
+    // Lets the release job confirm the domain serves the deployment it promoted.
+    deployment: process.env.VERCEL_DEPLOYMENT_ID ?? null,
     time: new Date().toISOString(),
   });
 }

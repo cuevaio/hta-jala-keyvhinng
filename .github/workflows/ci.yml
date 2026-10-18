@@ -161,9 +161,28 @@ jobs:
           check /api/auth/sign-in 401 -X POST -H 'Content-Type: application/json' \
             --data '{"email":"production-smoke@example.invalid","password":"Smoke-test-only-73!"}'
 
+      # The REST API, not `vercel promote`: that command looks up a personal
+      # account, which the CI token does not have.
       - name: Promote to production
-        run: bunx $VERCEL_CLI promote "${{ steps.deploy.outputs.url }}" --yes --token="$VERCEL_TOKEN"
-      - name: Check the production domain
+        id: promote
+        env:
+          DEPLOYMENT: ${{ steps.deploy.outputs.url }}
         run: |
-          code=$(curl -s -o /dev/null -w '%{http_code}' "${{ vars.PRODUCTION_URL }}/api/health")
-          [ "$code" = "200" ] || { echo "::error::production health returned $code"; exit 1; }
+          api=https://api.vercel.com
+          auth="Authorization: Bearer $VERCEL_TOKEN"
+          id=$(curl -fsS -H "$auth" "$api/v13/deployments/${DEPLOYMENT#https://}?teamId=$VERCEL_ORG_ID" | jq -r .id)
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+          curl -fsS -X POST -H "$auth" "$api/v10/projects/$VERCEL_PROJECT_ID/promote/$id?teamId=$VERCEL_ORG_ID"
+
+      # Promotion is asynchronous: wait until the domain serves this deployment.
+      - name: Check the production domain
+        env:
+          DEPLOYMENT_ID: ${{ steps.promote.outputs.id }}
+        run: |
+          for i in $(seq 1 24); do
+            served=$(curl -s "${{ vars.PRODUCTION_URL }}/api/health" | jq -r '.data.deployment // empty')
+            [ "$served" = "$DEPLOYMENT_ID" ] && exit 0
+            sleep 5
+          done
+          echo "::error::production serves '$served', expected $DEPLOYMENT_ID"
+          exit 1
