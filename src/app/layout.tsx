@@ -1,7 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
-import { SiteFooter } from "@/components/layout/site-footer";
-import { SiteHeader } from "@/components/layout/site-header";
 import "./globals.css";
 import "@/components/journey/journey.css";
 
@@ -37,11 +35,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         >
           Saltar al contenido
         </a>
-        <SiteHeader />
-        <main id="contenido" className="site-main">
-          {children}
-        </main>
-        <SiteFooter />
+        {children}
       </body>
     </html>
   );

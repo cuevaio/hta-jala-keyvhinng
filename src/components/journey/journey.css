@@ -1,21 +1,4 @@
-/* Passenger reference flow. Scoped to keep the live ride screens compatible. */
-body:has(.passenger-app),
-body:has(.simulator) {
-  background: #f6f5ef;
-}
-body:has(.passenger-app) > .site-header,
-body:has(.passenger-app) > .site-footer,
-body:has(.simulator) > .site-header,
-body:has(.simulator) > .site-footer {
-  display: none;
-}
-body:has(.passenger-app) .site-main,
-body:has(.simulator) .site-main {
-  padding: 0;
-  margin: 0;
-  width: 100%;
-  max-width: none;
-}
+/* Passenger app. Scoped so the live ride screens keep their own styles. */
 .passenger-app,
 .simulator {
   --j-ink: #12343b;
@@ -68,77 +51,70 @@ body:has(.simulator) .site-main {
   text-decoration: none;
   color: inherit;
 }
-.j-demo-bar {
-  max-width: 390px;
-  margin: 18px auto 9px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 11px;
-  color: #657077;
-  padding: 0 4px;
-}
-.j-demo-bar a {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  text-decoration: underline;
-  font-weight: 600;
-}
-.j-phone {
-  max-width: 390px;
-  min-height: 844px;
-  margin: 0 auto;
-  background: white;
-  border: 1px solid #eeefeb;
-  box-shadow: 0 2px 3px #122e3214;
-  border-radius: 28px;
-  position: relative;
+.passenger-app {
+  --j-appbar-h: 72px;
+  --j-nav-h: 66px;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  overflow: clip;
+  background: white;
 }
-.j-phone h2 {
+.j-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  margin-inline: auto;
+}
+.passenger-app h2 {
   font-size: 21px;
   line-height: 1.25;
   letter-spacing: -0.65px;
   font-weight: 800;
 }
-.j-phone strong {
+.passenger-app strong {
   font-weight: 700;
 }
-.j-brand-header {
-  height: 72px;
-  padding: 18px 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.j-appbar {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  background: white;
   border-bottom: 1px solid var(--j-line);
   flex-shrink: 0;
 }
-.j-brand-header img {
+.j-appbar-inner {
+  height: var(--j-appbar-h);
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.j-logo img {
   width: 59px;
   height: auto;
   object-fit: contain;
+  display: block;
 }
-.j-brand-header > div {
+.j-appbar-actions {
   display: flex;
   gap: 10px;
   align-items: center;
+  margin-left: auto;
 }
-.j-brand-header .j-avatar {
+.j-appbar-actions .j-avatar {
   background: #f9dbcc;
   width: 40px;
   height: 40px;
   font-size: 17px;
-}
-.j-login-header {
   border: 0;
-  padding: 28px 24px 8px;
-  height: 72px;
 }
-.j-login-header img {
-  width: 59px;
+.j-appbar-plain {
+  border-bottom: 0;
+}
+.j-topnav {
+  display: none;
 }
 .j-circle {
   height: 40px;
@@ -224,7 +200,7 @@ body:has(.simulator) .site-main {
 .j-screen-login {
   padding: 8px 24px 28px;
 }
-.j-screen-login > .j-eyebrow {
+.j-screen-login .j-eyebrow {
   margin-top: 20px;
 }
 .j-screen-login h2 {
@@ -299,12 +275,6 @@ body:has(.simulator) .site-main {
 .j-dark:hover {
   background: #1b454e;
 }
-.j-login-note {
-  font-size: 11px;
-  color: var(--j-muted);
-  line-height: 1.5;
-  margin-top: 12px !important;
-}
 .j-divider {
   display: flex;
   align-items: center;
@@ -319,17 +289,6 @@ body:has(.simulator) .site-main {
   height: 1px;
   background: var(--j-line);
   flex: 1;
-}
-.j-login-admin {
-  font-size: 11px;
-  color: var(--j-muted);
-  margin-top: 20px !important;
-  text-align: center;
-}
-.j-login-admin a {
-  display: inline-flex;
-  gap: 4px;
-  align-items: center;
 }
 .j-search-card {
   border: 1px solid var(--j-line);
@@ -497,15 +456,14 @@ body:has(.simulator) .site-main {
   margin-top: 4px;
   color: var(--j-muted);
 }
-.j-has-tabs .j-content {
-  padding-bottom: 90px;
+.j-has-tabs .j-main {
+  padding-bottom: calc(var(--j-nav-h) + env(safe-area-inset-bottom));
 }
 .j-bottom-nav {
-  position: sticky;
-  bottom: 0;
-  margin-top: auto;
-  height: 66px;
-  width: 100%;
+  position: fixed;
+  inset: auto 0 0;
+  height: calc(var(--j-nav-h) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
   background: white;
   display: flex;
   align-items: center;
@@ -921,8 +879,10 @@ body:has(.simulator) .site-main {
   min-height: 0;
   flex: 1;
 }
-.j-phone-chat {
-  height: 844px;
+.passenger-app[data-screen="chat"] {
+  height: 100dvh;
+}
+.passenger-app[data-screen="chat"] .j-main {
   min-height: 0;
 }
 .j-meeting-banner {
@@ -1571,18 +1531,6 @@ body:has(.simulator) .site-main {
   line-height: 1.5;
   margin-top: 4px;
 }
-.j-shell-footer {
-  display: flex;
-  justify-content: space-between;
-  max-width: 390px;
-  font-size: 10px;
-  color: #52646d;
-  margin: 12px auto 22px;
-  padding: 0 4px;
-}
-.j-shell-footer a {
-  text-decoration: underline;
-}
 /* Public validation simulator, containing synthetic data only. */
 .simulator {
   background: #f4f6f6;
@@ -1773,14 +1721,6 @@ body:has(.simulator) .site-main {
   max-width: 1040px;
   margin-top: 25px !important;
 }
-@media (min-width: 1000px) {
-  .j-demo-bar {
-    margin-top: 28px;
-  }
-  .j-phone {
-    min-height: 844px;
-  }
-}
 @media (max-width: 760px) {
   .sim-title {
     flex-direction: column;
@@ -1826,53 +1766,142 @@ body:has(.simulator) .site-main {
     height: 430px;
   }
 }
-@media (max-width: 430px) {
-  .passenger-app {
-    background: white;
-    min-height: 100dvh;
-  }
-  .j-demo-bar {
-    margin: 0;
-    padding: 7px 16px;
-    max-width: none;
-    background: #f6f5ef;
-  }
-  .j-phone {
-    border: 0;
-    border-radius: 0;
-    box-shadow: none;
-    min-height: calc(100dvh - 29px);
-    max-width: none;
-    margin: 0;
-  }
-  .j-phone-chat {
-    height: calc(100dvh - 29px);
-    min-height: 0;
-  }
-  .j-shell-footer {
+/* Phones follow the mockups: the brand bar leads Inicio and the login only, every
+   other screen leads with its own title, and the tabs sit at the bottom. */
+@media (max-width: 767px) {
+  .j-appbar-desktop-only {
     display: none;
   }
-  .j-content {
-    padding: 20px;
+  .j-page-header {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: white;
   }
-  .j-screen-login {
-    padding: 8px 24px 28px;
+}
+/* Wider screens: one app bar carries the tabs and the content sits in a column. */
+@media (min-width: 768px) {
+  .j-appbar-inner {
+    max-width: 1120px;
+    margin-inline: auto;
+    padding-inline: 32px;
   }
-  .j-screen-chat {
-    padding: 0;
+  .j-topnav {
+    display: flex;
+    gap: 4px;
   }
-  .j-phone h2 {
-    font-size: 21px;
+  .j-topnav button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 14px;
+    border: 0;
+    border-radius: 999px;
+    background: none;
+    color: #52646d;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .j-topnav button:hover {
+    color: var(--j-ink);
+    background: var(--j-soft);
+  }
+  .j-topnav button[aria-current="page"] {
+    color: var(--j-ink);
+    background: #e4eff0;
+  }
+  .j-topnav .j-nav-badge {
+    position: static;
+    order: 3;
+    font-size: 11px;
   }
   .j-bottom-nav {
-    padding-bottom: env(safe-area-inset-bottom);
-    height: calc(66px + env(safe-area-inset-bottom));
+    display: none;
+  }
+  .j-has-tabs .j-main {
+    padding-bottom: 64px;
+  }
+  .j-main {
+    padding: 32px 32px 64px;
+  }
+  .j-main-narrow {
+    max-width: 624px;
+  }
+  .j-main-chat {
+    max-width: 784px;
+  }
+  .j-main-wide {
+    max-width: 1120px;
+  }
+  .j-page-header {
+    border-bottom: 0;
+    padding: 0 0 8px;
+    min-height: 0;
+  }
+  .j-page-header h1 {
+    font-size: 28px;
+    letter-spacing: -1px;
+  }
+  .j-page-header p {
+    font-size: 14px;
+  }
+  .j-content,
+  .j-screen-login {
+    padding: 16px 0 0;
+  }
+  .passenger-app[data-screen="chat"] .j-main {
+    padding-bottom: 24px;
+  }
+  .j-screen-chat {
+    border: 1px solid var(--j-line);
+    border-radius: 20px;
+    overflow: hidden;
+  }
+  .j-safety {
+    inset: 0;
+    margin: auto;
+    height: fit-content;
+    width: min(440px, calc(100% - 32px));
+    border-radius: 24px;
+  }
+}
+/* Home and login split into a lead column and a side column. */
+@media (min-width: 1024px) {
+  .j-screen-home,
+  .j-screen-login {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    gap: 64px;
+    align-items: start;
+    padding-top: 40px;
+  }
+  .j-screen-login {
+    align-items: center;
+    padding-top: 72px;
+  }
+  .j-home-title {
+    font-size: 46px;
+    letter-spacing: -2.4px;
   }
   .j-hero-title {
-    font-size: 36px;
+    font-size: 58px;
+    letter-spacing: -3px;
   }
-  .j-content.j-screen-home {
-    padding-bottom: 90px;
+  .j-intro {
+    font-size: 17px;
+    max-width: 34em;
+  }
+  .j-screen-home .j-col-side {
+    padding-top: 30px;
+  }
+  .j-login-card {
+    border: 1px solid var(--j-line);
+    border-radius: 20px;
+    padding: 28px;
+    box-shadow: 0 12px 32px #12343b0f;
+  }
+  .j-screen-login .j-login-card h2 {
+    margin-top: 0;
   }
 }
 @media (prefers-reduced-motion: reduce) {

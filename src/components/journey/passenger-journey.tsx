@@ -82,6 +82,16 @@ const TITLES: Partial<Record<Screen, [string, string]>> = {
   detail: ["Detalle del viaje", ""],
   account: ["Mi cuenta", "Tu ruta, nuestro viaje."],
 };
+const TABS = [
+  { id: "home", label: "Inicio", Icon: Home },
+  { id: "trips", label: "Mis viajes", Icon: Clock3 },
+  { id: "account", label: "Cuenta", Icon: UserRound },
+] as const;
+function greeting(hour: number) {
+  if (hour < 12) return "Buenos días";
+  if (hour < 19) return "Buenas tardes";
+  return "Buenas noches";
+}
 function Avatar({ name, pink = false }: { name: string; pink?: boolean }) {
   return (
     <span className={`j-avatar ${pink ? "pink" : ""}`} aria-hidden="true">
@@ -117,10 +127,10 @@ function SafetySheet({
     dialog.current?.showModal();
   }, []);
   async function share() {
-    const text = `Viaje de ejemplo Jala: ${origin} → Barranco. Grupo Rosa 04. No incluye seguimiento en tiempo real.`;
+    const text = `Mi viaje en Jala: ${origin} → Barranco. Grupo Rosa 04.`;
     try {
       if (navigator.share)
-        await navigator.share({ title: "Mi viaje de ejemplo", text });
+        await navigator.share({ title: "Mi viaje en Jala", text });
       else {
         await navigator.clipboard.writeText(text);
         setNotice("Resumen copiado. Puedes enviarlo a alguien de confianza.");
@@ -158,16 +168,14 @@ function SafetySheet({
           <Shield />
           <span>
             <strong>Compartir mi viaje</strong>
-            <small>
-              Envía a tu familia el resumen de este viaje de ejemplo.
-            </small>
+            <small>Envía a tu familia el resumen de tu viaje.</small>
           </span>
         </button>
         <button
           className="j-safety-item"
           onClick={() =>
             setNotice(
-              "Este es un recorrido de ejemplo. Para un viaje real, contacta al organizador de tu sala desde el flujo de viajes en vivo.",
+              "Cuéntaselo a tu grupo en el chat. Si estás en peligro, llama al 105.",
             )
           }
         >
@@ -255,9 +263,7 @@ export function PassengerJourney() {
     try {
       setTrips(readDemoTrips());
     } catch {
-      setError(
-        "No pudimos cargar el historial local. Se muestran los viajes de ejemplo.",
-      );
+      setError("No pudimos cargar tu historial. Inténtalo otra vez.");
     }
     setScreen("trips");
   }
@@ -296,9 +302,7 @@ export function PassengerJourney() {
     try {
       writeDemoTrips([trip, ...readDemoTrips()]);
     } catch {
-      setError(
-        "El viaje se guardó solo en esta sesión: el navegador no permite guardar el historial local.",
-      );
+      setError("No pudimos guardar el viaje en tu historial.");
     }
     setSaved(trip);
     setSelfie(null);
@@ -317,9 +321,7 @@ export function PassengerJourney() {
       setSelected(next);
       setError("");
     } catch {
-      setError(
-        "No pudimos guardar tu respuesta en este navegador. Inténtalo otra vez.",
-      );
+      setError("No pudimos guardar tu respuesta. Inténtalo otra vez.");
     }
   }
   const displayName = name.trim() || "Flor";
@@ -332,7 +334,10 @@ export function PassengerJourney() {
     normalize(d).includes(normalize(query)),
   );
   const title = TITLES[screen];
-  const tabs = ["home", "trips", "account"].includes(screen);
+  const tabs = TABS.some((tab) => tab.id === screen);
+  const pendingRatings = trips.some((t) =>
+    t.companions.some((p) => !(p in t.ratings)),
+  );
   const back: Partial<Record<Screen, Screen>> = {
     destination: "home",
     selfie: "destination",
@@ -354,32 +359,57 @@ export function PassengerJourney() {
     nav("destination");
   };
 
+  const signedIn = screen !== "login";
+  // Home and login lead with the brand bar; every other screen leads with its own title.
+  // On desktop the brand bar is always present and carries the tabs.
+  const branded = screen === "home" || screen === "login";
+  const width = branded ? "wide" : screen === "chat" ? "chat" : "narrow";
+  const tabLinks = TABS.map(({ id, label, Icon }) => (
+    <button
+      key={id}
+      aria-current={screen === id ? "page" : undefined}
+      onClick={() => (id === "trips" ? loadTrips() : nav(id))}
+    >
+      <Icon size={22} aria-hidden="true" />
+      {id === "trips" && pendingRatings && (
+        <span className="j-nav-badge" aria-label="calificación pendiente">
+          1
+        </span>
+      )}
+      <span>{label}</span>
+    </button>
+  ));
+  const signOut = () => {
+    setSelfie(null);
+    setMessages([]);
+    setName("");
+    nav("login");
+  };
+
   return (
-    <div className="passenger-app">
-      <div className="j-demo-bar">
-        <span>Recorrido de ejemplo</span>
-        <Link href="/ride">
-          Viajes en vivo <ArrowRight size={12} />
-        </Link>
-      </div>
-      <div
-        className={`j-phone ${screen === "chat" ? "j-phone-chat" : ""} ${tabs ? "j-has-tabs" : ""}`}
+    <div
+      className={`passenger-app ${tabs ? "j-has-tabs" : ""}`}
+      data-screen={screen}
+    >
+      <header
+        className={`j-appbar ${branded ? "" : "j-appbar-desktop-only"} ${screen === "login" ? "j-appbar-plain" : ""}`}
       >
-        {screen === "home" || screen === "login" ? (
-          <header
-            className={`j-brand-header ${screen === "login" ? "j-login-header" : ""}`}
-          >
-            <Link href="/" aria-label="Jala, inicio">
-              <Image
-                src="/jala-logo.png"
-                alt="jala"
-                width={88}
-                height={41}
-                priority
-              />
-            </Link>
-            {screen === "home" && (
-              <div>
+        <div className="j-appbar-inner">
+          <Link href="/" aria-label="Jala, inicio" className="j-logo">
+            <Image
+              src="/jala-logo.png"
+              alt="jala"
+              width={88}
+              height={41}
+              priority
+            />
+          </Link>
+          {signedIn && (
+            <>
+              <nav className="j-topnav" aria-label="Principal">
+                {tabLinks}
+              </nav>
+              <div className="j-appbar-actions">
                 <button
                   className="j-avatar"
                   onClick={() => nav("account")}
@@ -389,20 +419,18 @@ export function PassengerJourney() {
                 </button>
                 <button
                   className="j-circle"
-                  onClick={() => {
-                    setSelfie(null);
-                    setMessages([]);
-                    setName("");
-                    nav("login");
-                  }}
-                  aria-label="Salir del recorrido"
+                  onClick={signOut}
+                  aria-label="Cerrar sesión"
                 >
                   <LogOut size={20} />
                 </button>
               </div>
-            )}
-          </header>
-        ) : (
+            </>
+          )}
+        </div>
+      </header>
+      <main id="contenido" className={`j-main j-main-${width}`}>
+        {!branded && (
           <header className="j-page-header">
             {back[screen] && (
               <button
@@ -437,162 +465,166 @@ export function PassengerJourney() {
         <div className={`j-content j-screen-${screen}`}>
           {screen === "login" && (
             <>
-              <p className="j-eyebrow">
-                <i /> COMPARTE EL REGRESO
-              </p>
-              <h1 className="j-hero-title" ref={heading} tabIndex={-1}>
-                Sal en grupo.
-                <br />
-                <em>Llega a tu puerta.</em>
-              </h1>
-              <p className="j-intro">
-                Te juntamos con personas que salen cerca de ti y van hacia tu
-                zona. Cada quien paga su tramo.
-              </p>
-              <h2>Ingresa a tu cuenta</h2>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  nav("home");
-                }}
-              >
-                <label className="j-field">
-                  Tu nombre
-                  <input
-                    required
-                    maxLength={60}
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Cómo te verá tu grupo"
-                    autoComplete="given-name"
-                  />
-                </label>
-                <Primary>
-                  Probar el recorrido <ArrowRight size={20} />
-                </Primary>
-              </form>
-              <p className="j-login-note">
-                Explora el viaje con datos de ejemplo. El acceso por SMS todavía
-                no está disponible.
-              </p>
-              <div className="j-divider">o</div>
-              <Link className="j-secondary" href="/sign-in?next=%2Fride">
-                <Mail size={21} /> Continuar con correo
-              </Link>
-              <p className="j-login-admin">
-                <Link href="/admin">
-                  Ver simulador de agrupamiento <ArrowRight size={14} />
+              <section className="j-col-main">
+                <p className="j-eyebrow">
+                  <i /> COMPARTE EL REGRESO
+                </p>
+                <h1 className="j-hero-title" ref={heading} tabIndex={-1}>
+                  Sal en grupo.
+                  <br />
+                  <em>Llega a tu puerta.</em>
+                </h1>
+                <p className="j-intro">
+                  Te juntamos con personas que salen cerca de ti y van hacia tu
+                  zona. Cada quien paga su tramo.
+                </p>
+              </section>
+              <section className="j-col-side j-login-card">
+                <h2>Ingresa a tu cuenta</h2>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    nav("home");
+                  }}
+                >
+                  <label className="j-field">
+                    Tu nombre
+                    <input
+                      required
+                      maxLength={60}
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Cómo te verá tu grupo"
+                      autoComplete="given-name"
+                    />
+                  </label>
+                  <Primary>
+                    Continuar <ArrowRight size={20} />
+                  </Primary>
+                </form>
+                <div className="j-divider">o</div>
+                <Link className="j-secondary" href="/sign-in?next=%2Fride">
+                  <Mail size={21} /> Continuar con correo
                 </Link>
-              </p>
+              </section>
             </>
           )}
 
           {screen === "home" && (
             <>
-              <p className="j-eyebrow">
-                <i /> COMPARTE EL REGRESO
-              </p>
-              <h1 className="j-home-title" ref={heading} tabIndex={-1}>
-                Buenos días, {displayName.split(" ")[0]}.<br />
-                <em>¿Volvemos juntos?</em>
-              </h1>
-              <p className="j-intro">
-                Comparte un taxi con personas que salen cerca de ti y van hacia
-                tu zona. Cada quien llega a su puerta y paga su tramo.
-              </p>
-              <div className="j-search-card">
-                <div>
-                  <div className="j-origin-label">
-                    <strong>
-                      <Circle size={10} aria-hidden="true" /> Punto de partida
-                    </strong>
-                    <button
-                      onClick={() => {
-                        if (!navigator.geolocation) {
-                          setError(
-                            "Tu navegador no permite obtener la ubicación.",
-                          );
-                          return;
-                        }
-                        navigator.geolocation.getCurrentPosition(
-                          (pos) =>
-                            setOrigin(
-                              `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`,
-                            ),
-                          () =>
+              <section className="j-col-main">
+                <p className="j-eyebrow">
+                  <i /> COMPARTE EL REGRESO
+                </p>
+                <h1 className="j-home-title" ref={heading} tabIndex={-1}>
+                  {greeting(new Date().getHours())}, {displayName.split(" ")[0]}
+                  .
+                  <br />
+                  <em>¿Volvemos juntos?</em>
+                </h1>
+                <p className="j-intro">
+                  Comparte un taxi con personas que salen cerca de ti y van
+                  hacia tu zona. Cada quien llega a su puerta y paga su tramo.
+                </p>
+                <div className="j-search-card">
+                  <div>
+                    <div className="j-origin-label">
+                      <strong>
+                        <Circle size={10} aria-hidden="true" /> Punto de partida
+                      </strong>
+                      <button
+                        onClick={() => {
+                          if (!navigator.geolocation) {
                             setError(
-                              "No pudimos acceder a tu ubicación. Escribe tu punto de partida.",
-                            ),
-                          { timeout: 10000 },
-                        );
+                              "Tu navegador no permite obtener la ubicación.",
+                            );
+                            return;
+                          }
+                          navigator.geolocation.getCurrentPosition(
+                            (pos) =>
+                              setOrigin(
+                                `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`,
+                              ),
+                            () =>
+                              setError(
+                                "No pudimos acceder a tu ubicación. Escribe tu punto de partida.",
+                              ),
+                            { timeout: 10000 },
+                          );
+                        }}
+                      >
+                        <LocateFixed size={16} /> Usar mi ubicación
+                      </button>
+                    </div>
+                    <label className="sr-only" htmlFor="j-origin">
+                      Punto de partida
+                    </label>
+                    <input
+                      id="j-origin"
+                      value={origin}
+                      onChange={(e) => setOrigin(e.target.value)}
+                      maxLength={200}
+                    />
+                  </div>
+                  <div>
+                    <button
+                      className="j-destination-preview"
+                      onClick={resetRide}
+                    >
+                      <span>
+                        <MapPin size={17} /> ¿A dónde vas?
+                      </span>
+                      <strong>{district || "Distrito, calle o lugar"}</strong>
+                    </button>
+                    <Primary
+                      disabled={origin.trim().length < 3}
+                      onClick={resetRide}
+                    >
+                      Buscar compañeros de viaje <ArrowRight size={21} />
+                    </Primary>
+                  </div>
+                </div>
+                <p className="j-privacy">
+                  <Shield size={18} /> Tu destino exacto solo se comparte con tu
+                  grupo de viaje.
+                </p>
+              </section>
+              <section className="j-col-side">
+                <div className="j-promo">
+                  <p>Tu ruta, nuestro viaje.</p>
+                  <h2>4 viajes sin comisión</h2>
+                  <span>Tus primeros 5 son gratis</span>
+                </div>
+                <div className="j-shortcuts">
+                  {["Casa", "Trabajo", "Otros"].map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => {
+                        resetRide();
+                        setQuery("");
                       }}
                     >
-                      <LocateFixed size={16} /> Usar mi ubicación
+                      {t}
                     </button>
+                  ))}
+                </div>
+                <div className="j-section-heading">
+                  <div>
+                    <p className="j-eyebrow">AHORA MISMO</p>
+                    <h2>Salas de espera cerca</h2>
                   </div>
-                  <label className="sr-only" htmlFor="j-origin">
-                    Punto de partida
-                  </label>
-                  <input
-                    id="j-origin"
-                    value={origin}
-                    onChange={(e) => setOrigin(e.target.value)}
-                    maxLength={200}
-                  />
+                  <Link href="/ride">
+                    Crear sala <ArrowUpRight size={14} aria-hidden="true" />
+                  </Link>
                 </div>
-                <div>
-                  <button className="j-destination-preview" onClick={resetRide}>
-                    <span>
-                      <MapPin size={17} /> ¿A dónde vas?
-                    </span>
-                    <strong>{district || "Distrito, calle o lugar"}</strong>
-                  </button>
-                  <Primary
-                    disabled={origin.trim().length < 3}
-                    onClick={resetRide}
-                  >
-                    Buscar compañeros de viaje <ArrowRight size={21} />
-                  </Primary>
-                </div>
-              </div>
-              <p className="j-privacy">
-                <Shield size={18} /> Tu destino exacto solo se comparte con tu
-                grupo de viaje.
-              </p>
-              <div className="j-promo">
-                <p>Tu ruta, nuestro viaje.</p>
-                <h2>4 viajes sin comisión</h2>
-                <span>Tus primeros 5 son gratis</span>
-              </div>
-              <div className="j-shortcuts">
-                {["Casa", "Trabajo", "Otros"].map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => {
-                      resetRide();
-                      setQuery("");
-                    }}
-                  >
-                    {t}
-                  </button>
-                ))}
-              </div>
-              <div className="j-section-heading">
-                <div>
-                  <p className="j-eyebrow">AHORA MISMO</p>
-                  <h2>Salas de espera cerca</h2>
-                </div>
-                <Link href="/ride">
-                  Crear sala <ArrowUpRight size={14} aria-hidden="true" />
+                <Link href="/ride" className="j-room-card">
+                  <span>
+                    <strong>Encuentra personas hacia tu zona</strong>
+                    <small>Explora las salas abiertas o crea la tuya.</small>
+                  </span>
+                  <ArrowRight size={20} />
                 </Link>
-              </div>
-              <Link href="/ride" className="j-room-card">
-                <span>
-                  <strong>Encuentra personas hacia tu zona</strong>
-                  <small>Explora salas reales o crea la tuya.</small>
-                </span>
-                <ArrowRight size={20} />
-              </Link>
+              </section>
             </>
           )}
 
@@ -772,7 +804,6 @@ export function PassengerJourney() {
                 Usar foto de ejemplo
               </button>
               <p className="j-fine">
-                Grupo de ejemplo ·{" "}
                 {departure ? `Salida en ${departure} min` : "Salida ahora"} ·{" "}
                 {delegate ? "Puedes reservar" : "Vas de pasajero"}
               </p>
@@ -874,7 +905,7 @@ export function PassengerJourney() {
               </div>
               {leaving && (
                 <div className="j-notice" role="alert">
-                  <strong>¿Salir del grupo de ejemplo?</strong>
+                  <strong>¿Salir del grupo?</strong>
                   <p>Se borrarán los mensajes y tu selfie de esta sesión.</p>
                   <div className="j-row">
                     <button
@@ -914,7 +945,7 @@ export function PassengerJourney() {
               </div>
               {changingMeeting && (
                 <fieldset className="j-meeting-choices">
-                  <legend>Elige un punto de ejemplo</legend>
+                  <legend>Elige el punto de encuentro</legend>
                   {[
                     "Punto A · Parque Kennedy",
                     "Punto B · Parque Kennedy",
@@ -1011,10 +1042,6 @@ export function PassengerJourney() {
                 <span>2 paradas · orden óptimo</span>
                 <JourneyMap groups={groupRoute} label={origin} compact />
               </div>
-              <p className="j-fine">
-                Ruta ilustrativa de ejemplo. El viaje en vivo calcula las rutas
-                por calles.
-              </p>
               {[displayName, "Gabriela I."].map((person, i) => (
                 <div
                   key={person + i}
@@ -1051,7 +1078,7 @@ export function PassengerJourney() {
                   size={280}
                   marginSize={4}
                   fgColor="#092126"
-                  title="Código QR de ejemplo para Grupo Rosa 04"
+                  title="Código QR de Grupo Rosa 04"
                 />
               </div>
               <h2>JL-04-56A</h2>
@@ -1059,11 +1086,8 @@ export function PassengerJourney() {
                 El delegado lo escanea para confirmar que perteneces a este
                 grupo.
               </p>
-              <p className="j-fine">
-                Código de demostración, sin validez para viajes reales.
-              </p>
               <button className="j-secondary" onClick={() => nav("verify")}>
-                Probar verificación
+                Verificar a mi grupo
               </button>
             </div>
           )}
@@ -1099,8 +1123,7 @@ export function PassengerJourney() {
               ) : (
                 <>
                   <p className="j-fine">
-                    Verificación de ejemplo: usa el código del grupo. La cámara
-                    QR para viajes reales requiere una integración adicional.
+                    Ingresa el código que muestra cada pasajero debajo de su QR.
                   </p>
                   <form
                     onSubmit={(e) => {
@@ -1109,9 +1132,7 @@ export function PassengerJourney() {
                         scanCode.trim() !== "JL-04-56A" &&
                         scanCode.trim() !== DEMO_CODE
                       ) {
-                        setError(
-                          "Este código no pertenece al grupo de ejemplo.",
-                        );
+                        setError("Este código no pertenece a tu grupo.");
                         return;
                       }
                       setVerified(true);
@@ -1127,7 +1148,7 @@ export function PassengerJourney() {
                         required
                       />
                     </label>
-                    <Primary>Verificar código de ejemplo</Primary>
+                    <Primary>Verificar código</Primary>
                   </form>
                 </>
               )}
@@ -1179,7 +1200,7 @@ export function PassengerJourney() {
                 </p>
               )}
               <div className="j-commission">
-                <small>Comisión Jala para ti · ejemplo</small>
+                <small>Comisión Jala para ti</small>
                 <strong>S/ 0.00 · viaje gratis 2 de 5</strong>
               </div>
               <p className="j-fare-copy">
@@ -1202,7 +1223,7 @@ export function PassengerJourney() {
                 <h2>¡Buen viaje!</h2>
                 <p>
                   El chat del grupo se cerró y las selfies se borraron.
-                  Guardamos tu viaje en el historial de este navegador.
+                  Guardamos tu viaje en tu historial.
                 </p>
               </div>
               <div className="j-saved-card">
@@ -1269,8 +1290,7 @@ export function PassengerJourney() {
               </div>
               <p className="j-history-note">
                 Los chats de grupo no se guardan. Solo conservamos personas,
-                ruta y monto. Este historial de ejemplo se guarda en tu
-                navegador.
+                ruta y monto.
               </p>
             </>
           )}
@@ -1315,10 +1335,6 @@ export function PassengerJourney() {
                   </div>
                 </div>
               ))}
-              <p className="j-history-note">
-                Tus respuestas se guardan en este navegador para el recorrido de
-                ejemplo.
-              </p>
             </>
           )}
 
@@ -1327,62 +1343,25 @@ export function PassengerJourney() {
               <div className="j-account">
                 <Avatar name={displayName} />
                 <h2>{displayName}</h2>
-                <p>Estás explorando el recorrido de ejemplo.</p>
               </div>
               <Link href="/sign-in?next=%2Fride" className="j-primary">
-                <Mail size={20} /> Entrar a mi cuenta real
+                <Mail size={20} /> Entrar con correo
               </Link>
-              <Link href="/ride" className="j-secondary">
-                Buscar un viaje en vivo <ArrowRight size={19} />
-              </Link>
-              <Link href="/admin" className="j-secondary">
-                Simulador de agrupamiento
-              </Link>
-              <button
-                className="j-secondary"
-                onClick={() => {
-                  setSelfie(null);
-                  setMessages([]);
-                  nav("login");
-                }}
-              >
-                Salir del recorrido
+              <button className="j-secondary" onClick={signOut}>
+                Cerrar sesión
               </button>
             </>
           )}
         </div>
-        {tabs && (
-          <nav className="j-bottom-nav" aria-label="Navegación principal">
-            {(
-              [
-                { id: "home", label: "Inicio", Icon: Home },
-                { id: "trips", label: "Mis viajes", Icon: Clock3 },
-                { id: "account", label: "Cuenta", Icon: UserRound },
-              ] as const
-            ).map(({ id, label, Icon }) => (
-              <button
-                key={id}
-                aria-current={screen === id ? "page" : undefined}
-                onClick={() => (id === "trips" ? loadTrips() : nav(id))}
-              >
-                <Icon size={24} />
-                {id === "trips" &&
-                  trips.some((t) =>
-                    t.companions.some((p) => !(p in t.ratings)),
-                  ) && <span className="j-nav-badge">1</span>}
-                <span>{label}</span>
-              </button>
-            ))}
-          </nav>
-        )}
-      </div>
+      </main>
+      {tabs && (
+        <nav className="j-bottom-nav" aria-label="Principal">
+          {tabLinks}
+        </nav>
+      )}
       {safety && (
         <SafetySheet origin={origin} onClose={() => setSafety(false)} />
       )}
-      <footer className="j-shell-footer">
-        <Link href="/admin">Panel de validación</Link>
-        <span>Hecho en Lima · Jala</span>
-      </footer>
     </div>
   );
 }
