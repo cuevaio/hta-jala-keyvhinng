@@ -40,6 +40,7 @@ export default async function SessionPage({
         sessionId={session.id}
         eventId={session.eventId}
         vehicleCapacity={session.vehicleCapacity}
+        mapCenter={event.venue}
         closesAt={session.closesAt.toISOString()}
         initiallyOpen={
           session.status === "open" &&

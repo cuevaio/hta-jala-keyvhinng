@@ -1,4 +1,8 @@
 import type { GeoPoint } from "@/modules/events/domain/event";
+import {
+  RoutingError,
+  type RoutingProvider,
+} from "@/modules/routing/domain/routing-provider";
 
 export const TOTAL_BASIS_POINTS = 10_000;
 
@@ -17,6 +21,7 @@ export interface FareAllocation {
  * Recommends how a shared fare should be split.
  *
  * Contract:
+ * - `origin` is where the vehicle starts (the meeting point).
  * - `orderedStops` is the shared route in drop-off order.
  * - Returns exactly one allocation per stop, in the same order.
  * - Every `shareBps` is a non-negative integer and the sum is exactly
@@ -24,6 +29,7 @@ export interface FareAllocation {
  */
 export interface FareAllocationService {
   allocate(
+    origin: GeoPoint,
     orderedStops: readonly FareAllocationStop[],
   ): Promise<FareAllocation[]>;
 }
@@ -55,4 +61,61 @@ export function weightsToBasisPoints(weights: readonly number[]): number[] {
     remaining -= 1;
   }
   return result;
+}
+
+/**
+ * Segment-based shares from road distances.
+ *
+ * `legDistancesMeters[i]` is the leg that ends at stop `i`, so it is shared by
+ * everyone not yet dropped off: members `i..n-1`. Each leg is split equally among
+ * them and each member's contributions are accumulated, then normalized to basis
+ * points. A passenger who rides further therefore pays more, and nobody pays for
+ * road travelled after leaving. This is a distance-based recommendation, not the
+ * provider's metered fare.
+ */
+export function allocateBySegmentDistance(
+  legDistancesMeters: readonly number[],
+): number[] {
+  const n = legDistancesMeters.length;
+  const weights: number[] = [];
+  let cumulative = 0;
+  for (let i = 0; i < n; i++) {
+    const distance = legDistancesMeters[i];
+    if (!Number.isFinite(distance) || distance < 0) {
+      throw new RangeError("Leg distances must be finite and non-negative");
+    }
+    cumulative += distance / (n - i);
+    weights.push(cumulative);
+  }
+  return weightsToBasisPoints(weights);
+}
+
+/**
+ * Road-distance implementation of FareAllocationService. Routing failures propagate
+ * as RoutingError; there is deliberately no straight-line fallback.
+ */
+export function createRoadFareAllocationService(
+  routing: RoutingProvider,
+): FareAllocationService {
+  return {
+    async allocate(origin, orderedStops) {
+      if (orderedStops.length === 0) return [];
+      const route = await routing.estimateRoute([
+        origin,
+        ...orderedStops.map((stop) => stop.destination),
+      ]);
+      if (route.legs.length !== orderedStops.length) {
+        throw new RoutingError(
+          `Expected ${orderedStops.length} route legs, received ${route.legs.length}`,
+        );
+      }
+      const shares = allocateBySegmentDistance(
+        route.legs.map((leg) => leg.distanceMeters),
+      );
+      return orderedStops.map((stop, index) => ({
+        participantId: stop.participantId,
+        shareBps: shares[index],
+      }));
+    },
+  };
 }

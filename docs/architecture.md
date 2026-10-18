@@ -32,9 +32,9 @@ Rules:
 | `events`       | implemented (read) | Events and their predefined meeting points                                        |
 | `sessions`     | implemented (read) | Temporary matching pools per event                                                |
 | `matching`     | contracts only     | `MatchingService`: candidates → candidate ride parties                            |
-| `routing`      | contracts only     | `RoutingProvider`: provider-agnostic duration, distance, multi-stop routes        |
+| `routing`      | contract + OSRM    | `RoutingProvider` contract, `RoutingError`, OSRM adapter (`ROUTING_BASE_URL`)     |
 | `parties`      | domain only        | Ride party / member / ride types; `RideProviderAdapter` boundary for Uber etc.    |
-| `payments`     | domain only        | Platform fee rule, `FareAllocationService` contract, basis-point helper           |
+| `payments`     | domain only        | Platform fee rule, segment-based fare allocation, basis-point helper           |
 | `verification` | not created        | QR verification; add when there is code to put in it                              |
 
 `routing` and `matching` never reference a mapping vendor. `RideProviderAdapter` keeps external

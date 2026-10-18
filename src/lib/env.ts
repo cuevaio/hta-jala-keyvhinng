@@ -3,6 +3,7 @@ import { z } from "zod";
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3000"),
+  ROUTING_BASE_URL: z.string().url().default("https://router.project-osrm.org"),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
 });
 

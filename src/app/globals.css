@@ -895,6 +895,29 @@ select:focus-visible {
 .coordinates-section > .input-help {
   margin-top: 0;
 }
+.destination-map {
+  height: 280px;
+  margin-top: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  z-index: 0;
+}
+.destination-pin {
+  background: var(--primary);
+  border: 3px solid #fff;
+  border-radius: 50% 50% 50% 0;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.35);
+  transform: rotate(-45deg);
+}
+.coordinates-manual {
+  margin-top: 12px;
+  font-size: 12px;
+}
+.coordinates-manual summary {
+  cursor: pointer;
+  color: var(--muted-foreground);
+}
 .coordinate-fields {
   display: grid;
   grid-template-columns: 1fr 1fr;

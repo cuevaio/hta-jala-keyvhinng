@@ -11,6 +11,7 @@ import {
   CarFront,
   ShieldCheck,
 } from "lucide-react";
+import type { GeoPoint } from "@/modules/events/domain/event";
 import { SessionJoinForm } from "./session-join-form";
 import { sessionApi, SessionRequestError } from "./session-api";
 
@@ -37,12 +38,14 @@ export function WaitingRoom({
   closesAt,
   initiallyOpen,
   vehicleCapacity,
+  mapCenter,
 }: {
   sessionId: string;
   eventId: string;
   closesAt: string;
   initiallyOpen: boolean;
   vehicleCapacity: number;
+  mapCenter: GeoPoint;
 }) {
   const [room, setRoom] = useState<Room | null>(null);
   const [loading, setLoading] = useState(true);
@@ -271,7 +274,9 @@ export function WaitingRoom({
           </div>
         </section>
       ) : (
-        !closed && <SessionJoinForm onJoin={join} busy={busy} />
+        !closed && (
+          <SessionJoinForm onJoin={join} busy={busy} mapCenter={mapCenter} />
+        )
       )}
     </div>
   );

@@ -33,3 +33,11 @@ export interface RoutingProvider {
    */
   estimateRoute(waypoints: readonly GeoPoint[]): Promise<RouteEstimate>;
 }
+
+/** The routing provider could not produce a usable road estimate. */
+export class RoutingError extends Error {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, options);
+    this.name = "RoutingError";
+  }
+}
