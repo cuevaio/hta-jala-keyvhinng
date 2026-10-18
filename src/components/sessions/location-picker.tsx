@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { LocateFixed, MapPin, MapPinned } from "lucide-react";
+import { LocateFixed, MapPin } from "lucide-react";
 import {
   reverseGeocode,
   searchAddress,
@@ -56,12 +56,6 @@ export function LocationPicker({
   onFocusPoint: (point: GeoPoint) => void;
 }) {
   const copy = COPY[end];
-  const mapsQuery = value?.point
-    ? `${value.point.latitude},${value.point.longitude}`
-    : value?.label.trim();
-  const mapsHref = mapsQuery
-    ? `https://www.google.com/maps/search/?${new URLSearchParams({ api: "1", query: mapsQuery })}`
-    : "https://www.google.com/maps";
   const [lookup, setLookup] = useState<Lookup>("idle");
   const [results, setResults] = useState<AddressMatch[] | null>(null);
   const [searching, setSearching] = useState(false);
@@ -249,7 +243,11 @@ export function LocationPicker({
         </label>
       </div>
       <div className="address-search-row">
-        <div className="address-input-with-map">
+        <div
+          className={
+            end === "origin" ? "address-input-with-map" : "address-input"
+          }
+        >
           <input
             id={`${id}-label`}
             className="form-input"
@@ -276,7 +274,7 @@ export function LocationPicker({
             }}
             placeholder={copy.placeholder}
           />
-          {end === "origin" ? (
+          {end === "origin" && (
             <button
               type="button"
               className="address-google-maps"
@@ -287,17 +285,6 @@ export function LocationPicker({
             >
               <LocateFixed size={22} aria-hidden="true" />
             </button>
-          ) : (
-            <a
-              href={mapsHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="address-google-maps"
-              aria-label="Abrir destino en Google Maps (se abre en otra pestaña)"
-              title="Abrir en Google Maps"
-            >
-              <MapPinned size={22} aria-hidden="true" />
-            </a>
           )}
         </div>
       </div>

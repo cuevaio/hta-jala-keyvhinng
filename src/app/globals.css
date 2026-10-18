@@ -1367,6 +1367,7 @@ fieldset legend {
   display: flex;
   gap: 8px;
 }
+.address-input,
 .address-input-with-map {
   position: relative;
   flex: 1;
