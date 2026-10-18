@@ -26,7 +26,7 @@ export function SiteHeader() {
   return (
     <header className={`site-header${open ? " menu-open" : ""}`}>
       <div className="site-header-inner wrap">
-        <Wordmark />
+        <Wordmark eager />
         <button
           type="button"
           className="menu-toggle"

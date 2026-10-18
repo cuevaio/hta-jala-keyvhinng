@@ -516,24 +516,15 @@ fieldset legend {
 }
 .wordmark {
   display: inline-flex;
-  align-items: flex-start;
-  font-size: 40px;
-  font-weight: 800;
-  letter-spacing: -0.09em;
-  line-height: 1;
-  color: var(--ink);
+  flex-shrink: 0;
 }
-.wordmark span {
-  margin: -3px 0 0 6px;
-  font-size: 30px;
-  letter-spacing: 0;
-  color: var(--orange);
+.wordmark img {
+  display: block;
+  width: auto;
+  height: 46px;
 }
-.wordmark-small {
-  font-size: 32px;
-}
-.wordmark-small span {
-  font-size: 24px;
+.wordmark-small img {
+  height: 36px;
 }
 .site-menu {
   flex: 1;
@@ -2221,11 +2212,8 @@ ol.roster {
   .site-header-inner {
     height: 72px;
   }
-  .wordmark {
-    font-size: 36px;
-  }
-  .wordmark span {
-    font-size: 27px;
+  .site-header .wordmark img {
+    height: 40px;
   }
   .hero {
     grid-template-columns: 1fr;
