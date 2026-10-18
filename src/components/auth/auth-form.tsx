@@ -125,6 +125,11 @@ export function AuthForm({
         {mode === "sign-up" && (
           <p className="input-help">Usa al menos 8 caracteres.</p>
         )}
+        {mode === "sign-in" && (
+          <p className="input-help">
+            <Link href="/forgot-password">¿Olvidaste tu contraseña?</Link>
+          </p>
+        )}
       </div>
       {error && (
         <p role="alert" className="form-error">

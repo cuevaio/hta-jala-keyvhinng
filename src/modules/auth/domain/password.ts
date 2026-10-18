@@ -7,22 +7,43 @@ const P = 1;
 const KEY_LENGTH = 64;
 const MAX_MEMORY = 256 * 1024 * 1024;
 
-function derive(
+// Each derivation holds ~128 MiB, so concurrent logins could exhaust a small host.
+// Excess work queues instead of allocating; the rate limiters bound the queue.
+const MAX_CONCURRENT = 2;
+let running = 0;
+const waiting: (() => void)[] = [];
+async function acquire() {
+  if (running >= MAX_CONCURRENT)
+    await new Promise<void>((resolve) => waiting.push(resolve));
+  else running += 1;
+}
+function release() {
+  const next = waiting.shift();
+  if (next) next();
+  else running -= 1;
+}
+
+async function derive(
   password: string,
   salt: Buffer,
   n: number,
   r: number,
   p: number,
 ) {
-  return new Promise<Buffer>((resolve, reject) => {
-    scrypt(
-      password.normalize("NFKC"),
-      salt,
-      KEY_LENGTH,
-      { N: n, r, p, maxmem: MAX_MEMORY },
-      (error, key) => (error ? reject(error) : resolve(key)),
-    );
-  });
+  await acquire();
+  try {
+    return await new Promise<Buffer>((resolve, reject) => {
+      scrypt(
+        password.normalize("NFKC"),
+        salt,
+        KEY_LENGTH,
+        { N: n, r, p, maxmem: MAX_MEMORY },
+        (error, key) => (error ? reject(error) : resolve(key)),
+      );
+    });
+  } finally {
+    release();
+  }
 }
 
 /** Encodes as `scrypt$N$r$p$salt$hash` so parameters can be raised later. */

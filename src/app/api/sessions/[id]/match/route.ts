@@ -13,7 +13,7 @@ export const POST = handle(
     assertSameOrigin(request);
     const { userId } = await requireIdentity();
     const { id } = sessionIdParams.parse(await ctx.params);
-    if (!consume(`matching:${userId}`, 6, 60_000)) {
+    if (!(await consume(`matching:${userId}`, 6, 60_000))) {
       throw new ApiError(
         429,
         "rate_limited",

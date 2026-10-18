@@ -1,3 +1,4 @@
+import { createLogMailer } from "@/lib/mailer";
 import { getEnv } from "@/lib/env";
 import { createMatchingApplication } from "@/modules/matching/application/matching.service";
 import { createMatchingRepository } from "@/modules/matching/infrastructure/matching.repository";
@@ -24,7 +25,11 @@ export function getServices() {
       ),
       "osrm",
     ),
-    auth: createAuthService(createAuthRepository(db)),
+    auth: createAuthService(
+      createAuthRepository(db),
+      createLogMailer(),
+      getEnv().NEXT_PUBLIC_APP_URL,
+    ),
     participation: createParticipationRepository(db),
     parties: createPartyRepository(db),
     events: createEventService(createEventRepository(db)),

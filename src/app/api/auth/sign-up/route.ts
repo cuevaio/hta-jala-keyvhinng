@@ -9,7 +9,7 @@ import { clientKey } from "../client-key";
 export const POST = handle(async (request: Request) => {
   assertSameOrigin(request);
   // Each sign-up costs a ~128 MiB scrypt run; cap them per client.
-  if (!consume(`sign-up:${clientKey(request)}`, 10, 60 * 60 * 1000)) {
+  if (!(await consume(`sign-up:${clientKey(request)}`, 10, 60 * 60 * 1000))) {
     throw new ApiError(
       429,
       "rate_limited",

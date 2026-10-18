@@ -89,6 +89,7 @@ describe("auth schemas", () => {
 describe("auth service", () => {
   let accounts: Map<string, AccountRecord>;
   let repository: AuthRepository;
+  const mailer = { send: async () => {} };
 
   beforeEach(() => {
     accounts = new Map();
@@ -102,11 +103,12 @@ describe("auth service", () => {
         accounts.set(input.email, { id, ...input });
         return { id };
       },
-    };
+      // Reset and change-password persistence is covered by the integration tests.
+    } as AuthRepository;
   });
 
   it("signs up, stores only a hash, then signs in", async () => {
-    const service = createAuthService(repository);
+    const service = createAuthService(repository, mailer, "http://app.test");
     const created = await service.signUp({
       displayName: "Ana",
       email: "ana@x.co",
@@ -119,7 +121,7 @@ describe("auth service", () => {
   });
 
   it("maps a unique violation (including wrapped causes) to EmailTakenError", async () => {
-    const service = createAuthService(repository);
+    const service = createAuthService(repository, mailer, "http://app.test");
     const input = {
       displayName: "Ana",
       email: "ana@x.co",
@@ -136,7 +138,7 @@ describe("auth service", () => {
   });
 
   it("gives the same error for unknown email and wrong password", async () => {
-    const service = createAuthService(repository);
+    const service = createAuthService(repository, mailer, "http://app.test");
     await service.signUp({
       displayName: "Ana",
       email: "ana@x.co",
@@ -155,9 +157,9 @@ describe("auth service", () => {
 describe("rate limiter", () => {
   beforeEach(resetRateLimits);
 
-  it("allows up to the limit per key, then blocks, independently per key", () => {
-    for (let i = 0; i < 3; i++) expect(consume("a", 3, 1000)).toBe(true);
-    expect(consume("a", 3, 1000)).toBe(false);
-    expect(consume("b", 3, 1000)).toBe(true);
+  it("allows up to the limit per key, then blocks, independently per key", async () => {
+    for (let i = 0; i < 3; i++) expect(await consume("a", 3, 1000)).toBe(true);
+    expect(await consume("a", 3, 1000)).toBe(false);
+    expect(await consume("b", 3, 1000)).toBe(true);
   });
 });

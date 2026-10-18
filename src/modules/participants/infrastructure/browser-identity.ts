@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import { and, eq, gt, isNotNull } from "drizzle-orm";
+import { and, eq, gt, isNotNull, lt } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { getDb } from "@/db";
 import { browserSessions, users } from "@/db/schema";
@@ -49,9 +49,14 @@ export async function startSession(userId: string) {
   await endSession();
   const token = randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
-  await getDb()
+  const db = getDb();
+  await db
     .insert(browserSessions)
     .values({ userId, tokenHash: hash(token), expiresAt });
+  // Opportunistic cleanup keeps the table bounded without a scheduled job.
+  await db
+    .delete(browserSessions)
+    .where(lt(browserSessions.expiresAt, new Date()));
   (await cookies()).set(COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",

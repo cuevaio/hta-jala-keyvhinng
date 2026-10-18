@@ -32,6 +32,21 @@ export const signInInput = z.object({
     .max(PASSWORD_MAX_LENGTH),
 });
 
+const newPassword = z
+  .string()
+  .min(PASSWORD_MIN_LENGTH, `Usa al menos ${PASSWORD_MIN_LENGTH} caracteres.`)
+  .max(PASSWORD_MAX_LENGTH, "La contraseña es demasiado larga.");
+
+export const passwordResetRequestInput = z.object({ email });
+export const passwordResetConfirmInput = z.object({
+  token: z.string().regex(/^[a-f0-9]{64}$/, "Enlace inválido."),
+  password: newPassword,
+});
+export const changePasswordInput = z.object({
+  currentPassword: z.string().min(1).max(PASSWORD_MAX_LENGTH),
+  newPassword,
+});
+
 export type SignUpInput = z.infer<typeof signUpInput>;
 export type SignInInput = z.infer<typeof signInInput>;
 

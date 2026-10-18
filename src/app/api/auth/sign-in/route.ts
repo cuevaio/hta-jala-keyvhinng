@@ -11,10 +11,13 @@ const WINDOW_MS = 15 * 60 * 1000;
 export const POST = handle(async (request: Request) => {
   assertSameOrigin(request);
   const input = signInInput.parse(await readJson(request));
-  // Throttle per account (slows password guessing) and per client (slows enumeration).
+  // Per account+client so one attacker cannot lock the real owner out, per client to
+  // slow enumeration, and a looser per-account cap to bound distributed guessing.
+  const ip = clientKey(request);
   if (
-    !consume(`sign-in:email:${input.email}`, 10, WINDOW_MS) ||
-    !consume(`sign-in:ip:${clientKey(request)}`, 30, WINDOW_MS)
+    !(await consume(`sign-in:pair:${input.email}:${ip}`, 8, WINDOW_MS)) ||
+    !(await consume(`sign-in:ip:${ip}`, 30, WINDOW_MS)) ||
+    !(await consume(`sign-in:email:${input.email}`, 40, WINDOW_MS))
   ) {
     throw new ApiError(
       429,

@@ -19,3 +19,10 @@ export class InvalidCredentialsError extends Error {
     this.name = "InvalidCredentialsError";
   }
 }
+
+export class InvalidResetTokenError extends Error {
+  constructor() {
+    super("Invalid or expired password reset token");
+    this.name = "InvalidResetTokenError";
+  }
+}

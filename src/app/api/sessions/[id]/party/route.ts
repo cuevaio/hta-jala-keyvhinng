@@ -12,7 +12,7 @@ export const POST = handle(
     const { userId } = await requireIdentity();
     const { id } = sessionIdParams.parse(await ctx.params);
     const { action } = partyCommandBody.parse(await request.json());
-    if (!consume(`party:${userId}`, 30, 60_000))
+    if (!(await consume(`party:${userId}`, 30, 60_000)))
       throw new ApiError(
         429,
         "rate_limited",
