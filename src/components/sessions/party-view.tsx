@@ -4,6 +4,7 @@ import { forwardRef, useEffect, useRef, useState } from "react";
 import { Check, CarFront, ExternalLink, MapPin } from "lucide-react";
 import type { PartyCommand } from "@/modules/parties/domain/party-lifecycle";
 import { apportionMinor } from "@/modules/payments/domain/fare-allocation";
+import { parseFareMinor } from "@/modules/payments/domain/fare-input";
 import { formatSoles } from "@/modules/payments/domain/fees";
 import { PartyChat } from "./party-chat";
 import type { Room, PartyStatus } from "./room";
@@ -24,12 +25,6 @@ const HINTS: Record<PartyStatus, string> = {
   cancelled: "Este grupo de viaje ya no está activo.",
 };
 
-/** "45.5" or "45,50" → 4550 céntimos; null when empty or not a plain amount. */
-export function parseFareMinor(value: string): number | null {
-  const match = /^(\d{1,5})(?:[.,](\d{1,2}))?$/.exec(value.trim());
-  if (!match) return null;
-  return Number(match[1]) * 100 + Number((match[2] ?? "").padEnd(2, "0"));
-}
 const percent = (bps: number) =>
   `${(bps / 100).toLocaleString("es-PE", { maximumFractionDigits: 0 })}%`;
 

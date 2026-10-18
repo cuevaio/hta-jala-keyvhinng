@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import "./globals.css";
+import "@/components/journey/journey.css";
 
 const font = Plus_Jakarta_Sans({
   variable: "--font-body",

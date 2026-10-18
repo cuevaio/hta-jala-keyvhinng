@@ -43,8 +43,8 @@ export function SiteHeader() {
         </button>
         <div id="site-menu" className="site-menu">
           <nav aria-label="Principal">
-            <Link href="/#como-funciona" className="nav-link">
-              Cómo funciona
+            <Link href="/" className="nav-link">
+              Inicio
             </Link>
             <Link
               href="/places"

@@ -12,7 +12,7 @@ export function SiteFooter() {
         <nav aria-label="Pie de página">
           <Link href="/ride">Compartir un taxi</Link>
           <Link href="/places">Lugares</Link>
-          <Link href="/#como-funciona">Cómo funciona</Link>
+          <Link href="/">Inicio</Link>
         </nav>
       </div>
       <div className="footer-bottom">
