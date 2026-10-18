@@ -215,7 +215,6 @@
   margin-bottom: 16px;
 }
 .j-field > input,
-.j-search-input,
 .j-chat-composer input {
   width: 100%;
   min-width: 0;
@@ -227,8 +226,7 @@
   font-size: 15px;
   min-height: 50px;
 }
-.j-field input::placeholder,
-.j-search-input input::placeholder {
+.j-field input::placeholder {
   color: #6d767b;
   opacity: 1;
 }
@@ -340,6 +338,20 @@
   font-size: 14px;
   color: var(--j-ink);
   background: white;
+}
+.j-origin-preview {
+  width: 100%;
+  min-height: 46px;
+  padding: 13px 11px;
+  border: 1px solid #d5e0e3;
+  border-radius: 10px;
+  background: white;
+  color: var(--j-ink);
+  font-size: 14px;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .j-destination-preview {
   padding: 0 4px 12px;
@@ -500,49 +512,6 @@
   place-items: center;
   font-weight: 500;
 }
-.j-search-input {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-.j-search-input input {
-  border: 0;
-  outline: 0;
-  background: none;
-  min-width: 0;
-  width: 100%;
-  color: var(--j-ink);
-  font-size: 15px;
-}
-.j-districts {
-  max-height: 194px;
-  overflow: auto;
-  margin-bottom: 14px;
-  scrollbar-width: thin;
-}
-.j-districts > div {
-  border: 1px solid var(--j-line);
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 7px 12px;
-  margin-bottom: 7px;
-  gap: 8px;
-  min-height: 49px;
-}
-.j-districts strong {
-  font-size: 13px;
-  display: block;
-}
-.j-districts small {
-  font-size: 11px;
-  color: var(--j-muted);
-  display: block;
-  line-height: 1.15;
-}
-.j-districts button,
 .j-meeting-banner button {
   background: white;
   border: 1px solid var(--j-ink);
@@ -551,10 +520,6 @@
   font-size: 11px;
   font-weight: 700;
   color: var(--j-ink);
-}
-.j-districts .selected {
-  background: #e7f0f1;
-  border-color: var(--j-ink);
 }
 .j-options {
   border: 0;
@@ -1766,6 +1731,23 @@
     height: 430px;
   }
 }
+/* Trip screen: the shared address pickers and ride map from the live flow. */
+.j-trip {
+  display: grid;
+  gap: 16px;
+  grid-template-areas: "fields" "map" "details";
+}
+.j-trip-fields {
+  grid-area: fields;
+}
+.j-trip-map {
+  grid-area: map;
+  position: relative;
+  height: 300px;
+}
+.j-trip-details {
+  grid-area: details;
+}
 /* Phones follow the mockups: the brand bar leads Inicio and the login only, every
    other screen leads with its own title, and the tabs sit at the bottom. */
 @media (max-width: 767px) {
@@ -1865,8 +1847,21 @@
     border-radius: 24px;
   }
 }
-/* Home and login split into a lead column and a side column. */
+/* Home and login split into a lead column and a side column; the trip screen
+   keeps its fields on the left and the map on the right. */
 @media (min-width: 1024px) {
+  .j-trip {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+    grid-template-rows: auto 1fr;
+    grid-template-areas: "fields map" "details map";
+    column-gap: 40px;
+    align-items: start;
+  }
+  .j-trip-map {
+    position: sticky;
+    top: calc(var(--j-appbar-h) + 24px);
+    height: min(640px, calc(100dvh - var(--j-appbar-h) - 120px));
+  }
   .j-screen-home,
   .j-screen-login {
     display: grid;

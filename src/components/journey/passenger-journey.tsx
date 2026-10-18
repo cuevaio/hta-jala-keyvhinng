@@ -17,7 +17,6 @@ import {
   Mail,
   MapPin,
   QrCode,
-  Search,
   Shield,
   UserRound,
   X,
@@ -29,10 +28,14 @@ import {
 } from "@/modules/payments/domain/fare-allocation";
 import { formatSoles } from "@/modules/payments/domain/fees";
 import { parseFareMinor } from "@/modules/payments/domain/fare-input";
+import type { GeoPoint } from "@/modules/places/domain/place";
+import type { SimGroup } from "@/modules/simulation/domain/simulation";
 import {
-  DISTRICTS,
-  type SimGroup,
-} from "@/modules/simulation/domain/simulation";
+  LocationPicker,
+  type PickedLocation,
+} from "@/components/sessions/location-picker";
+import { DEFAULT_MAP_CENTER } from "@/components/sessions/ride-form";
+import { RideMap, type RideEnd } from "@/components/sessions/ride-map";
 import {
   readDemoTrips,
   writeDemoTrips,
@@ -117,9 +120,11 @@ function Primary({
 function SafetySheet({
   onClose,
   origin,
+  destination,
 }: {
   onClose: () => void;
   origin: string;
+  destination: string;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [notice, setNotice] = useState("");
@@ -127,7 +132,7 @@ function SafetySheet({
     dialog.current?.showModal();
   }, []);
   async function share() {
-    const text = `Mi viaje en Jala: ${origin} → Barranco. Grupo Rosa 04.`;
+    const text = `Mi viaje en Jala: ${origin} → ${destination}. Grupo Rosa 04.`;
     try {
       if (navigator.share)
         await navigator.share({ title: "Mi viaje en Jala", text });
@@ -210,10 +215,10 @@ function SafetySheet({
 export function PassengerJourney() {
   const [screen, setScreen] = useState<Screen>("login");
   const [name, setName] = useState("");
-  const [origin, setOrigin] = useState("Av. José Larco 345, Miraflores");
-  const [district, setDistrict] = useState("");
-  const [query, setQuery] = useState("");
-  const [address, setAddress] = useState("");
+  const [origin, setOrigin] = useState<PickedLocation | null>(null);
+  const [destination, setDestination] = useState<PickedLocation | null>(null);
+  const [mapEnd, setMapEnd] = useState<RideEnd>("origin");
+  const [mapFocus, setMapFocus] = useState<GeoPoint | null>(null);
   const [departure, setDeparture] = useState(0);
   const [delegate, setDelegate] = useState(false);
   const [selfie, setSelfie] = useState<string | null>(null);
@@ -247,12 +252,31 @@ export function PassengerJourney() {
     if (screen === "chat")
       chatEnd.current?.scrollIntoView({ block: "nearest" });
   }, [messages, screen]);
+  // Short names for the itinerary: the first part of the chosen address.
+  const originName = origin?.label.split(",")[0].trim() ?? "";
+  const destinationName = destination?.label.split(",")[0].trim() ?? "";
+  const routeReady = Boolean(
+    origin?.point &&
+    origin.label.trim().length >= 3 &&
+    destination?.point &&
+    destination.label.trim().length >= 3,
+  );
+  function changeOrigin(next: PickedLocation | null) {
+    setOrigin(next);
+    // With the start known, the next tap on the map is most likely the destination.
+    if (next?.point && !origin?.point && !destination?.point)
+      setMapEnd("destination");
+  }
+  function pickOnMap(end: RideEnd, point: GeoPoint) {
+    if (end === "origin") changeOrigin({ point, label: origin?.label ?? "" });
+    else setDestination({ point, label: destination?.label ?? "" });
+  }
   const groupRoute: SimGroup[] = [
     {
       id: 1,
       stops: [
-        { id: 1, x: 1.2, y: -3.7, district: district || "Barranco" },
-        { id: 2, x: 2.4, y: -4.4, district: district || "Barranco" },
+        { id: 1, x: 1.2, y: -3.7, district: destinationName || "Barranco" },
+        { id: 2, x: 2.4, y: -4.4, district: destinationName || "Barranco" },
       ],
       km: 5.3,
       shares: SHARES,
@@ -290,8 +314,8 @@ export function PassengerJourney() {
         minute: "2-digit",
         timeZone: "America/Lima",
       }),
-      origin,
-      destination: district,
+      origin: originName,
+      destination: destinationName,
       group: "Grupo Rosa 04",
       total: fareMinor,
       mine: split[0],
@@ -325,14 +349,6 @@ export function PassengerJourney() {
     }
   }
   const displayName = name.trim() || "Flor";
-  const normalize = (value: string) =>
-    value
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase();
-  const filteredDistricts = DISTRICTS.filter((d) =>
-    normalize(d).includes(normalize(query)),
-  );
   const title = TITLES[screen];
   const tabs = TABS.some((tab) => tab.id === screen);
   const pendingRatings = trips.some((t) =>
@@ -349,7 +365,10 @@ export function PassengerJourney() {
     fare: "verify",
     detail: "trips",
   };
-  const resetRide = () => {
+  const resetRide = (
+    end: RideEnd = destination?.point ? "origin" : "destination",
+  ) => {
+    setMapEnd(origin?.point ? end : "origin");
     setVerified(false);
     setSelfie(null);
     setMessages(INITIAL_MESSAGES);
@@ -363,7 +382,12 @@ export function PassengerJourney() {
   // Home and login lead with the brand bar; every other screen leads with its own title.
   // On desktop the brand bar is always present and carries the tabs.
   const branded = screen === "home" || screen === "login";
-  const width = branded ? "wide" : screen === "chat" ? "chat" : "narrow";
+  const width =
+    branded || screen === "destination"
+      ? "wide"
+      : screen === "chat"
+        ? "chat"
+        : "narrow";
   const tabLinks = TABS.map(({ id, label, Icon }) => (
     <button
       key={id}
@@ -447,7 +471,9 @@ export function PassengerJourney() {
               </h1>
               <p>
                 {screen === "destination"
-                  ? `Saliendo desde ${origin.split(",")[0]}`
+                  ? originName
+                    ? `Saliendo desde ${originName}`
+                    : "Elige tu punto de partida y tu destino"
                   : screen === "verify"
                     ? `${verified ? 1 : 0} de 1 verificados`
                     : screen === "detail"
@@ -532,54 +558,30 @@ export function PassengerJourney() {
                       <strong>
                         <Circle size={10} aria-hidden="true" /> Punto de partida
                       </strong>
-                      <button
-                        onClick={() => {
-                          if (!navigator.geolocation) {
-                            setError(
-                              "Tu navegador no permite obtener la ubicación.",
-                            );
-                            return;
-                          }
-                          navigator.geolocation.getCurrentPosition(
-                            (pos) =>
-                              setOrigin(
-                                `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`,
-                              ),
-                            () =>
-                              setError(
-                                "No pudimos acceder a tu ubicación. Escribe tu punto de partida.",
-                              ),
-                            { timeout: 10000 },
-                          );
-                        }}
-                      >
+                      <button onClick={() => resetRide("origin")}>
                         <LocateFixed size={16} /> Usar mi ubicación
                       </button>
                     </div>
-                    <label className="sr-only" htmlFor="j-origin">
-                      Punto de partida
-                    </label>
-                    <input
-                      id="j-origin"
-                      value={origin}
-                      onChange={(e) => setOrigin(e.target.value)}
-                      maxLength={200}
-                    />
+                    <button
+                      className="j-origin-preview"
+                      onClick={() => resetRide("origin")}
+                    >
+                      {origin?.label || "¿Desde dónde sales?"}
+                    </button>
                   </div>
                   <div>
                     <button
                       className="j-destination-preview"
-                      onClick={resetRide}
+                      onClick={() => resetRide("destination")}
                     >
                       <span>
                         <MapPin size={17} /> ¿A dónde vas?
                       </span>
-                      <strong>{district || "Distrito, calle o lugar"}</strong>
+                      <strong>
+                        {destination?.label || "Distrito, calle o lugar"}
+                      </strong>
                     </button>
-                    <Primary
-                      disabled={origin.trim().length < 3}
-                      onClick={resetRide}
-                    >
+                    <Primary onClick={() => resetRide()}>
                       Buscar compañeros de viaje <ArrowRight size={21} />
                     </Primary>
                   </div>
@@ -597,13 +599,7 @@ export function PassengerJourney() {
                 </div>
                 <div className="j-shortcuts">
                   {["Casa", "Trabajo", "Otros"].map((t) => (
-                    <button
-                      key={t}
-                      onClick={() => {
-                        resetRide();
-                        setQuery("");
-                      }}
-                    >
+                    <button key={t} onClick={() => resetRide("destination")}>
                       {t}
                     </button>
                   ))}
@@ -630,96 +626,96 @@ export function PassengerJourney() {
 
           {screen === "destination" && (
             <form
+              className="j-trip"
               onSubmit={(e) => {
                 e.preventDefault();
-                nav("selfie");
+                if (routeReady) nav("selfie");
               }}
             >
-              <label className="j-search-input">
-                <Search size={23} />
-                <input
-                  aria-label="Distrito de destino"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Distrito de destino"
+              <div className="j-trip-fields">
+                <LocationPicker
+                  id="j-origin"
+                  end="origin"
+                  value={origin}
+                  onChange={changeOrigin}
+                  onActivate={() => setMapEnd("origin")}
+                  onFocusPoint={setMapFocus}
                 />
-              </label>
-              <div
-                className="j-districts"
-                role="region"
-                aria-label="Distritos de destino"
-              >
-                {filteredDistricts.map((d) => (
-                  <div key={d} className={district === d ? "selected" : ""}>
-                    <span>
-                      <strong>{d}</strong>
-                      <small>Lima</small>
-                    </span>
-                    <button
-                      type="button"
-                      aria-pressed={district === d}
-                      onClick={() => {
-                        setDistrict(d);
-                        setQuery("");
-                      }}
-                    >
-                      {district === d ? "Elegido" : "Elegir"}
-                    </button>
-                  </div>
-                ))}
-                {filteredDistricts.length === 0 && query && (
-                  <p>Prueba con otro distrito de Lima.</p>
-                )}
+                <LocationPicker
+                  id="j-destination"
+                  end="destination"
+                  value={destination}
+                  onChange={setDestination}
+                  onActivate={() => setMapEnd("destination")}
+                  onFocusPoint={setMapFocus}
+                />
               </div>
-              <label className="j-field">
-                Dirección exacta · solo la ve tu grupo
-                <input
-                  placeholder="Calle y número"
-                  value={address}
-                  required
-                  maxLength={200}
-                  onChange={(e) => setAddress(e.target.value)}
-                />
-              </label>
-              <fieldset className="j-options">
-                <legend>¿Cuándo sales?</legend>
-                <div>
-                  {[0, 15, 30, 60].map((n) => (
+              <div className="j-trip-map">
+                <div
+                  className="map-mode"
+                  role="group"
+                  aria-label="Al tocar el mapa marcas"
+                >
+                  <span aria-hidden="true">Tocar el mapa marca</span>
+                  {(["origin", "destination"] as const).map((end) => (
                     <button
+                      key={end}
                       type="button"
-                      key={n}
-                      aria-pressed={departure === n}
-                      onClick={() => setDeparture(n)}
+                      aria-pressed={mapEnd === end}
+                      onClick={() => setMapEnd(end)}
                     >
-                      {n === 0 ? "Ahora" : n === 60 ? "1 hora" : `${n} min`}
+                      {end === "origin" ? "Partida" : "Destino"}
                     </button>
                   ))}
                 </div>
-              </fieldset>
-              <fieldset className="j-options j-role-options">
-                <legend>¿Puedes reservar el taxi?</legend>
-                <div>
-                  <button
-                    type="button"
-                    aria-pressed={!delegate}
-                    onClick={() => setDelegate(false)}
-                  >
-                    <strong>Voy de pasajero</strong>
-                    <small>Prefiero que otra persona reserve</small>
-                  </button>
-                  <button
-                    type="button"
-                    aria-pressed={delegate}
-                    onClick={() => setDelegate(true)}
-                  >
-                    <strong>Puedo reservar</strong>
-                    <small>Pido el taxi y no pago comisión</small>
-                  </button>
-                </div>
-              </fieldset>
-              <Primary disabled={!district || address.trim().length < 3}>
-                Buscar grupo
-              </Primary>
+                <RideMap
+                  center={origin?.point ?? DEFAULT_MAP_CENTER}
+                  origin={origin?.point ?? null}
+                  destination={destination?.point ?? null}
+                  active={mapEnd}
+                  focus={mapFocus}
+                  onPick={pickOnMap}
+                />
+              </div>
+              <div className="j-trip-details">
+                <fieldset className="j-options">
+                  <legend>¿Cuándo sales?</legend>
+                  <div>
+                    {[0, 15, 30, 60].map((n) => (
+                      <button
+                        type="button"
+                        key={n}
+                        aria-pressed={departure === n}
+                        onClick={() => setDeparture(n)}
+                      >
+                        {n === 0 ? "Ahora" : n === 60 ? "1 hora" : `${n} min`}
+                      </button>
+                    ))}
+                  </div>
+                </fieldset>
+                <fieldset className="j-options j-role-options">
+                  <legend>¿Puedes reservar el taxi?</legend>
+                  <div>
+                    <button
+                      type="button"
+                      aria-pressed={!delegate}
+                      onClick={() => setDelegate(false)}
+                    >
+                      <strong>Voy de pasajero</strong>
+                      <small>Prefiero que otra persona reserve</small>
+                    </button>
+                    <button
+                      type="button"
+                      aria-pressed={delegate}
+                      onClick={() => setDelegate(true)}
+                    >
+                      <strong>Puedo reservar</strong>
+                      <small>Pido el taxi y no pago comisión</small>
+                    </button>
+                  </div>
+                </fieldset>
+                <Primary disabled={!routeReady}>Buscar grupo</Primary>
+              </div>
             </form>
           )}
 
@@ -860,14 +856,14 @@ export function PassengerJourney() {
                 <li>
                   <span className="j-stop j-stop-start" />
                   <div>
-                    <strong>Salida · {origin.split(",")[0]}</strong>
+                    <strong>Salida · {originName}</strong>
                     <small>{meeting} · 5 min a pie</small>
                   </div>
                 </li>
                 <li>
                   <span className="j-stop j-stop-mine">1</span>
                   <div>
-                    <strong>Tú — {district}</strong>
+                    <strong>Tú — {destinationName}</strong>
                     <small>~10 min · sin desvío</small>
                   </div>
                   <b>{Math.round(SHARES[0] / 100)}%</b>
@@ -876,7 +872,8 @@ export function PassengerJourney() {
                   <span className="j-stop">2</span>
                   <div>
                     <strong>
-                      Gabriela I. {delegate ? "" : "· delegado "}— {district}
+                      Gabriela I. {delegate ? "" : "· delegado "}—{" "}
+                      {destinationName}
                     </strong>
                     <small>~13 min · +5% desvío</small>
                   </div>
@@ -1040,7 +1037,7 @@ export function PassengerJourney() {
             <>
               <div className="j-route-chart">
                 <span>2 paradas · orden óptimo</span>
-                <JourneyMap groups={groupRoute} label={origin} compact />
+                <JourneyMap groups={groupRoute} label={originName} compact />
               </div>
               {[displayName, "Gabriela I."].map((person, i) => (
                 <div
@@ -1054,7 +1051,7 @@ export function PassengerJourney() {
                   </span>
                   <span>
                     <strong>
-                      {i === 0 ? "Tú" : person} — {district}
+                      {i === 0 ? "Tú" : person} — {destinationName}
                     </strong>
                     <small>
                       ~{i === 0 ? 10 : 13} min · {i === 0 ? 3.9 : 5.3} km
@@ -1102,7 +1099,7 @@ export function PassengerJourney() {
                 <Avatar name="Gabriela" />
                 <span>
                   <strong>Gabriela I.</strong>
-                  <small>{district}</small>
+                  <small>{destinationName}</small>
                 </span>
                 <span
                   className={verified ? "j-success-pill" : "j-pending-pill"}
@@ -1188,7 +1185,8 @@ export function PassengerJourney() {
                             : ""}
                       </strong>
                       <small>
-                        {Math.round(SHARES[i] / 100)}% del costo · {district}
+                        {Math.round(SHARES[i] / 100)}% del costo ·{" "}
+                        {destinationName}
                       </small>
                     </span>
                     <b>{formatSoles(split[i])}</b>
@@ -1360,7 +1358,11 @@ export function PassengerJourney() {
         </nav>
       )}
       {safety && (
-        <SafetySheet origin={origin} onClose={() => setSafety(false)} />
+        <SafetySheet
+          origin={originName}
+          destination={destinationName}
+          onClose={() => setSafety(false)}
+        />
       )}
     </div>
   );

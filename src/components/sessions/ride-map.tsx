@@ -125,8 +125,19 @@ export function RideMap({
           longitude: event.latlng.lng,
         });
       });
-      moveView.current = (point) =>
-        map.setView([point.latitude, point.longitude], 15);
+      // With both ends known, frame the whole ride; otherwise look at the new point.
+      moveView.current = (point) => {
+        const { origin, destination } = pointsRef.current;
+        if (origin && destination)
+          map.fitBounds(
+            [
+              [origin.latitude, origin.longitude],
+              [destination.latitude, destination.longitude],
+            ],
+            { padding: [60, 60], maxZoom: 15 },
+          );
+        else map.setView([point.latitude, point.longitude], 15);
+      };
       sync.current();
       cleanup = () => map.remove();
     });
