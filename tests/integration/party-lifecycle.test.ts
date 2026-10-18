@@ -364,8 +364,13 @@ describe.skipIf(!url)("party lifecycle", () => {
       // The expired group no longer blocks joining another room...
       const other = await participation.createGroup(userIds[1], {
         ...input,
+        // Avoid snapping to another suite's Lima place, whose cleanup would
+        // cascade-delete this room while the suites run in parallel.
+        originLatitude: 0,
+        originLongitude: 0,
         departInMinutes: 0,
       });
+      expect(other.placeId).toBeNull();
       // ...and the later sweep leaves that new seat alone instead of requeueing here.
       await parties.sweep(s.id);
       expect((await seatsOf(s.id)).get(userIds[1])?.status).toBe("withdrawn");
