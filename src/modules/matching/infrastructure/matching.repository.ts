@@ -205,14 +205,26 @@ export function createMatchingRepository(db: Database) {
               fareShareBps: stop.fareShareBps,
             })),
           );
-          await tx
+          // Only seats still waiting: a person who left for another room since the
+          // snapshot must not be pulled back into a group here.
+          const claimed = await tx
             .update(sessionParticipants)
             .set({ status: "matched" })
             .where(
-              inArray(
-                sessionParticipants.id,
-                plan.stops.map((stop) => stop.participantId),
+              and(
+                inArray(
+                  sessionParticipants.id,
+                  plan.stops.map((stop) => stop.participantId),
+                ),
+                eq(sessionParticipants.status, "waiting"),
               ),
+            )
+            .returning({ id: sessionParticipants.id });
+          if (claimed.length !== plan.stops.length)
+            throw new MatchingError(
+              409,
+              "matching_snapshot_changed",
+              "La sala cambió. Busca compañeros de viaje otra vez.",
             );
         }
         if (plans.length) await bumpRoomRevision(tx, sessionId);

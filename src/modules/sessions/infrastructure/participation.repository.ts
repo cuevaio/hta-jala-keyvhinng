@@ -120,8 +120,24 @@ async function waitingCount(
   return row.n;
 }
 
-/** One live group at a time: groups they were only waiting in are released. */
+/**
+ * One live group at a time: groups they were only waiting in are released. The caller
+ * holds the account lock. Releasing comes first: if a matching commit took one of
+ * those seats a moment ago, the release finds nothing and the busy check below sees
+ * the committed group.
+ */
 async function claimExclusivity(tx: Tx, sessionId: string, userId: string) {
+  const released = await tx
+    .update(sessionParticipants)
+    .set({ status: "withdrawn" })
+    .where(
+      and(
+        eq(sessionParticipants.userId, userId),
+        eq(sessionParticipants.status, "waiting"),
+        ne(sessionParticipants.sessionId, sessionId),
+      ),
+    )
+    .returning({ sessionId: sessionParticipants.sessionId });
   const [busy] = await tx
     .select({ sessionId: rideParties.sessionId })
     .from(ridePartyMembers)
@@ -140,24 +156,26 @@ async function claimExclusivity(tx: Tx, sessionId: string, userId: string) {
       "already_in_group",
       "Ya estás en un grupo de viaje activo. Termínalo o sal de él antes de entrar a otra sala.",
     );
-  const released = await tx
-    .update(sessionParticipants)
-    .set({ status: "withdrawn" })
-    .where(
-      and(
-        eq(sessionParticipants.userId, userId),
-        eq(sessionParticipants.status, "waiting"),
-        ne(sessionParticipants.sessionId, sessionId),
-      ),
-    )
-    .returning({ sessionId: sessionParticipants.sessionId });
   await bumpOtherRoomRevisions(
     tx,
     released.map((r) => r.sessionId),
   );
 }
 
-/** Caller holds the session row lock. */
+/**
+ * Serializes everything one account does across rooms. Taken before any room lock, so
+ * two requests from the same account queue instead of each claiming a seat, and so
+ * lock order is always account → room (releasing a seat touches the other room's row).
+ */
+async function lockAccount(tx: Tx, userId: string) {
+  await tx
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.id, userId))
+    .for("update");
+}
+
+/** Caller holds the account lock, then the session row lock. */
 async function joinLocked(
   tx: Tx,
   session: SessionRow,
@@ -330,6 +348,7 @@ export function createParticipationRepository(db: Database) {
     /** Starts a group around this ride, anchored on a nearby place when there is one. */
     async createGroup(userId: string, input: CreateGroupInput) {
       return db.transaction(async (tx) => {
+        await lockAccount(tx, userId);
         const origin = originOf(input);
         const box = boundingBox(origin, PLACE_SNAP_METERS);
         const nearby = await tx
@@ -406,6 +425,7 @@ export function createParticipationRepository(db: Database) {
     },
     async join(sessionId: string, userId: string, input: JoinSessionInput) {
       return db.transaction(async (tx) => {
+        await lockAccount(tx, userId);
         // All join and matching commits serialize on this same session row.
         const [session] = await tx
           .select()

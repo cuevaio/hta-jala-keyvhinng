@@ -8,6 +8,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import { coordinateChecks, coordinateColumns, id, timestamps } from "./_shared";
@@ -82,6 +83,10 @@ export const sessionParticipants = pgTable(
   },
   (t) => [
     unique("session_participants_session_user_uq").on(t.sessionId, t.userId),
+    // A person waits in one room at a time, even under concurrent requests.
+    uniqueIndex("session_participants_one_waiting_per_user_uq")
+      .on(t.userId)
+      .where(sql`${t.status} = 'waiting'`),
     index("session_participants_session_status_idx").on(t.sessionId, t.status),
     index("session_participants_user_idx").on(t.userId),
     ...coordinateChecks("session_participants", "destination_"),
