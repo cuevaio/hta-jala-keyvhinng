@@ -591,91 +591,6 @@
   background: var(--j-pink);
   flex-shrink: 0;
 }
-.j-camera-preview {
-  position: relative;
-  width: min(100%, 320px);
-  aspect-ratio: 3 / 4;
-  margin: 0 auto;
-  background: #092126;
-  border-radius: 24px;
-  overflow: hidden;
-  color: #c8dfe0;
-}
-.j-camera-preview > * {
-  position: absolute;
-}
-.j-face-guide {
-  inset: 9% 20% 24%;
-  border: 2px dashed #c9dfe0;
-  border-radius: 50%;
-  pointer-events: none;
-}
-.j-camera-trigger {
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 0 16px 18px;
-  border: 0;
-  background: none;
-  color: inherit;
-  font-size: 13px;
-  font-weight: 600;
-}
-.j-camera-trigger:hover:not(:disabled) {
-  background: #ffffff0d;
-}
-.passenger-app .j-camera-trigger:disabled {
-  opacity: 1;
-  cursor: progress;
-}
-.j-camera-preview[data-stage="checking"] .j-face-guide,
-.j-camera-preview[data-stage="starting"] .j-face-guide {
-  animation: j-pulse 1.2s ease-in-out infinite;
-}
-@keyframes j-pulse {
-  50% {
-    opacity: 0.35;
-  }
-}
-.j-camera-video,
-.j-camera-preview .j-photo {
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.j-camera-video {
-  transform: scaleX(-1);
-}
-.j-camera-preview p {
-  inset: auto 0 14px;
-  font-size: 12px;
-  text-align: center;
-  text-shadow: 0 1px 4px #000a;
-}
-.j-selfie-actions {
-  display: grid;
-  gap: 10px;
-}
-.j-selfie-actions .j-secondary {
-  margin-top: 0;
-}
-.j-link-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 6px;
-  border: 0;
-  background: none;
-  color: var(--j-ink);
-  font-size: 13px;
-  font-weight: 700;
-  text-decoration: underline;
-}
 .j-selfie-copy {
   text-align: center;
   color: var(--j-muted);
@@ -1957,9 +1872,6 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .j-camera-preview .j-face-guide {
-    animation: none !important;
-  }
   .j-primary,
   .j-secondary,
   .j-dark {

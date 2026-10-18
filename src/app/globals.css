@@ -397,6 +397,7 @@ svg {
   font-weight: 500;
 }
 .form-section > label,
+.form-section > .form-label,
 fieldset legend {
   display: block;
   margin-bottom: 8px;
@@ -2189,7 +2190,7 @@ ol.roster {
     display: none;
   }
   .ride-form {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
       "route"
       "map"
@@ -2403,12 +2404,123 @@ ol.roster {
   object-fit: cover;
   border-radius: inherit;
 }
-.selfie-preview {
-  margin: 0;
+/* Selfie capture, shared by the passenger journey and the ride form. */
+.selfie-capture {
+  display: grid;
+  gap: 12px;
 }
-.selfie-preview img {
+.selfie-stage {
+  position: relative;
+  width: min(100%, 320px);
+  aspect-ratio: 3 / 4;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 24px;
+  background: #092126;
+  color: #c8dfe0;
+}
+.selfie-capture-compact .selfie-stage {
+  width: min(100%, 200px);
+  margin: 0;
+  border-radius: 18px;
+}
+.selfie-stage > * {
+  position: absolute;
+}
+.selfie-face-guide {
+  inset: 9% 20% 24%;
+  border: 2px dashed #c9dfe0;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.selfie-stage[data-stage="checking"] .selfie-face-guide,
+.selfie-stage[data-stage="starting"] .selfie-face-guide {
+  animation: selfie-pulse 1.2s ease-in-out infinite;
+}
+@keyframes selfie-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+.selfie-stage-trigger {
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 0 14px 18px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+}
+.selfie-capture-compact .selfie-stage-trigger {
+  font-size: 13px;
+  padding-bottom: 12px;
+}
+.selfie-stage-trigger:hover:not(:disabled) {
+  background: #ffffff0d;
+}
+.selfie-stage-trigger:disabled {
+  cursor: progress;
+}
+.selfie-stage-media {
+  inset: 0;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  border-radius: 12px;
+}
+.selfie-stage-video {
+  transform: scaleX(-1);
+}
+.selfie-stage-caption {
+  inset: auto 0 14px;
+  font-size: 13px;
+  text-align: center;
+  text-shadow: 0 1px 4px #000a;
+}
+.selfie-error,
+.selfie-hint {
+  margin-top: 0;
+}
+.selfie-actions {
+  display: grid;
+  gap: 8px;
+}
+.selfie-upload-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.selfie-upload-link:hover:not(:disabled) {
+  background: var(--sage);
+}
+.selfie-upload-link:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+@media (prefers-reduced-motion: reduce) {
+  .selfie-face-guide {
+    animation: none !important;
+  }
 }
 
 .room-countdown {

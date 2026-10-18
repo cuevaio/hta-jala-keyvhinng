@@ -13,7 +13,7 @@ import {
   DEPARTURE_CHOICES,
   type DepartureChoice,
 } from "@/modules/sessions/domain/affinity";
-import { SelfieUpload } from "./selfie-upload";
+import { SelfieCapture } from "./selfie-capture";
 import { LocationPicker, type PickedLocation } from "./location-picker";
 import { RideMap, type RideEnd } from "./ride-map";
 
@@ -224,11 +224,23 @@ export function RideForm({
                 placeholder="Cómo te verán los demás"
               />
             </div>
-            <SelfieUpload
-              value={selfieDataUrl}
-              onChange={setSelfieDataUrl}
-              disabled={busy}
-            />
+            <div className="form-section">
+              <span className="form-label" id="selfie-label">
+                Tu selfie (obligatoria)
+              </span>
+              <SelfieCapture
+                compact
+                value={selfieDataUrl || null}
+                onChange={(photo) => setSelfieDataUrl(photo ?? "")}
+                disabled={busy}
+                hint={
+                  <p className="fine selfie-hint">
+                    Que se vea tu rostro. Solo la verán tus compañeros cuando se
+                    forme tu grupo de viaje.
+                  </p>
+                }
+              />
+            </div>
             <fieldset className="delegate-section">
               <legend>¿Puedes reservar el taxi?</legend>
               <div className="delegate-choices">

@@ -2,29 +2,42 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Camera, ImageUp, RotateCcw } from "lucide-react";
-import { prepareSelfie } from "@/components/sessions/selfie-photo";
+import { prepareSelfie } from "./selfie-photo";
 
 type Stage = "idle" | "starting" | "live" | "checking";
+
+const ACTION_CLASSES = {
+  primary: "action action-primary",
+  secondary: "action action-secondary",
+};
 
 /**
  * Takes the selfie inside the face oval. Phones open their own front camera
  * (`capture="user"`), which is sharper and needs no camera permission in the page;
- * desktops show a live webcam preview with a shutter. Either way the photo goes
- * through the same resize and face check as the live ride flow, and "Subir una foto"
- * is always there for anyone without a usable camera.
+ * desktops show a live webcam preview with a shutter. Either way the photo is resized
+ * and checked for a face by the server, and "o sube una foto" is always there for
+ * anyone without a usable camera.
  */
 export function SelfieCapture({
   value,
   onChange,
   hint,
   confirm,
+  compact = false,
+  disabled = false,
+  buttons = ACTION_CLASSES,
 }: {
   value: string | null;
   onChange: (value: string | null) => void;
   /** Shown between the camera and the actions. */
-  hint: ReactNode;
-  /** The primary action once a photo is accepted. */
-  confirm: ReactNode;
+  hint?: ReactNode;
+  /** The primary action once a photo is accepted, when the flow has one. */
+  confirm?: ReactNode;
+  /** A smaller frame for forms with other fields around it. */
+  compact?: boolean;
+  disabled?: boolean;
+  /** Button classes, so each flow keeps its own button style. */
+  buttons?: { primary: string; secondary: string };
 }) {
   const [stage, setStage] = useState<Stage>("idle");
   const [error, setError] = useState("");
@@ -33,6 +46,7 @@ export function SelfieCapture({
   const cameraInput = useRef<HTMLInputElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const attempt = useRef(0);
+  const busy = disabled || stage === "starting" || stage === "checking";
 
   function stopCamera() {
     stream.current?.getTracks().forEach((track) => track.stop());
@@ -119,28 +133,30 @@ export function SelfieCapture({
   };
 
   return (
-    <div className="j-selfie-capture">
-      <div className="j-camera-preview" data-stage={stage}>
+    <div
+      className={`selfie-capture${compact ? " selfie-capture-compact" : ""}`}
+    >
+      <div className="selfie-stage" data-stage={stage}>
         {value ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={value} alt="Tu selfie" className="j-photo" />
+          <img src={value} alt="Tu selfie" className="selfie-stage-media" />
         ) : stage === "live" ? (
           <video
             ref={video}
             autoPlay
             playsInline
             muted
-            className="j-camera-video"
+            className="selfie-stage-media selfie-stage-video"
             aria-label="Vista previa de la cámara"
           />
         ) : (
           <button
             type="button"
-            className="j-camera-trigger"
+            className="selfie-stage-trigger"
             onClick={() => void takeSelfie()}
-            disabled={stage !== "idle"}
+            disabled={busy}
           >
-            <Camera size={28} aria-hidden="true" />
+            <Camera size={compact ? 22 : 28} aria-hidden="true" />
             <span>
               {stage === "starting"
                 ? "Abriendo la cámara…"
@@ -150,15 +166,26 @@ export function SelfieCapture({
             </span>
           </button>
         )}
-        {!value && <div className="j-face-guide" aria-hidden="true" />}
-        {stage === "live" && <p>Centra tu rostro dentro del óvalo</p>}
+        {!value && <div className="selfie-face-guide" aria-hidden="true" />}
+        {stage === "live" && (
+          <p className="selfie-stage-caption">
+            Centra tu rostro dentro del óvalo
+          </p>
+        )}
       </div>
       {hint}
       {error && (
-        <p className="j-error" role="alert">
+        <p className="form-error selfie-error" role="alert">
           {error}
         </p>
       )}
+      <p className="sr-only" role="status">
+        {stage === "checking"
+          ? "Comprobando que se vea tu rostro"
+          : value
+            ? "Rostro detectado. Tu selfie está lista."
+            : ""}
+      </p>
       <input
         ref={cameraInput}
         type="file"
@@ -178,13 +205,14 @@ export function SelfieCapture({
         aria-hidden="true"
         onChange={(e) => pickFile(e.currentTarget)}
       />
-      <div className="j-selfie-actions">
+      <div className="selfie-actions">
         {value ? (
           <>
             {confirm}
             <button
               type="button"
-              className="j-secondary"
+              className={buttons.secondary}
+              disabled={disabled}
               onClick={() => {
                 onChange(null);
                 void takeSelfie();
@@ -195,12 +223,12 @@ export function SelfieCapture({
           </>
         ) : stage === "live" ? (
           <>
-            <button type="button" className="j-primary" onClick={shutter}>
+            <button type="button" className={buttons.primary} onClick={shutter}>
               <Camera size={21} aria-hidden="true" /> Tomar foto
             </button>
             <button
               type="button"
-              className="j-secondary"
+              className={buttons.secondary}
               onClick={() => {
                 stopCamera();
                 setStage("idle");
@@ -213,19 +241,19 @@ export function SelfieCapture({
           <>
             <button
               type="button"
-              className="j-primary"
+              className={buttons.primary}
               onClick={() => void takeSelfie()}
-              disabled={stage !== "idle"}
+              disabled={busy}
             >
               <Camera size={21} aria-hidden="true" /> Tomar selfie
             </button>
             <button
               type="button"
-              className="j-link-button"
+              className="selfie-upload-link"
               onClick={() => fileInput.current?.click()}
-              disabled={stage !== "idle"}
+              disabled={busy}
             >
-              <ImageUp size={16} aria-hidden="true" /> o sube una foto
+              <ImageUp size={18} aria-hidden="true" /> o sube una foto
             </button>
           </>
         )}

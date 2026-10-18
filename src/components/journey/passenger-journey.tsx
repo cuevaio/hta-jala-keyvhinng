@@ -42,7 +42,7 @@ import {
   type DemoTrip,
 } from "./demo-history";
 import { JourneyMap } from "./journey-map";
-import { SelfieCapture } from "./selfie-capture";
+import { SelfieCapture } from "@/components/sessions/selfie-capture";
 
 type Screen =
   | "login"
@@ -727,6 +727,7 @@ export function PassengerJourney() {
               <SelfieCapture
                 value={selfie}
                 onChange={setSelfie}
+                buttons={{ primary: "j-primary", secondary: "j-secondary" }}
                 hint={
                   <p className="j-selfie-copy">
                     Antes de confirmar el grupo, toma una selfie. Solo la verán
