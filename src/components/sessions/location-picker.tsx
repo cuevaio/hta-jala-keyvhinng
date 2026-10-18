@@ -261,6 +261,8 @@ export function LocationPicker({
             minLength={3}
             maxLength={200}
             enterKeyHint="search"
+            autoComplete="off"
+            data-1p-ignore="true"
             aria-describedby={`${id}-address-help`}
             value={value?.label ?? ""}
             onFocus={onActivate}
