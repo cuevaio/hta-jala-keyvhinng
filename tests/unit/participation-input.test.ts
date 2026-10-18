@@ -1,0 +1,51 @@
+import { describe, expect, it } from "vitest";
+import { joinSessionInput } from "@/modules/sessions/schemas/session.schema";
+import { assertSameOrigin, readJson } from "@/lib/http";
+
+const input = {
+  displayName: " Ana ",
+  destinationLabel: "Mi destino",
+  latitude: -12.12,
+  longitude: -77.03,
+  delegatePreference: "delegate",
+};
+describe("join input and request boundary", () => {
+  it("normalizes names and preserves exact coordinates", () => {
+    expect(joinSessionInput.parse(input)).toEqual({
+      ...input,
+      displayName: "Ana",
+    });
+  });
+  it.each([
+    { displayName: " " },
+    { latitude: 91 },
+    { longitude: -181 },
+    { latitude: "" },
+    { delegatePreference: "auto" },
+    { destinationLabel: "" },
+  ])("rejects invalid input: %j", (override) => {
+    expect(joinSessionInput.safeParse({ ...input, ...override }).success).toBe(
+      false,
+    );
+  });
+  it("rejects cross-origin mutations", () => {
+    expect(() =>
+      assertSameOrigin(
+        new Request("https://jala.test/api/sessions", {
+          headers: { origin: "https://other.test" },
+        }),
+      ),
+    ).toThrow();
+  });
+  it("returns a client error for malformed JSON", async () => {
+    await expect(
+      readJson(
+        new Request("https://jala.test", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: "{",
+        }),
+      ),
+    ).rejects.toMatchObject({ status: 400 });
+  });
+});

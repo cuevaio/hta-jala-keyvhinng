@@ -17,8 +17,8 @@ Ride 1 ──< FeeLedgerEntry >── 1 User
   a **delegate preference** (`delegate` | `passenger`). Unique per (session, user).
 - **RideParty** – participants matched to share one vehicle. A session can produce many parties.
 - **RidePartyMember** – a participant's place in a party. `role` is the _assigned_ role, kept
-  separate from the stated preference. A partial unique index guarantees exactly one delegate per
-  party. Stores the drop-off order and fare share.
+  separate from the stated preference. A partial unique index permits at most one delegate per
+  party; finalization must also enforce at least one willing delegate. Stores the drop-off order and fare share.
 - **Ride** – the actual coordinated journey for a party (one per party), with an external
   provider reference. Lifecycle: pending → requested → in_progress → completed | cancelled.
 - **FeeLedgerEntry** – append-only record of the platform fee (`platform_fee`) or its waiver

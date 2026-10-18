@@ -1,3 +1,4 @@
+import { createParticipationRepository } from "@/modules/sessions/infrastructure/participation.repository";
 import { getDb } from "@/db";
 import { createEventService } from "@/modules/events/application/event.service";
 import { createEventRepository } from "@/modules/events/infrastructure/event.repository";
@@ -8,6 +9,7 @@ import { createSessionRepository } from "@/modules/sessions/infrastructure/sessi
 export function getServices() {
   const db = getDb();
   return {
+    participation: createParticipationRepository(db),
     events: createEventService(createEventRepository(db)),
     sessions: createSessionService(createSessionRepository(db)),
   };

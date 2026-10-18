@@ -1,9 +1,11 @@
+import { OpenSession } from "@/components/sessions/open-session";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
+import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
 import { CalendarDays, MapPin } from "lucide-react";
 import { EventStatusBadge } from "@/components/shared/event-status-badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { NotFoundError } from "@/lib/errors";
 import { getServices } from "@/lib/services";
 import { formatEventDate } from "@/lib/utils";
@@ -35,50 +37,64 @@ export default async function EventDetailPage({
   const event = await loadEvent(params);
 
   return (
-    <article className="space-y-6">
-      <header className="space-y-3">
-        <EventStatusBadge status={event.status} />
-        <h1 className="text-3xl font-extrabold tracking-tight">{event.name}</h1>
-        <p className="flex items-center gap-2 text-sm text-muted-foreground">
-          <CalendarDays className="size-4" aria-hidden />
-          <span className="capitalize">{formatEventDate(event.startsAt)}</span>
-        </p>
-        <p className="flex items-center gap-2 text-sm text-muted-foreground">
-          <MapPin className="size-4" aria-hidden />
-          {event.venueName}
-        </p>
-        <p>{event.description}</p>
-      </header>
-
-      <section aria-labelledby="puntos" className="space-y-3">
-        <h2 id="puntos" className="text-lg font-bold">
-          Puntos de encuentro
-        </h2>
-        {event.meetingPoints.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Aún no hay puntos definidos.
-          </p>
-        ) : (
-          <ul className="space-y-2">
-            {event.meetingPoints.map((point) => (
-              <li key={point.id}>
-                <Card size="sm">
-                  <CardContent>
-                    <p className="font-semibold">{point.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {point.description}
-                    </p>
-                  </CardContent>
-                </Card>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <p className="rounded-xl bg-muted p-4 text-sm text-muted-foreground">
-        Pronto podrás unirte a una sesión de este evento e indicar tu destino.
-      </p>
+    <article className="event-detail">
+      <Link href="/events" className="back-link">
+        <ChevronLeft size={17} aria-hidden="true" />
+        Todos los eventos
+      </Link>
+      <div className="event-detail-grid">
+        <div>
+          <header className="event-heading">
+            <div className="ticket-meta">
+              <EventStatusBadge status={event.status} />
+              {event.isFictional && (
+                <span className="fiction-label">
+                  Evento ficticio de demostración
+                </span>
+              )}
+            </div>
+            <h1>{event.name.replace(/^\[DEMO\]\s*/, "")}</h1>
+            <p className="event-fact">
+              <CalendarDays size={19} aria-hidden="true" />
+              {formatEventDate(event.startsAt)}
+            </p>
+            <p className="event-fact">
+              <MapPin size={19} aria-hidden="true" />
+              {event.venueName}
+            </p>
+            <p className="event-description">{event.description}</p>
+          </header>
+          <section className="meeting-section" aria-labelledby="puntos">
+            <h2 id="puntos">Puntos para encontrarse</h2>
+            <p className="section-help">
+              Referencias cerca del evento. Todavía no tienes un punto asignado.
+            </p>
+            {event.meetingPoints.length === 0 ? (
+              <p className="empty-state">
+                Aún no hay puntos definidos para este evento.
+              </p>
+            ) : (
+              <ul className="meeting-list">
+                {event.meetingPoints.map((point) => (
+                  <li key={point.id}>
+                    <span className="meeting-pin">
+                      <MapPin size={19} aria-hidden="true" />
+                    </span>
+                    <div>
+                      <h3>{point.name}</h3>
+                      <p>{point.description}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
+        <OpenSession
+          eventId={event.id}
+          disabled={event.status === "ended" || event.status === "cancelled"}
+        />
+      </div>
     </article>
   );
 }

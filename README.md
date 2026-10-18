@@ -5,9 +5,10 @@ People leaving concerts, plays and festivals are grouped with compatible destina
 delegate books a taxi through an existing service (e.g. Uber), and costs are split by recommended
 percentages. Jala operates no vehicles and processes no payments in the MVP.
 
-Status: **foundation only** – schema, read API, landing/event pages and the contracts for
-matching, routing and fare allocation. The matching algorithm, auth, QR verification, payments and
-provider integrations are not implemented. All seeded data is fictional.
+Status: **shared-session milestone** – event pages, opaque browser identity, expiring session creation,
+transactional joining, exact destinations and a shared polling waiting room. Matching, account login,
+QR verification, payments and provider integrations are not implemented. All seeded data is fictional.
+See [the milestone contract and verification guide](docs/shared-session-contract.md).
 
 ## Stack
 
@@ -61,6 +62,10 @@ All responses are `{ "data": ... }` or `{ "error": { "code", "message", "details
 
 | Endpoint                                    | Description                                   |
 | ------------------------------------------- | --------------------------------------------- |
+| `POST /api/participant`                     | Establish anonymous browser identity          |
+| `POST /api/sessions`                        | Open/reuse an expiring event session          |
+| `POST /api/sessions/:id/join`               | Join or update own waiting participation      |
+| `GET /api/sessions/:id/waiting-room`        | Member roster and own destination             |
 | `GET /api/health`                           | Liveness + database check (503 if DB is down) |
 | `GET /api/events?status=&limit=`            | List events                                   |
 | `GET /api/events/:id`                       | Event with meeting points                     |

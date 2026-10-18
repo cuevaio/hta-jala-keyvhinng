@@ -1,66 +1,79 @@
 import Link from "next/link";
-import { Car, MapPinned, Users } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { CalendarDays, MapPin, Users } from "lucide-react";
+import { DeparturePass } from "@/components/shared/departure-pass";
 
 const steps = [
-  { icon: Users, title: "Únete", text: "Elige tu evento y dinos a dónde vas." },
   {
-    icon: MapPinned,
-    title: "Te agrupamos",
-    text: "Armamos grupos con rutas compatibles y un punto de encuentro.",
+    icon: CalendarDays,
+    title: "Elige tu evento",
+    text: "Abre una sala de salida y comparte el enlace con otras personas del evento.",
   },
   {
-    icon: Car,
-    title: "Comparte taxi",
-    text: "Un delegado pide el viaje y todos dividen el costo.",
+    icon: MapPin,
+    title: "Dinos a dónde vas",
+    text: "Guarda tu destino exacto e indica si puedes reservar el taxi para el grupo.",
+  },
+  {
+    icon: Users,
+    title: "Comparte la sala",
+    text: "Ve quién está esperando. El emparejamiento automático llegará en la siguiente etapa.",
   },
 ];
-
 export default function LandingPage() {
   return (
-    <div className="space-y-10">
-      <section className="space-y-4 pt-4">
-        <h1 className="text-4xl font-extrabold tracking-tight">
-          Sal del evento y <span className="text-primary">comparte taxi</span>.
-        </h1>
-        <p className="text-lg text-muted-foreground">
-          Jala junta a personas que salen del mismo concierto o función hacia
-          destinos cercanos, para que viajen más seguros y paguen menos.
-        </p>
-        <Link
-          href="/events"
-          className={cn(buttonVariants({ size: "lg" }), "h-12 px-6 text-base")}
-        >
-          Ver eventos
-        </Link>
+    <div>
+      <section className="home-hero">
+        <div className="hero-copy">
+          <h1>
+            Del último
+            <br />
+            aplauso
+            <br />a tu puerta.
+          </h1>
+          <p>
+            La salida también es parte del plan. Reúnete con personas de tu
+            evento para organizar un taxi compartido.
+          </p>
+          <Link href="/events" className="action action-primary">
+            Elegir mi evento
+          </Link>
+          <p className="hero-footnote">
+            Tú conservas tu destino. El delegado reserva afuera.
+          </p>
+        </div>
+        <DeparturePass />
       </section>
-
-      <section aria-labelledby="como-funciona" className="space-y-4">
-        <h2 id="como-funciona" className="text-xl font-bold">
-          Cómo funciona
-        </h2>
-        <ol className="space-y-3">
+      <section className="how-section" aria-labelledby="como-funciona">
+        <div className="section-intro">
+          <h2 id="como-funciona">¿Cómo jalamos?</h2>
+          <p>Empieza por encontrar tu sala.</p>
+        </div>
+        <ol className="journey-steps">
           {steps.map(({ icon: Icon, title, text }, i) => (
-            <li key={title} className="flex gap-4 rounded-xl border p-4">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <Icon className="size-5" aria-hidden />
-              </span>
-              <div>
-                <h3 className="font-semibold">
-                  {i + 1}. {title}
-                </h3>
-                <p className="text-sm text-muted-foreground">{text}</p>
+            <li key={title}>
+              <div className="step-symbol">
+                <Icon size={25} strokeWidth={1.6} aria-hidden="true" />
+                <span>{i + 1}</span>
               </div>
+              <h3>{title}</h3>
+              <p>{text}</p>
             </li>
           ))}
         </ol>
       </section>
-
-      <section className="rounded-xl bg-muted p-4 text-sm text-muted-foreground">
-        Tus primeros 5 viajes son gratis. Luego, una tarifa de servicio de S/
-        0.10 por viaje. Los delegados no pagan.
-      </section>
+      <aside className="fee-note">
+        <span className="fee-note-mark" aria-hidden="true">
+          S/
+        </span>
+        <div>
+          <h2>El taxi y la comisión son cosas distintas.</h2>
+          <p>
+            La propuesta de Jala exonera la comisión de tus primeros cinco
+            viajes y la de quien reserva. Cada persona paga su parte del taxi.
+            Esta demo no realiza cobros.
+          </p>
+        </div>
+      </aside>
     </div>
   );
 }

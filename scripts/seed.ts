@@ -78,11 +78,11 @@ async function main() {
     .insert(schema.sessions)
     .values({
       eventId: concert.id,
-      name: "Salida 10:30 pm",
+      name: "Salida demo abierta",
       status: "open",
-      opensAt: new Date(now + hours(5)),
+      opensAt: new Date(now - hours(1)),
       closesAt: new Date(now + hours(11)),
-      vehicleCapacity: 4,
+      vehicleCapacity: 3,
     })
     .returning();
 

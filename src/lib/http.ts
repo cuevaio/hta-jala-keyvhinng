@@ -79,3 +79,29 @@ export function handle<A extends unknown[]>(
     }
   };
 }
+
+/** JSON mutations are same-origin; reject cross-site requests before any write. */
+export function assertSameOrigin(request: Request) {
+  const origin = request.headers.get("origin");
+  if (origin && origin !== new URL(request.url).origin) {
+    throw new ApiError(
+      403,
+      "invalid_origin",
+      "Solicitud de otro sitio no permitida.",
+    );
+  }
+}
+
+export async function readJson(request: Request) {
+  if (!request.headers.get("content-type")?.includes("application/json")) {
+    throw new ApiError(415, "json_required", "Envía los datos como JSON.");
+  }
+  const body = await request.text();
+  if (body.length > 8192)
+    throw new ApiError(413, "body_too_large", "Solicitud demasiado grande.");
+  try {
+    return JSON.parse(body) as unknown;
+  } catch {
+    throw new ApiError(400, "invalid_json", "JSON inválido.");
+  }
+}
