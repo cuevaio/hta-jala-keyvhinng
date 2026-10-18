@@ -1,4 +1,8 @@
-export async function sessionApi<T>(path: string, body?: unknown): Promise<T> {
+export async function sessionApi<T>(
+  path: string,
+  body?: unknown,
+  signal?: AbortSignal,
+): Promise<T> {
   let response: Response;
   try {
     response = await fetch(path, {
@@ -7,6 +11,7 @@ export async function sessionApi<T>(path: string, body?: unknown): Promise<T> {
         body === undefined ? undefined : { "Content-Type": "application/json" },
       body: body === undefined ? undefined : JSON.stringify(body),
       cache: "no-store",
+      signal,
     });
   } catch {
     throw new SessionRequestError(

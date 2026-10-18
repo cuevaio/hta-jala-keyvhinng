@@ -5,6 +5,7 @@ export type PartyStatus =
 
 /** JSON shape of GET /api/sessions/:id/waiting-room, as the client consumes it. */
 export interface Room {
+  serverNow: string;
   party: {
     id: string;
     status: PartyStatus;

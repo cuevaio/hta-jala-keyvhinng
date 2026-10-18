@@ -217,6 +217,37 @@ describe.skipIf(!url)("durable matching", () => {
       code: "session_unavailable",
     });
   });
+  it("rejects a match that crosses the deadline before commit", async () => {
+    const session = await fixture();
+    const delayed = createMatchingApplication(
+      {
+        ...repository,
+        commit: async (...args) => {
+          expect(args[3]).toHaveLength(1);
+          await db
+            .update(schema.sessions)
+            .set({ closesAt: new Date(Date.now() - 1) })
+            .where(eq(schema.sessions.id, session.id));
+          return repository.commit(...args);
+        },
+      },
+      createRoadMatchingService(routing),
+      "fixture",
+    );
+    await expect(delayed.match(session.id, userIds[0])).rejects.toMatchObject({
+      code: "session_unavailable",
+    });
+    expect(
+      await db
+        .select()
+        .from(schema.rideParties)
+        .where(eq(schema.rideParties.sessionId, session.id)),
+    ).toHaveLength(0);
+    const room = await participation.waitingRoom(session.id, userIds[0]);
+    expect(room.acceptingJoins).toBe(false);
+    expect(room.me.status).toBe("waiting");
+    expect(Number.isFinite(Date.parse(room.serverNow))).toBe(true);
+  });
   it("includes a later requester and a volunteer beyond the oldest batch", async () => {
     const session = await fixture(false, 14);
     await participation.join(session.id, userIds[13], {

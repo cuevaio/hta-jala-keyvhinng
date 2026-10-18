@@ -2389,3 +2389,20 @@ ol.roster {
   object-fit: cover;
   border-radius: 12px;
 }
+
+.room-countdown {
+  font-variant-numeric: tabular-nums;
+}
+.room-deadline {
+  margin: 16px 0;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.room-deadline-warning {
+  background: #fff6db;
+  border-color: #b88b24;
+  color: #58400b;
+}
