@@ -60,11 +60,23 @@ bun dev                        # http://localhost:3000
 
 ### Production deployment
 
-GitHub Actions is the production deployment path: verification must pass, then
-pending database migrations run before the build and deployment. `vercel.json`
-disables automatic Vercel Git deployments from `main` so they cannot bypass that
-ordering. Other branches retain automatic preview deployments. The production
-smoke test also checks that an unknown account gets a 401 from sign-in.
+Production ships only from GitHub Actions on a push to `main`, in this order:
+
+1. Verify (format, lint, types, migration drift, tests, build).
+2. Apply pending migrations to the production database.
+3. Build and deploy **without** moving the production domain.
+4. Smoke-test that deployment: `/api/health` answers 200 only when the database
+   has every migration in the build's journal, and sign-in must reach a real
+   account query (401 for an unknown account).
+5. Promote the deployment, then check the production domain.
+
+Nothing else can ship code ahead of its schema: `vercel.json` turns off Git
+deployments from `main`, and `scripts/assert-release-path.mjs` fails any
+production build not started by that job (`vercel --prod`, dashboard redeploys).
+Migrations may only add to the schema, which `tests/unit/migrations.test.ts`
+enforces; dropping or reshaping something takes a later migration marked
+`-- contract: <reason>` once no deployed code uses it. To roll back, promote an
+earlier deployment; it still works against the expanded schema.
 
 ## Commands
 

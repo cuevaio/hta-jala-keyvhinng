@@ -103,6 +103,8 @@ jobs:
       VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_CLI: vercel@64.5.0
+      # Lets scripts/assert-release-path.mjs tell this build from any other.
+      JALA_RELEASE: ci
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
@@ -124,30 +126,42 @@ jobs:
 
       - name: Build
         run: bunx $VERCEL_CLI build --prod --token="$VERCEL_TOKEN"
-      - name: Deploy
-        run: bunx $VERCEL_CLI deploy --prebuilt --prod --token="$VERCEL_TOKEN"
-
-      # A deploy that cannot serve its own database queries is a failed deploy.
-      - name: Smoke test
+      # The new deployment gets no traffic until it proves it can serve.
+      - name: Deploy without promoting
+        id: deploy
         run: |
-          base="${{ vars.PRODUCTION_URL }}"
+          url=$(bunx $VERCEL_CLI deploy --prebuilt --prod --skip-domain --token="$VERCEL_TOKEN")
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      # Health fails unless the database has every migration this build expects,
+      # and sign-in exercises a real account query. `vercel curl` passes the
+      # deployment protection that guards unpromoted deployments.
+      - name: Smoke test the new deployment
+        env:
+          DEPLOYMENT: ${{ steps.deploy.outputs.url }}
+        run: |
+          probe() {
+            bunx $VERCEL_CLI curl "$1" --deployment "$DEPLOYMENT" --yes --token="$VERCEL_TOKEN" \
+              -- -s -o /dev/null -w '%{http_code}' "${@:3}" | tail -1
+          }
           check() {
             for i in $(seq 1 12); do
-              code=$(curl -s -o /dev/null -w '%{http_code}' "$base$1")
-              [ "$code" = "200" ] && return 0
+              code=$(probe "$1" "$2" "${@:3}")
+              [ "$code" = "$2" ] && return 0
               sleep 5
             done
-            echo "::error::$1 returned $code"
+            echo "::error::$1 returned $code, expected $2"
             return 1
           }
-          check /api/health
-          check "/api/groups/search?olat=-12.12&olng=-77.03&dlat=-12.09&dlng=-77.0&depart=0"
-          check /ride
-          # A public page and health check can pass while account queries fail.
-          code=$(curl -sS -o /dev/null -w '%{http_code}' "$base/api/auth/sign-in" \
-            -H 'Content-Type: application/json' \
-            --data '{"email":"production-smoke@example.invalid","password":"Smoke-test-only-73!"}')
-          [ "$code" = "401" ] || {
-            echo "::error::Sign-in smoke test expected 401, got $code"
-            exit 1
-          }
+          check /api/health 200
+          check "/api/groups/search?olat=-12.12&olng=-77.03&dlat=-12.09&dlng=-77.0&depart=0" 200
+          check /ride 200
+          check /api/auth/sign-in 401 -X POST -H 'Content-Type: application/json' \
+            --data '{"email":"production-smoke@example.invalid","password":"Smoke-test-only-73!"}'
+
+      - name: Promote to production
+        run: bunx $VERCEL_CLI promote "${{ steps.deploy.outputs.url }}" --yes --token="$VERCEL_TOKEN"
+      - name: Check the production domain
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' "${{ vars.PRODUCTION_URL }}/api/health")
+          [ "$code" = "200" ] || { echo "::error::production health returned $code"; exit 1; }
