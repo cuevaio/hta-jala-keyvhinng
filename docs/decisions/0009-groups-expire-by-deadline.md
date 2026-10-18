@@ -27,5 +27,5 @@ which no one can see.
 
 **Changes from the RFC:** 5 minutes to confirm instead of 10 (rooms now close 5 minutes
 after departure); the start window counts from confirmation, not departure; the
-delegate-loss fallback is new. Rows created before migration `0008` have no deadlines
+delegate-loss fallback is new. Rows created before migration `0009` have no deadlines
 and never expire.
