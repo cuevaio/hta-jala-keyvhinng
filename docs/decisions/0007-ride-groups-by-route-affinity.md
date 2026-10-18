@@ -2,9 +2,10 @@
 
 **Status:** accepted (refines 0006)
 
-Jala works like a ride-hailing web app: your start is your current location, not a
-chosen place. A session is now an open **ride group** with a pickup, a destination
-anchor and a `departs_at`.
+Jala works like a ride-hailing web app: your start can be your current location,
+a specific address or a point selected on the map. Featured places are optional
+shortcuts, not the only alternative to GPS. A session is now an open **ride group**
+with a pickup, a destination anchor and a `departs_at`.
 
 - Searching (`GET /api/groups/search`, public) returns open groups whose pickup is within
   1.5 km of the rider's start, whose destination anchor is within 3 km of their

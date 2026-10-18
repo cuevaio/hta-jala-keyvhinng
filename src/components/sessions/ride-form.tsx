@@ -55,7 +55,6 @@ export function RideForm({
   busyLabel,
   busy,
   mapCenter,
-  autoLocate,
   onSubmit,
 }: {
   initial: RideDraft;
@@ -65,7 +64,6 @@ export function RideForm({
   busyLabel: string;
   busy: boolean;
   mapCenter: GeoPoint;
-  autoLocate: boolean;
   onSubmit: (values: RideValues) => void;
 }) {
   const [origin, setOrigin] = useState(initial.origin);
@@ -125,7 +123,7 @@ export function RideForm({
           onActivate={() => setActive("origin")}
           onFocusPoint={setFocus}
           locate
-          autoLocate={autoLocate}
+          autoSearch
         />
         <LocationPicker
           id="destination"

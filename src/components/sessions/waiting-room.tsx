@@ -304,7 +304,6 @@ export function WaitingRoom({
             busyLabel="Guardando tu ruta…"
             busy={busy}
             mapCenter={group.pickup}
-            autoLocate
             onSubmit={join}
           />
         )

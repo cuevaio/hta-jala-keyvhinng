@@ -12,6 +12,7 @@ export interface OriginChoice {
 }
 
 const HERE = "here";
+const CUSTOM = "custom";
 
 /**
  * The landing's shortcut into /ride. It only carries what was typed; the ride page
@@ -20,6 +21,7 @@ const HERE = "here";
 export function HeroSearch({ origins }: { origins: OriginChoice[] }) {
   const router = useRouter();
   const [origin, setOrigin] = useState(HERE);
+  const [originAddress, setOriginAddress] = useState("");
   const [destination, setDestination] = useState("");
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -31,6 +33,7 @@ export function HeroSearch({ origins }: { origins: OriginChoice[] }) {
       query.set("olng", String(place.location.longitude));
       query.set("olabel", place.name);
     }
+    if (origin === CUSTOM) query.set("oq", originAddress.trim());
     if (destination.trim().length >= 3) query.set("dq", destination.trim());
     const search = query.toString();
     router.push(search ? `/ride?${search}` : "/ride");
@@ -44,6 +47,7 @@ export function HeroSearch({ origins }: { origins: OriginChoice[] }) {
         </span>
         <select value={origin} onChange={(e) => setOrigin(e.target.value)}>
           <option value={HERE}>Mi ubicación actual</option>
+          <option value={CUSTOM}>Otra dirección</option>
           {origins.map((o) => (
             <option key={o.id} value={o.id}>
               {o.name}
@@ -51,6 +55,19 @@ export function HeroSearch({ origins }: { origins: OriginChoice[] }) {
           ))}
         </select>
       </label>
+      {origin === CUSTOM && (
+        <label>
+          <span>Dirección de partida</span>
+          <input
+            value={originAddress}
+            onChange={(e) => setOriginAddress(e.target.value)}
+            required
+            minLength={3}
+            maxLength={200}
+            placeholder="Distrito, calle o lugar de partida"
+          />
+        </label>
+      )}
       <label>
         <span>
           <MapPin size={14} aria-hidden="true" /> ¿A dónde vas?

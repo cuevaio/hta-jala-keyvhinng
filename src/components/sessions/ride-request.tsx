@@ -279,7 +279,6 @@ export function RideRequest({
         mapCenter={
           draft.origin?.point ?? draft.destination?.point ?? DEFAULT_MAP_CENTER
         }
-        autoLocate={draft.origin === null}
         onSubmit={search}
       />
     </div>

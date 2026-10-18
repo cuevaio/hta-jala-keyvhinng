@@ -21,8 +21,8 @@ import type { Place } from "@/modules/places/domain/place";
 const steps = [
   {
     icon: LocateFixed,
-    title: "Dinos dónde estás",
-    text: "Usamos tu ubicación como punto de salida, o eliges uno de los lugares frecuentes.",
+    title: "Elige desde dónde sales",
+    text: "Usa tu ubicación actual, escribe una dirección o elige uno de los lugares frecuentes.",
   },
   {
     icon: Clock3,

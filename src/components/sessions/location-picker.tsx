@@ -50,7 +50,6 @@ export function LocationPicker({
   onActivate,
   onFocusPoint,
   locate = false,
-  autoLocate = false,
   autoSearch = false,
 }: {
   id: string;
@@ -62,8 +61,6 @@ export function LocationPicker({
   onFocusPoint: (point: GeoPoint) => void;
   /** Offers "use my location". */
   locate?: boolean;
-  /** Asks the browser for the position as soon as the picker appears. */
-  autoLocate?: boolean;
   /** Searches the address the field starts with (text carried from the landing). */
   autoSearch?: boolean;
 }) {
@@ -75,6 +72,7 @@ export function LocationPicker({
   const labelEdited = useRef(false);
   const lookupAbort = useRef<AbortController | null>(null);
   const searchAbort = useRef<AbortController | null>(null);
+  const locateAbort = useRef<AbortController | null>(null);
   const valueRef = useRef(value);
   const onChangeRef = useRef(onChange);
   useEffect(() => {
@@ -85,6 +83,7 @@ export function LocationPicker({
     () => () => {
       lookupAbort.current?.abort();
       searchAbort.current?.abort();
+      locateAbort.current?.abort();
     },
     [],
   );
@@ -94,11 +93,17 @@ export function LocationPicker({
   useEffect(() => {
     const point = value?.point ?? null;
     if (point && point !== lastPoint.current) {
+      cancelLocate();
       clearSearch();
       resolveLabel(point);
     }
     lastPoint.current = point;
   }, [value?.point]);
+
+  function cancelLocate() {
+    locateAbort.current?.abort();
+    setLocating("idle");
+  }
 
   function clearSearch() {
     searchAbort.current?.abort();
@@ -130,6 +135,7 @@ export function LocationPicker({
 
   function choose(match: AddressMatch) {
     // The chosen address is the person's own pick, so it replaces any earlier label.
+    cancelLocate();
     lookupAbort.current?.abort();
     labelEdited.current = false;
     setLookup("idle");
@@ -157,27 +163,35 @@ export function LocationPicker({
   }
 
   function useMyLocation() {
+    cancelLocate();
+    lookupAbort.current?.abort();
+    setLookup("idle");
     clearSearch();
     onActivate();
     if (!("geolocation" in navigator)) {
       setLocating("unsupported");
       return;
     }
+    const controller = new AbortController();
+    locateAbort.current = controller;
     setLocating("locating");
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
+        if (controller.signal.aborted) return;
         const point = {
           latitude: coords.latitude,
           longitude: coords.longitude,
         };
         labelEdited.current = false;
         lastPoint.current = point;
-        onChangeRef.current({ point, label: valueRef.current?.label ?? "" });
+        onChangeRef.current({ point, label: "" });
         onFocusPoint(point);
         setLocating("idle");
         resolveLabel(point);
       },
-      () => setLocating("denied"),
+      () => {
+        if (!controller.signal.aborted) setLocating("denied");
+      },
       { enableHighAccuracy: true, timeout: 10_000, maximumAge: 30_000 },
     );
   }
@@ -186,13 +200,11 @@ export function LocationPicker({
   useEffect(() => {
     if (autoAsked.current) return;
     const run =
-      autoLocate && !valueRef.current
-        ? useMyLocation
-        : autoSearch && valueRef.current && !valueRef.current.point
-          ? () => void search()
-          : null;
+      autoSearch && valueRef.current && !valueRef.current.point
+        ? () => void search()
+        : null;
     if (!run) return;
-    // Deferred so the first paint is not blocked by a permission prompt or request.
+    // Defer the carried-address search until after the first paint.
     // The flag is set when it runs, so a cancelled first mount still runs once.
     const timer = setTimeout(() => {
       autoAsked.current = true;
@@ -252,6 +264,7 @@ export function LocationPicker({
           value={value?.label ?? ""}
           onFocus={onActivate}
           onChange={(event) => {
+            cancelLocate();
             lookupAbort.current?.abort();
             clearSearch();
             setLookup("idle");

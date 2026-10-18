@@ -48,7 +48,8 @@ function readDraft(raw: Record<string, string | string[] | undefined>) {
       dlng: first("dlng"),
       dlabel: first("dlabel"),
     });
-  // Text typed on the landing: the destination picker searches it on arrival.
+  // Text typed on the landing: each picker searches its address on arrival.
+  const typedOrigin = z.string().trim().min(3).max(200).safeParse(first("oq"));
   const typed = z.string().trim().min(3).max(200).safeParse(first("dq"));
   return {
     origin: origin.success
@@ -56,7 +57,9 @@ function readDraft(raw: Record<string, string | string[] | undefined>) {
           point: { latitude: origin.data.olat, longitude: origin.data.olng },
           label: origin.data.olabel,
         }
-      : null,
+      : typedOrigin.success
+        ? { point: null, label: typedOrigin.data }
+        : null,
     destination: destination.success
       ? {
           point: {
@@ -84,8 +87,8 @@ export default async function RidePage({ searchParams }: PageProps<"/ride">) {
       <header className="page-heading">
         <h1>Comparte un taxi.</h1>
         <p>
-          Dinos dónde estás y a dónde vas. Te mostramos salas de espera con
-          personas hacia tu zona, o creas una para que otros se sumen.
+          Dinos desde dónde sales y a dónde vas. Te mostramos salas de espera
+          con personas hacia tu zona, o creas una para que otros se sumen.
         </p>
       </header>
       <RideRequest
