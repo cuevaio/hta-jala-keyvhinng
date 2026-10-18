@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MapPin, MapPinned } from "lucide-react";
+import { LocateFixed, MapPin, MapPinned } from "lucide-react";
 import {
   reverseGeocode,
   searchAddress,
@@ -67,10 +67,7 @@ export function LocationPicker({
   const [searching, setSearching] = useState(false);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState("");
-  const locateRequest = useRef<{
-    cancelled: boolean;
-    tab: Window | null;
-  } | null>(null);
+  const locateRequest = useRef<{ cancelled: boolean } | null>(null);
   const labelEdited = useRef(false);
   const lookupAbort = useRef<AbortController | null>(null);
   const searchAbort = useRef<AbortController | null>(null);
@@ -86,7 +83,6 @@ export function LocationPicker({
       searchAbort.current?.abort();
       if (locateRequest.current) {
         locateRequest.current.cancelled = true;
-        locateRequest.current.tab?.close();
       }
     },
     [],
@@ -112,7 +108,6 @@ export function LocationPicker({
   function cancelLocation() {
     if (locateRequest.current) {
       locateRequest.current.cancelled = true;
-      locateRequest.current.tab?.close();
       locateRequest.current = null;
     }
     setLocating(false);
@@ -127,10 +122,7 @@ export function LocationPicker({
       );
       return;
     }
-    // Reserve the tab during the click so browsers allow navigation after GPS resolves.
-    const tab = window.open("about:blank", "_blank");
-    if (tab) tab.opener = null;
-    const request = { cancelled: false, tab };
+    const request = { cancelled: false };
     locateRequest.current = request;
     setLocating(true);
     clearSearch();
@@ -154,21 +146,9 @@ export function LocationPicker({
         onFocusPoint(point);
         onActivate();
         resolveLabel(point);
-        const href = `https://www.google.com/maps/search/?${new URLSearchParams(
-          {
-            api: "1",
-            query: `${point.latitude},${point.longitude}`,
-          },
-        )}`;
-        if (tab && !tab.closed) tab.location.href = href;
-        else
-          setLocationError(
-            "Ubicación guardada. Tu navegador bloqueó la pestaña de Google Maps.",
-          );
       },
       (error) => {
         if (request.cancelled) return;
-        tab?.close();
         locateRequest.current = null;
         setLocating(false);
         setLocationError(
@@ -302,10 +282,10 @@ export function LocationPicker({
               className="address-google-maps"
               disabled={locating}
               onClick={locateOrigin}
-              aria-label="Usar mi ubicación actual como punto de partida y abrir en Google Maps"
-              title="Ubicación actual en Google Maps"
+              aria-label="Usar mi ubicación actual como punto de partida"
+              title="Usar mi ubicación actual"
             >
-              <MapPinned size={22} aria-hidden="true" />
+              <LocateFixed size={22} aria-hidden="true" />
             </button>
           ) : (
             <a
