@@ -47,8 +47,12 @@ Focused controls and text were readable in the full-size combined mobile compari
 
 ## Verification and limits
 
-Lint, type generation/TypeScript and production build passed. Vitest: 137 passed, 40 database-dependent tests skipped by existing configuration. Live database/auth service end-to-end tests were not run; their existing implementation remains reachable and unchanged.
+Lint, type generation/TypeScript and production build passed. Vitest: 170 passed, 49 database-dependent tests skipped by existing configuration. Live database/auth service end-to-end tests were not run; their existing implementation remains reachable and unchanged.
 
 The passenger reference journey is a frontend sample, not a production SMS/QR/ride-history backend. `/admin` is a synthetic public validation panel, not privileged administration. These boundaries are visible in the UI and README.
 
 No actionable P0/P1/P2 findings remain within this frontend reference-flow scope. Follow-up P3 polish: use the final reference brand assets if supplied; reproduce the decorative promo ring; replace the sample portrait with approved illustrated avatars.
+
+Final code review: Approve within the documented sample-frontend scope. Rebased onto main with its notification/matching improvements preserved; lint, types and tests rerun after rebase. The production build was also rerun.
+
+The clean post-rebase production build passed after moving aside a cache containing a sandbox-denied worker-socket error. No application code change was needed.
