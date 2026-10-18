@@ -1,4 +1,5 @@
 import { ApiError, assertSameOrigin, handle, ok, readJson } from "@/lib/http";
+import { logger } from "@/lib/logger";
 import { consume } from "@/lib/rate-limit";
 import { getServices } from "@/lib/services";
 import { passwordResetRequestInput } from "@/modules/auth/schemas/auth.schema";
@@ -19,6 +20,8 @@ export const POST = handle(async (request: Request) => {
       "Demasiados intentos. Intenta de nuevo más tarde.",
     );
   await getServices().auth.requestPasswordReset(email);
+  // No email or account existence in logs: the answer is the same either way.
+  logger.info("auth.password_reset_requested");
   // Identical answer whether or not the account exists.
   return ok({ requested: true });
 });

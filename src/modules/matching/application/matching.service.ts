@@ -67,11 +67,16 @@ export function createMatchingApplication(
       };
     });
     const outcome = await repo.commit(sessionId, userId, snapshot, plans);
-    logger.info("Matching round completed", {
+    logger.info("match.round", {
       sessionId,
       candidateCount: snapshot.candidates.length,
+      // Matching needs one volunteer booker per group; zero explains "no group".
+      delegateVolunteerCount: snapshot.candidates.filter(
+        (c) => c.delegatePreference === "delegate",
+      ).length,
       createdPartyCount: outcome.createdPartyCount,
       unmatchedCount: result.unmatched.length,
+      alreadyMatched: outcome.alreadyMatched,
     });
     return outcome;
   }

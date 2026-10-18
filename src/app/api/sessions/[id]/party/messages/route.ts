@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { logger } from "@/lib/logger";
 import { ApiError, assertSameOrigin, handle, ok, readJson } from "@/lib/http";
 import { consume } from "@/lib/rate-limit";
 import { getServices } from "@/lib/services";
@@ -46,7 +47,14 @@ export const POST = handle(async (request: NextRequest, ctx: Context) => {
       "rate_limited",
       "Estás enviando muchos mensajes. Espera un momento.",
     );
-  return withPartyErrors(() =>
-    getServices().partyMessages.post(id, userId, body),
-  );
+  return withPartyErrors(async () => {
+    const message = await getServices().partyMessages.post(id, userId, body);
+    // Never the text itself.
+    logger.info("chat.message_sent", {
+      sessionId: id,
+      userId,
+      length: body.length,
+    });
+    return message;
+  });
 });

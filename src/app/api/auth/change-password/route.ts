@@ -1,4 +1,5 @@
 import { ApiError, assertSameOrigin, handle, ok, readJson } from "@/lib/http";
+import { logger } from "@/lib/logger";
 import { InvalidCredentialsError } from "@/lib/errors";
 import { consume } from "@/lib/rate-limit";
 import { getServices } from "@/lib/services";
@@ -35,5 +36,6 @@ export const POST = handle(async (request: Request) => {
   }
   // Every session was revoked, including this browser's; keep this one signed in.
   await startSession(userId);
+  logger.info("auth.password_changed", { userId });
   return ok({ changed: true });
 });

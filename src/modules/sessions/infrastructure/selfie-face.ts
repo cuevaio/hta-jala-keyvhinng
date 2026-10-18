@@ -6,7 +6,7 @@ import * as tf from "@tensorflow/tfjs-core";
 import "@tensorflow/tfjs-backend-cpu";
 import { loadGraphModel, type GraphModel } from "@tensorflow/tfjs-converter";
 import { ApiError } from "@/lib/http";
-import { logger } from "@/lib/logger";
+import { describeError, logger } from "@/lib/logger";
 
 let model: Promise<GraphModel> | undefined;
 function detector() {
@@ -47,12 +47,30 @@ const results = new Map<string, { expiresAt: number; result: Promise<void> }>();
 export function assertSelfieHasFace(dataUrl: string): Promise<void> {
   const key = createHash("sha256").update(dataUrl).digest("hex");
   const cached = results.get(key);
-  if (cached && cached.expiresAt > Date.now()) return cached.result;
+  if (cached && cached.expiresAt > Date.now()) {
+    logger.debug("selfie.face_check", { cacheHit: true });
+    return cached.result;
+  }
   if (results.size >= 64) results.delete(results.keys().next().value!);
-  const result = inspect(dataUrl).catch((error) => {
-    results.delete(key);
-    throw error;
-  });
+  const started = performance.now();
+  // Outcome and timing only: never the image, its hash or the face score.
+  const result = inspect(dataUrl).then(
+    () =>
+      logger.info("selfie.face_check", {
+        cacheHit: false,
+        outcome: "face_found",
+        durationMs: Math.round(performance.now() - started),
+      }),
+    (error) => {
+      results.delete(key);
+      logger.info("selfie.face_check", {
+        cacheHit: false,
+        outcome: error instanceof ApiError ? error.code : "error",
+        durationMs: Math.round(performance.now() - started),
+      });
+      throw error;
+    },
+  );
   results.set(key, { result, expiresAt: Date.now() + 5 * 60_000 });
   return result;
 }
@@ -97,9 +115,7 @@ async function inspect(dataUrl: string) {
       );
     });
   } catch (error) {
-    logger.error("Selfie face detector unavailable", {
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error("selfie.detector_unavailable", describeError(error));
     throw new ApiError(
       503,
       "selfie_check_unavailable",

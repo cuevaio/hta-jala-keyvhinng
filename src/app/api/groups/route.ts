@@ -1,4 +1,5 @@
 import { consume } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 import { ApiError, assertSameOrigin, handle, ok, readJson } from "@/lib/http";
 import { getServices } from "@/lib/services";
 import { assertSelfieHasFace } from "@/modules/sessions/infrastructure/selfie-face";
@@ -17,5 +18,14 @@ export const POST = handle(async (request: Request) => {
       "Demasiados intentos. Espera un minuto e intenta de nuevo.",
     );
   await assertSelfieHasFace(input.selfieDataUrl);
-  return ok(await getServices().participation.createGroup(userId, input));
+  const room = await getServices().participation.createGroup(userId, input);
+  logger.info("room.create", {
+    sessionId: room.id,
+    userId,
+    placeAnchored: Boolean(room.placeId),
+    departInMinutes: input.departInMinutes,
+    delegatePreference: input.delegatePreference,
+    hasArea: Boolean(input.destinationArea),
+  });
+  return ok(room);
 });

@@ -1,4 +1,5 @@
 import { after } from "next/server";
+import { logger } from "@/lib/logger";
 import { consume } from "@/lib/rate-limit";
 import { ApiError, assertSameOrigin, handle, ok, readJson } from "@/lib/http";
 import { getServices } from "@/lib/services";
@@ -26,6 +27,12 @@ export const POST = handle(
     await assertSelfieHasFace(input.selfieDataUrl);
     const services = getServices();
     const participant = await services.participation.join(id, userId, input);
+    logger.info("room.join", {
+      sessionId: id,
+      userId,
+      participantId: participant.id,
+      delegatePreference: input.delegatePreference,
+    });
     after(() => services.roomEvents.joined(id, userId));
     return ok(participant);
   },

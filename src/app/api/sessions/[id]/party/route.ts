@@ -1,4 +1,5 @@
 import { after } from "next/server";
+import { logger } from "@/lib/logger";
 import { ApiError, assertSameOrigin, handle, ok } from "@/lib/http";
 import { consume } from "@/lib/rate-limit";
 import { getServices } from "@/lib/services";
@@ -28,6 +29,12 @@ export const POST = handle(
         userId,
         action,
       );
+      logger.info(`party.${action}`, {
+        sessionId: id,
+        userId,
+        partyStatus,
+        event: event?.kind ?? null,
+      });
       if (event) after(() => services.roomEvents.partyChanged(id, event));
       const response = ok({ partyStatus });
       response.headers.set("Cache-Control", "private, no-store");

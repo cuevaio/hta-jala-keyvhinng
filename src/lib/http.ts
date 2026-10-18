@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { NotFoundError } from "@/lib/errors";
-import { logger } from "@/lib/logger";
+import { describeError, logger } from "@/lib/logger";
+import { currentRequest, routeOf, runWithRequest } from "@/lib/request-context";
 
 /** Consistent JSON envelope: `{ data }` on success, `{ error: { code, message } }` on failure. */
 export type ApiSuccess<T> = { data: T };
@@ -63,30 +64,73 @@ export function fail(error: unknown) {
       { status: 400 },
     );
   }
-  logger.error("Unhandled API error", {
-    error: error instanceof Error ? error.message : String(error),
-  });
+  logger.error("http.unhandled_error", describeError(error));
+  const requestId = currentRequest()?.requestId;
   return NextResponse.json<ApiFailure>(
     {
       error: {
         code: "internal_error",
         message: "Algo salió mal de nuestro lado. Inténtalo de nuevo.",
+        // Lets support find this exact failure in the logs.
+        ...(requestId && { details: { requestId } }),
       },
     },
     { status: 500 },
   );
 }
 
-/** Wraps a handler so thrown errors become consistent JSON responses. */
+/**
+ * Wraps a handler so thrown errors become consistent JSON responses, and every
+ * request gets an id (`x-request-id`) and one summary log line. Reads (polls) log at
+ * debug so routine polling stays out of production logs.
+ */
 export function handle<A extends unknown[]>(
   fn: (...args: A) => Promise<Response>,
 ) {
   return async (...args: A): Promise<Response> => {
-    try {
-      return await fn(...args);
-    } catch (error) {
-      return fail(error);
-    }
+    const request = args[0] instanceof Request ? args[0] : null;
+    const context = {
+      requestId: crypto.randomUUID(),
+      method: request?.method ?? "UNKNOWN",
+      route: request ? routeOf(request.url) : "unknown",
+    };
+    return runWithRequest(context, async () => {
+      const started = performance.now();
+      let response: Response;
+      let code: string | undefined;
+      try {
+        response = await fn(...args);
+      } catch (error) {
+        response = fail(error);
+        code =
+          error instanceof ApiError
+            ? error.code
+            : error instanceof ZodError
+              ? "validation_error"
+              : error instanceof NotFoundError
+                ? "not_found"
+                : "internal_error";
+      }
+      response.headers.set("x-request-id", context.requestId);
+      const status = response.status;
+      // 4xx are expected outcomes (full room, wrong password); only abuse warns.
+      const level =
+        status >= 500
+          ? "error"
+          : status === 429
+            ? "warn"
+            : context.method === "GET" && status < 400
+              ? "debug"
+              : "info";
+      logger[level]("http.request", {
+        method: context.method,
+        route: context.route,
+        status,
+        ...(code && { code }),
+        durationMs: Math.round(performance.now() - started),
+      });
+      return response;
+    });
   };
 }
 
