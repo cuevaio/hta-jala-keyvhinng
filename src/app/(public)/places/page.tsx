@@ -26,15 +26,10 @@ export default async function PlacesPage({
   return (
     <div className="places-page">
       <header className="page-heading">
-        <h1>
-          Lugares
-          <br />
-          frecuentes.
-        </h1>
+        <h1>¿De dónde salimos hoy?</h1>
         <p>
           Universidades, centros comerciales, conciertos y estaciones con puntos
-          de encuentro ya definidos.
-          <br className="desktop-break" /> ¿Estás en otro sitio?{" "}
+          de encuentro definidos. ¿Estás en otro sitio?{" "}
           <Link href="/ride">Pide un grupo desde tu ubicación</Link>.
         </p>
       </header>
@@ -42,7 +37,7 @@ export default async function PlacesPage({
         <Link
           href="/places"
           aria-current={query.kind ? undefined : "true"}
-          className="kind-chip"
+          className="chip"
         >
           Todos
         </Link>
@@ -51,31 +46,23 @@ export default async function PlacesPage({
             key={kind}
             href={`/places?kind=${kind}`}
             aria-current={query.kind === kind ? "true" : undefined}
-            className="kind-chip"
+            className="chip"
           >
             {PLACE_KIND_LABELS[kind]}
           </Link>
         ))}
       </nav>
-      <div className="list-caption">
-        <span>
-          <MapPin size={18} aria-hidden="true" /> Lugares disponibles
-        </span>
-        <span>
-          {places.length} {places.length === 1 ? "lugar" : "lugares"}
-        </span>
-      </div>
       {places.length === 0 ? (
         <div className="empty-state">
-          <MapPin size={32} aria-hidden="true" />
-          <h2>Tu próxima salida está por llegar.</h2>
+          <MapPin size={28} aria-hidden="true" />
+          <h2>No hay lugares de este tipo todavía.</h2>
           <p>
-            Aún no hay lugares de este tipo. Prueba con otro filtro o vuelve más
-            tarde.
+            Prueba con otro filtro o{" "}
+            <Link href="/ride">pide un grupo desde tu ubicación</Link>.
           </p>
         </div>
       ) : (
-        <ul className="place-list">
+        <ul className="place-grid">
           {places.map((place) => (
             <li key={place.id}>
               <PlaceCard place={place} />
@@ -83,9 +70,7 @@ export default async function PlacesPage({
           ))}
         </ul>
       )}
-      <p className="page-note">
-        Estás explorando una demo. Los lugares publicados son ficticios.
-      </p>
+      <p className="page-note">Los lugares de esta demo son ficticios.</p>
     </div>
   );
 }

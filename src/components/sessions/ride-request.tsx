@@ -118,7 +118,10 @@ export function RideRequest({
 
   if (values && groups) {
     return (
-      <section className="ride-results" aria-labelledby="ride-results-title">
+      <section
+        className="panel ride-results"
+        aria-labelledby="ride-results-title"
+      >
         <header className="form-heading">
           <h2 id="ride-results-title" tabIndex={-1}>
             {groups.length === 0
@@ -132,11 +135,10 @@ export function RideRequest({
             {shortLabel(values.origin.label)}
             <ArrowRight size={15} aria-hidden="true" />
             {shortLabel(values.destination.label)}
-            <span>
-              ·{" "}
+            <span className="tag">
               {values.departInMinutes === 0
-                ? "ahora"
-                : `en ${values.departInMinutes} min`}
+                ? "Sales ahora"
+                : `Sales en ${values.departInMinutes} min`}
             </span>
           </p>
         </header>
@@ -151,7 +153,7 @@ export function RideRequest({
               <li key={group.id} className="group-card">
                 <div className="group-card-head">
                   <h3>{group.name}</h3>
-                  <span className="group-count">
+                  <span className="tag">
                     <Users size={16} aria-hidden="true" />
                     {group.waitingCount}{" "}
                     {group.waitingCount === 1 ? "persona" : "personas"}
@@ -203,6 +205,7 @@ export function RideRequest({
                   }
                 >
                   {busy ? "Uniéndote…" : "Unirme a este grupo"}
+                  {!busy && <ArrowRight size={17} aria-hidden="true" />}
                 </button>
               </li>
             ))}
@@ -245,7 +248,7 @@ export function RideRequest({
   return (
     <div>
       {active && (
-        <aside className="active-group" role="status">
+        <aside className="notice active-group" role="status">
           <div>
             <strong>Ya estás en un grupo: {active.name}</strong>
             <span>
@@ -273,9 +276,8 @@ export function RideRequest({
         submitLabel="Buscar grupos"
         busyLabel="Buscando grupos…"
         busy={busy}
-        originMapCenter={draft.origin?.point ?? DEFAULT_MAP_CENTER}
-        destinationMapCenter={
-          draft.destination?.point ?? draft.origin?.point ?? DEFAULT_MAP_CENTER
+        mapCenter={
+          draft.origin?.point ?? draft.destination?.point ?? DEFAULT_MAP_CENTER
         }
         autoLocate={draft.origin === null}
         onSubmit={search}

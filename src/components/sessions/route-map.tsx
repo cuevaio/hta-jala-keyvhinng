@@ -44,13 +44,13 @@ export function RouteMap({ plan }: { plan: MatchingRoutePlan }) {
           : [plan.origin, ...plan.stops.map((s) => s.destination)]
       ).map(toLatLng);
       L.polyline(line, {
-        color: "#2457E6",
+        color: "#FF6B35",
         weight: 5,
         opacity: 0.8,
         dashArray: plan.route.geometry?.length ? undefined : "6 8",
       }).addTo(map);
       L.marker(toLatLng(plan.origin), {
-        icon: pin("●", "route-pin-origin"),
+        icon: pin("J", "route-pin-origin"),
         alt: `Punto de encuentro: ${plan.origin.label}`,
         title: plan.origin.label,
       }).addTo(map);

@@ -30,8 +30,8 @@ export function PlaceKindBadge({
 }) {
   const Icon = PLACE_KIND_ICONS[kind] ?? Building2;
   return (
-    <span className={`place-status place-status-${status}`}>
-      <Icon size={15} aria-hidden="true" />
+    <span className={`tag${status === "inactive" ? " tag-danger" : ""}`}>
+      <Icon size={14} aria-hidden="true" />
       {PLACE_KIND_LABELS[kind]}
       {status === "inactive" && " · Cerrado"}
     </span>

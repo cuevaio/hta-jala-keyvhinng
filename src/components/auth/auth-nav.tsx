@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { ArrowRight } from "lucide-react";
 import { sessionApi } from "@/components/sessions/session-api";
 
 interface Me {
@@ -33,6 +34,13 @@ export function AuthNav() {
     router.refresh();
   }
 
+  const cta = (
+    <Link href="/ride" className="action action-primary action-small">
+      Pedir un grupo
+      <ArrowRight size={16} aria-hidden="true" />
+    </Link>
+  );
+
   if (me === undefined)
     return <span className="auth-nav auth-nav-loading" aria-hidden="true" />;
   if (!me)
@@ -41,9 +49,7 @@ export function AuthNav() {
         <Link href="/sign-in" className="nav-link">
           Iniciar sesión
         </Link>
-        <Link href="/sign-up" className="action action-primary auth-cta">
-          Crear cuenta
-        </Link>
+        {cta}
       </span>
     );
   return (
@@ -52,6 +58,7 @@ export function AuthNav() {
       <button type="button" onClick={signOut} className="nav-link auth-signout">
         Salir
       </button>
+      {cta}
     </span>
   );
 }

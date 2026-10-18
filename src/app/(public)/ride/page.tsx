@@ -48,6 +48,8 @@ function readDraft(raw: Record<string, string | string[] | undefined>) {
       dlng: first("dlng"),
       dlabel: first("dlabel"),
     });
+  // Text typed on the landing: the destination picker searches it on arrival.
+  const typed = z.string().trim().min(3).max(200).safeParse(first("dq"));
   return {
     origin: origin.success
       ? {
@@ -63,7 +65,9 @@ function readDraft(raw: Record<string, string | string[] | undefined>) {
           },
           label: destination.data.dlabel,
         }
-      : null,
+      : typed.success
+        ? { point: null, label: typed.data }
+        : null,
     departInMinutes,
   } satisfies RideDraft;
 }
@@ -78,14 +82,10 @@ export default async function RidePage({ searchParams }: PageProps<"/ride">) {
   return (
     <div className="ride-page">
       <header className="page-heading">
-        <h1>
-          ¿A dónde
-          <br />
-          vas hoy?
-        </h1>
+        <h1>Encuentra tu grupo.</h1>
         <p>
-          Dinos dónde estás y a dónde vas. Te mostramos grupos cercanos que van
-          hacia tu zona, o creas uno nuevo para que otros se sumen.
+          Dinos dónde estás y a dónde vas. Te mostramos grupos cercanos hacia tu
+          zona, o creas uno para que otros se sumen.
         </p>
       </header>
       <RideRequest

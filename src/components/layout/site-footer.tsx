@@ -1,20 +1,23 @@
 import Link from "next/link";
+import { Wordmark } from "./wordmark";
+
 export function SiteFooter() {
   return (
-    <footer className="site-footer">
-      <div className="footer-inner">
+    <footer className="site-footer wrap">
+      <div className="footer-top">
         <div>
-          <Link href="/" className="footer-brand">
-            Jala
-          </Link>
-          <p>La salida también se comparte.</p>
+          <Wordmark className="wordmark-small" />
+          <p>Tu ruta, nuestro viaje.</p>
         </div>
-        <div className="footer-note">
-          <p>Hecho en Lima para Hack The Andes 2026.</p>
-          <p>
-            Demo con lugares ficticios. Jala no opera taxis ni procesa pagos.
-          </p>
-        </div>
+        <nav aria-label="Pie de página">
+          <Link href="/ride">Pedir un grupo</Link>
+          <Link href="/places">Lugares</Link>
+          <Link href="/#como-funciona">Cómo funciona</Link>
+        </nav>
+      </div>
+      <div className="footer-bottom">
+        <span>Hecho en Lima para Hack The Andes 2026.</span>
+        <span>Demo con lugares ficticios. Jala no opera taxis ni cobra.</span>
       </div>
     </footer>
   );

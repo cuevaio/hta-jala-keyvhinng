@@ -9,7 +9,7 @@ export default function ErrorPage({
   reset: () => void;
 }) {
   return (
-    <div className="session-closed" role="alert">
+    <div className="status-page session-closed" role="alert">
       <h1>Algo salió mal.</h1>
       <p>
         No pudimos cargar esta página. Tu salida no se perdió; intenta de nuevo.

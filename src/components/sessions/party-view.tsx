@@ -78,7 +78,10 @@ export const PartyView = forwardRef<
   const live = party.status === "forming" || party.status === "confirmed";
 
   return (
-    <section className="waiting-room" aria-labelledby="matched-title">
+    <section
+      className="waiting-room party-room"
+      aria-labelledby="matched-title"
+    >
       <header className="room-heading">
         <span className="room-heading-icon">
           <CarFront size={24} aria-hidden="true" />
@@ -91,189 +94,190 @@ export const PartyView = forwardRef<
         </div>
       </header>
 
-      <RouteMap plan={plan} />
-
-      <div className="own-destination">
-        <MapPin size={23} aria-hidden="true" />
-        <div>
-          <span>Punto de encuentro</span>
-          <strong>{plan.origin.label}</strong>
-          <a
-            href={`https://www.google.com/maps/search/?api=1&query=${plan.origin.latitude},${plan.origin.longitude}`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Abrir en Google Maps
-            <ExternalLink size={15} aria-hidden="true" />
-            <span className="sr-only"> (se abre en otra pestaña)</span>
-          </a>
-        </div>
-      </div>
-
-      {me && (
-        <div className="my-share" aria-live="polite">
-          <span>Tu parte</span>
-          <strong>
-            {split ? soles(split[myIndex]) : percent(me.fareShareBps)}
-          </strong>
-          <small>
-            {split
-              ? `${percent(me.fareShareBps)} del taxi`
-              : "del taxi. Escribe la tarifa para verla en soles."}
-          </small>
-        </div>
-      )}
-
-      <div className="fare-calculator">
-        <label htmlFor="fare-input">Tarifa del taxi, si ya la conocen</label>
-        <div className="fare-input-row">
-          <span aria-hidden="true">S/</span>
-          <input
-            id="fare-input"
-            inputMode="decimal"
-            autoComplete="off"
-            value={fareInput}
-            aria-invalid={fareInvalid}
-            aria-describedby={fareInvalid ? "fare-error" : undefined}
-            onChange={(e) => setFareInput(e.target.value)}
-            placeholder="45.00"
-          />
-        </div>
-        {fareInvalid && (
-          <p id="fare-error" role="alert" className="form-error">
-            Escribe solo el monto en soles, por ejemplo 45 o 45.50.
-          </p>
-        )}
-      </div>
-
-      <h3>Ruta y reparto</h3>
-      <ol className="roster">
-        {plan.stops.map((stop, i) => (
-          <li key={stop.participantId}>
-            <span className="person-avatar" aria-hidden="true">
-              {stop.dropOffOrder}
-            </span>
-            <div className="person-name">
+      <div className="room-grid">
+        <div className="room-main">
+          {me && (
+            <div className="my-share" aria-live="polite">
+              <span>Tu parte</span>
               <strong>
-                {stop.displayName}
-                {stop.participantId === meId ? " (Tú)" : ""}
-                {confirmed.has(stop.participantId) && (
-                  <Check
-                    size={16}
-                    aria-label="Confirmó"
-                    className="inline-icon"
-                  />
-                )}
+                {split ? soles(split[myIndex]) : percent(me.fareShareBps)}
               </strong>
-              <span>{stop.destinationLabel}</span>
-              <span>
-                {stop.role === "delegate" ? "Reserva el taxi" : "Pasajero"} ·{" "}
-                {Math.ceil(stop.arrivalSeconds / 60)} min desde el encuentro
-                {stop.detourSeconds > 0 &&
-                  ` · +${Math.ceil(stop.detourSeconds / 60)} min de desvío`}
-              </span>
+              <small>
+                {split
+                  ? `${percent(me.fareShareBps)} del taxi`
+                  : "del taxi. Escribe la tarifa para verla en soles."}
+              </small>
             </div>
-            <span className="person-share">
-              <strong>
-                {split ? soles(split[i]) : percent(stop.fareShareBps)}
-              </strong>
-              {split && <small>{percent(stop.fareShareBps)}</small>}
-            </span>
-          </li>
-        ))}
-      </ol>
-      <p className="privacy-note">
-        Las direcciones de esta propuesta solo se comparten con tu grupo.
-      </p>
+          )}
 
-      {party.status === "forming" && mine?.status !== "confirmed" && (
-        <button
-          type="button"
-          className="action action-primary"
-          disabled={busy}
-          onClick={() => onAction("confirm")}
-        >
-          Confirmo mi lugar y el reparto
-        </button>
-      )}
-      {party.status === "forming" && mine?.status === "confirmed" && (
-        <p role="status" className="wait-note">
-          Esperando la confirmación de {pending}{" "}
-          {pending === 1 ? "persona" : "personas"} más.
-        </p>
-      )}
-      {isDelegate && party.status === "confirmed" && (
-        <button
-          type="button"
-          className="action action-primary"
-          disabled={busy}
-          onClick={() => onAction("start")}
-        >
-          Salimos: iniciar viaje
-        </button>
-      )}
-      {isDelegate && party.status === "in_progress" && (
-        <button
-          type="button"
-          className="action action-primary"
-          disabled={busy}
-          onClick={() => onAction("complete")}
-        >
-          Llegamos: finalizar viaje
-        </button>
-      )}
-      {live &&
-        (confirmingLeave ? (
-          <div
-            ref={leavePanel}
-            tabIndex={-1}
-            role="alertdialog"
-            aria-labelledby="leave-title"
-            aria-describedby="leave-body"
-            className="leave-panel"
-          >
-            <strong id="leave-title">¿Salir del grupo?</strong>
-            <p id="leave-body">
-              Esto afecta a {others} {others === 1 ? "persona" : "personas"}{" "}
-              más: el grupo se deshace y vuelven a la sala para recalcular la
-              ruta y el reparto. Tú tendrás que unirte de nuevo.
+          <div className="fare-calculator">
+            <label htmlFor="fare-input">
+              Tarifa del taxi, si ya la conocen
+            </label>
+            <div className="fare-input-row">
+              <span aria-hidden="true">S/</span>
+              <input
+                id="fare-input"
+                inputMode="decimal"
+                autoComplete="off"
+                value={fareInput}
+                aria-invalid={fareInvalid}
+                aria-describedby={fareInvalid ? "fare-error" : undefined}
+                onChange={(e) => setFareInput(e.target.value)}
+                placeholder="45.00"
+              />
+            </div>
+            {fareInvalid && (
+              <p id="fare-error" role="alert" className="form-error">
+                Escribe solo el monto en soles, por ejemplo 45 o 45.50.
+              </p>
+            )}
+          </div>
+
+          <h3>Ruta y reparto</h3>
+          <ol className="roster">
+            {plan.stops.map((stop, i) => (
+              <li key={stop.participantId}>
+                <span className="person-avatar" aria-hidden="true">
+                  {stop.dropOffOrder}
+                </span>
+                <div className="person-name">
+                  <strong>
+                    {stop.displayName}
+                    {stop.participantId === meId ? " (Tú)" : ""}
+                    {confirmed.has(stop.participantId) && (
+                      <Check
+                        size={16}
+                        aria-label="Confirmó"
+                        className="inline-icon"
+                      />
+                    )}
+                  </strong>
+                  <span>{stop.destinationLabel}</span>
+                  <span>
+                    {stop.role === "delegate" ? "Reserva el taxi" : "Pasajero"}{" "}
+                    · {Math.ceil(stop.arrivalSeconds / 60)} min desde el
+                    encuentro
+                    {stop.detourSeconds > 0 &&
+                      ` · +${Math.ceil(stop.detourSeconds / 60)} min de desvío`}
+                  </span>
+                </div>
+                <span className="person-share">
+                  <strong>
+                    {split ? soles(split[i]) : percent(stop.fareShareBps)}
+                  </strong>
+                  {split && <small>{percent(stop.fareShareBps)}</small>}
+                </span>
+              </li>
+            ))}
+          </ol>
+
+          {party.status === "forming" && mine?.status !== "confirmed" && (
+            <button
+              type="button"
+              className="action action-primary"
+              disabled={busy}
+              onClick={() => onAction("confirm")}
+            >
+              Confirmo mi lugar y el reparto
+            </button>
+          )}
+          {party.status === "forming" && mine?.status === "confirmed" && (
+            <p role="status" className="wait-note">
+              Esperando la confirmación de {pending}{" "}
+              {pending === 1 ? "persona" : "personas"} más.
             </p>
-            <div className="leave-actions">
+          )}
+          {isDelegate && party.status === "confirmed" && (
+            <button
+              type="button"
+              className="action action-primary"
+              disabled={busy}
+              onClick={() => onAction("start")}
+            >
+              Salimos: iniciar viaje
+            </button>
+          )}
+          {isDelegate && party.status === "in_progress" && (
+            <button
+              type="button"
+              className="action action-primary"
+              disabled={busy}
+              onClick={() => onAction("complete")}
+            >
+              Llegamos: finalizar viaje
+            </button>
+          )}
+          {live &&
+            (confirmingLeave ? (
+              <div
+                ref={leavePanel}
+                tabIndex={-1}
+                role="alertdialog"
+                aria-labelledby="leave-title"
+                aria-describedby="leave-body"
+                className="leave-panel"
+              >
+                <strong id="leave-title">¿Salir del grupo?</strong>
+                <p id="leave-body">
+                  Esto afecta a {others} {others === 1 ? "persona" : "personas"}{" "}
+                  más: el grupo se deshace y vuelven a la sala para recalcular
+                  la ruta y el reparto. Tú tendrás que unirte de nuevo.
+                </p>
+                <div className="leave-actions">
+                  <button
+                    type="button"
+                    className="action action-secondary"
+                    onClick={() => setConfirmingLeave(false)}
+                  >
+                    Quedarme en el grupo
+                  </button>
+                  <button
+                    type="button"
+                    className="action action-danger"
+                    disabled={busy}
+                    onClick={() => onAction("leave")}
+                  >
+                    Sí, salir y deshacer el grupo
+                  </button>
+                </div>
+              </div>
+            ) : (
               <button
+                ref={leaveButton}
                 type="button"
                 className="action action-secondary"
-                onClick={() => setConfirmingLeave(false)}
+                onClick={() => setConfirmingLeave(true)}
               >
-                Quedarme en el grupo
+                Salir del grupo
               </button>
-              <button
-                type="button"
-                className="action action-danger"
-                disabled={busy}
-                onClick={() => onAction("leave")}
+            ))}
+
+          <p className="fine">
+            Jala no reserva ni cobra. El reparto se calcula por distancia, suma
+            100% y solo tu grupo ve estas direcciones.
+          </p>
+        </div>
+        <aside className="room-side">
+          <RouteMap plan={plan} />
+
+          <div className="own-destination">
+            <MapPin size={23} aria-hidden="true" />
+            <div>
+              <span>Punto de encuentro</span>
+              <strong>{plan.origin.label}</strong>
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${plan.origin.latitude},${plan.origin.longitude}`}
+                target="_blank"
+                rel="noreferrer"
               >
-                Sí, salir y deshacer el grupo
-              </button>
+                Abrir en Google Maps
+                <ExternalLink size={15} aria-hidden="true" />
+                <span className="sr-only"> (se abre en otra pestaña)</span>
+              </a>
             </div>
           </div>
-        ) : (
-          <button
-            ref={leaveButton}
-            type="button"
-            className="action action-secondary"
-            onClick={() => setConfirmingLeave(true)}
-          >
-            Salir del grupo
-          </button>
-        ))}
-
-      <div className="milestone-note">
-        <strong>Jala no reserva ni cobra el taxi.</strong>
-        <p>
-          Quien reserva el taxi lo pide fuera de Jala. El reparto se calcula por
-          distancia recorrida y suma 100%; no es una tarifa del proveedor. Todos
-          deben confirmar antes de salir.
-        </p>
+        </aside>
       </div>
     </section>
   );

@@ -1,63 +1,125 @@
 import Link from "next/link";
-import { Clock3, LocateFixed, Users } from "lucide-react";
-import { DeparturePass } from "@/components/shared/departure-pass";
+import { connection } from "next/server";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  CarFront,
+  Clock3,
+  LocateFixed,
+  Route,
+  ShieldCheck,
+  Users,
+  Wallet,
+} from "lucide-react";
+import { HeroSearch } from "@/components/home/hero-search";
+import { RouteVisual } from "@/components/home/route-visual";
+import { PlaceCard } from "@/components/shared/place-card";
+import { logger } from "@/lib/logger";
+import { getServices } from "@/lib/services";
+import type { Place } from "@/modules/places/domain/place";
 
 const steps = [
   {
     icon: LocateFixed,
-    title: "Detectamos dónde estás",
-    text: "Usamos tu ubicación como punto de salida. Si estás en un lugar frecuente, te llevamos a su punto de encuentro.",
+    title: "Dinos dónde estás",
+    text: "Usamos tu ubicación como punto de salida, o eliges uno de los lugares frecuentes.",
   },
   {
     icon: Clock3,
-    title: "Dinos a dónde y cuándo",
-    text: "Elige tu destino exacto y si sales ahora o dentro de 15, 30 o 60 minutos.",
+    title: "A dónde y cuándo",
+    text: "Marca tu destino exacto y si sales ahora o dentro de 15, 30 o 60 minutos.",
   },
   {
     icon: Users,
     title: "Únete o crea un grupo",
-    text: "Te mostramos grupos cercanos que van hacia tu zona. Si no hay, creas uno y otros se suman. Todos confirman el reparto antes de salir.",
+    text: "Te mostramos grupos cercanos hacia tu zona. Si no hay, creas uno y otros se suman.",
   },
 ];
-export default function LandingPage() {
+
+const benefits = [
+  {
+    icon: Wallet,
+    title: "Pagas tu tramo, no el taxi entero",
+    text: "El reparto se calcula por la distancia que recorre cada persona y siempre suma 100%.",
+  },
+  {
+    icon: Route,
+    title: "Desvío máximo de cinco minutos",
+    text: "Solo agrupamos destinos compatibles por tiempo real de manejo, no por línea recta.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Tu dirección exacta es privada",
+    text: "Solo la ven las personas de tu grupo, y solo cuando el grupo se forma.",
+  },
+  {
+    icon: CarFront,
+    title: "Ustedes reservan el taxi",
+    text: "Una persona del grupo lo reserva en su app de siempre. Jala no reserva ni cobra.",
+  },
+];
+
+/** The landing still renders when the database is unreachable; it just lists no places. */
+async function featuredPlaces(): Promise<Place[]> {
+  try {
+    return await getServices().places.list({ status: "active", limit: 4 });
+  } catch (error) {
+    logger.error("landing.places_failed", { error: String(error) });
+    return [];
+  }
+}
+
+export default async function LandingPage() {
+  await connection();
+  const places = await featuredPlaces();
   return (
-    <div>
-      <section className="home-hero">
+    <>
+      <section className="hero wrap">
         <div className="hero-copy">
+          <p className="eyebrow">
+            <span className="live-dot" aria-hidden="true" /> Lima se mueve mejor
+            en grupo
+          </p>
           <h1>
-            Tu taxi,
+            No vuelvas solo.
             <br />
-            con quienes
-            <br />
-            van hacia allá.
+            <span>Jala contigo.</span>
           </h1>
-          <p>
-            Dinos dónde estás y a dónde vas. Te juntamos con personas que salen
-            cerca de ti hacia la misma zona para compartir un taxi.
+          <p className="intro">
+            Comparte un taxi con personas que salen cerca de ti y van hacia tu
+            misma zona. Cada quien llega a su puerta y paga su parte.
           </p>
-          <Link href="/ride" className="action action-primary">
-            Pedir un grupo
-          </Link>
-          <Link href="/places" className="action action-secondary">
-            Ver lugares frecuentes
-          </Link>
-          <p className="hero-footnote">
-            Tú conservas tu destino. Quien reserva el taxi lo pide afuera.
+          <HeroSearch
+            origins={places.map(({ id, name, location }) => ({
+              id,
+              name,
+              location,
+            }))}
+          />
+          <p className="hero-note">
+            <ShieldCheck size={17} aria-hidden="true" /> Tu destino exacto solo
+            lo ve tu grupo.
           </p>
         </div>
-        <DeparturePass />
+        <RouteVisual />
       </section>
-      <section className="how-section" aria-labelledby="como-funciona">
-        <div className="section-intro">
-          <h2 id="como-funciona">¿Cómo jalamos?</h2>
-          <p>Tres pasos, sin salir de la web.</p>
+
+      <section className="section wrap" id="como-funciona">
+        <div className="section-head">
+          <div>
+            <p className="eyebrow">Así de simple</p>
+            <h2>Volver a casa, en tres pasos.</h2>
+          </div>
+          <p>Todo desde la web, sin instalar nada.</p>
         </div>
-        <ol className="journey-steps">
+        <ol className="steps">
           {steps.map(({ icon: Icon, title, text }, i) => (
             <li key={title}>
-              <div className="step-symbol">
-                <Icon size={25} strokeWidth={1.6} aria-hidden="true" />
-                <span>{i + 1}</span>
+              <div className="step-top">
+                <span className="step-icon">
+                  <Icon size={21} aria-hidden="true" />
+                </span>
+                <span className="step-number">{i + 1}</span>
               </div>
               <h3>{title}</h3>
               <p>{text}</p>
@@ -65,19 +127,67 @@ export default function LandingPage() {
           ))}
         </ol>
       </section>
-      <aside className="fee-note">
-        <span className="fee-note-mark" aria-hidden="true">
-          S/
-        </span>
-        <div>
-          <h2>El taxi se paga afuera, entre ustedes.</h2>
-          <p>
-            Jala no reserva ni cobra el taxi: quien reserva lo pide en otra app
-            y cada persona paga su parte. Jala te muestra cuánto le toca a cada
-            una según la distancia recorrida. Esta demo no realiza cobros.
-          </p>
+
+      <section className="benefit-section" id="por-que">
+        <div className="wrap benefit-grid">
+          <div>
+            <p className="eyebrow">Misma ruta. Mejor viaje.</p>
+            <h2>Lo bueno de compartir empieza en el camino.</h2>
+            <p>
+              Ese asiento vacío puede ser tu próximo ahorro. Jala arma el grupo
+              y calcula el reparto; el viaje lo hacen ustedes.
+            </p>
+            <Link className="text-link" href="/ride">
+              Encuentra tu próximo viaje
+              <ArrowUpRight size={19} aria-hidden="true" />
+            </Link>
+          </div>
+          <ul className="benefit-list">
+            {benefits.map(({ icon: Icon, title, text }) => (
+              <li key={title}>
+                <Icon size={20} aria-hidden="true" />
+                <div>
+                  <h3>{title}</h3>
+                  <p>{text}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
-      </aside>
-    </div>
+      </section>
+
+      {places.length > 0 && (
+        <section className="section wrap" id="lugares">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">Del plan a casa</p>
+              <h2>¿De dónde salimos hoy?</h2>
+            </div>
+            <Link className="text-link" href="/places">
+              Ver todos los lugares
+              <ArrowUpRight size={19} aria-hidden="true" />
+            </Link>
+          </div>
+          <ul className="place-grid">
+            {places.map((place) => (
+              <li key={place.id}>
+                <PlaceCard place={place} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <section className="cta wrap-inset">
+        <div>
+          <p>Tu ruta, nuestro viaje.</p>
+          <h2>El próximo regreso, hagámoslo juntos.</h2>
+        </div>
+        <Link href="/ride" className="action action-primary">
+          Pedir un grupo
+          <ArrowRight size={18} aria-hidden="true" />
+        </Link>
+      </section>
+    </>
   );
 }

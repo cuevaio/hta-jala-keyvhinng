@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Clock3, Users } from "lucide-react";
+import { ArrowRight, Clock3, MapPin, Users } from "lucide-react";
 import type { GeoPoint } from "@/modules/places/domain/place";
 import type { PartyCommand } from "@/modules/parties/domain/party-lifecycle";
 import { PartyView } from "./party-view";
@@ -12,6 +12,13 @@ import { RideForm, type RideValues } from "./ride-form";
 import { sessionApi, SessionRequestError } from "./session-api";
 
 const POLL_MS = 4000;
+
+const limaTime = (iso: string) =>
+  new Date(iso).toLocaleTimeString("es-PE", {
+    timeZone: "America/Lima",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
 export interface GroupRoute {
   pickupLabel: string;
@@ -227,30 +234,23 @@ export function WaitingRoom({
   return (
     <div className="session-content">
       <div className="session-meta">
-        <span>
-          <ArrowRight size={17} aria-hidden="true" />
-          {group.pickupLabel.split(",")[0]} →{" "}
+        <p className="ride-route-summary">
+          <MapPin size={17} aria-hidden="true" />
+          {group.pickupLabel.split(",")[0]}
+          <ArrowRight size={15} aria-hidden="true" />
           {group.destinationLabel.split(",")[0]}
-        </span>
-        <span>
-          <Clock3 size={17} aria-hidden="true" />
-          Sale{" "}
-          {new Date(group.departsAt).toLocaleTimeString("es-PE", {
-            timeZone: "America/Lima",
-            hour: "2-digit",
-            minute: "2-digit",
-          })}{" "}
-          (Lima) · se cierra{" "}
-          {new Date(closesAt).toLocaleTimeString("es-PE", {
-            timeZone: "America/Lima",
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-        </span>
-        <span>
-          <Users size={17} aria-hidden="true" />
-          Hasta {Math.min(vehicleCapacity, 3)} personas por taxi
-        </span>
+        </p>
+        <div className="session-tags">
+          <span className="tag">
+            <Clock3 size={14} aria-hidden="true" />
+            Sale {limaTime(group.departsAt)}
+          </span>
+          <span className="tag">
+            <Users size={14} aria-hidden="true" />
+            Hasta {Math.min(vehicleCapacity, 3)} personas
+          </span>
+          <span className="tag">Abierto hasta {limaTime(closesAt)}</span>
+        </div>
       </div>
       {actionError && (
         <p role="alert" className="form-error">
@@ -301,8 +301,7 @@ export function WaitingRoom({
             submitLabel="Unirme al grupo"
             busyLabel="Guardando tu ruta…"
             busy={busy}
-            originMapCenter={group.pickup}
-            destinationMapCenter={group.destination}
+            mapCenter={group.pickup}
             autoLocate
             onSubmit={join}
           />

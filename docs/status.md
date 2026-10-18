@@ -52,7 +52,7 @@ whole product is about half.
 - `x-forwarded-for` is trusted for per-client rate limits; deploy behind a proxy that sets it.
 - Migrations were reset to one baseline (`0000`) before launch. After the first deploy, only
   add new migrations. Local databases need `bun run db:reset`.
-- The stylesheet is hand-written (about 1,900 lines) and does not use the installed
+- The stylesheet is hand-written (about 2,200 lines) and does not use the installed
   Tailwind/shadcn components or success/warning tokens.
 
 ## Next, in order

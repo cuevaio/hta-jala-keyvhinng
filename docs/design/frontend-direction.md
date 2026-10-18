@@ -16,36 +16,32 @@ have working pending/error/expiry states; retain their semantics and form contra
 
 ## 3. Design system and approach
 
-- Cobalt `#2457E6`: main actions and the distinctive departure-pass illustration.
-- Ink `#162C45`: readable text and headings.
-- Paper `#F6F8FD`: page canvas.
-- Sky `#E6EEFF`: supporting surfaces and route context.
-- Yellow `#F6D65B`: departure marker, used sparingly.
-- White `#FFFFFF`: form and ticket surfaces.
+_Updated 2026-10-18: the visual language now follows the `jala-saint-v2` prototype; the
+features and contracts below are unchanged._
 
-Barlow Condensed, weights 600/700/800, carries the energy of event posters and transport signs.
-DM Sans carries body text, controls and user information. Use sentence case throughout.
+- Ink `#12343B`: text, headings and dark surfaces (place pass, fare share, CTA band).
+- Orange `#FF6B35`: the one primary action per screen, routes and map stops. Text on
+  orange is ink, never white.
+- Sage `#F3F6F4` / Surface `#F5F7F8`: section bands and grouped rows.
+- Line `#E1E7E4`, muted text `#56676B` (AA on white).
 
-Layout: left-aligned, spacious desktop composition with a narrower form reading column.
-The home page's one expressive element is a departure pass with three paths leaving one point.
-Event rows adapt the ticket structure into useful date/event/action columns. Waiting-room
-members form one roster rather than a pile of unrelated cards.
+Plus Jakarta Sans 400–800 for everything; headings are heavy with tight tracking. The
+wordmark is `jala↗`. Type floor stays at 12px metadata and 16px inputs.
 
-    Desktop home                     Mobile home
-    [Jala]               [Eventos]   [Jala]      [Eventos]
-    [Headline] [Departure pass]      [Headline + action]
-    [Copy/CTA] [Route illustration]  [Departure pass]
-    [Three sequential actions]      [Sequential actions]
+Landing follows the prototype's structure: hero (headline, origin/destination search,
+route illustration) → three steps → benefits on a sage band → real places → dark CTA band.
+The hero search only carries what was typed to `/ride` (`dq`), where the destination
+picker runs the address search so the person chooses the exact match.
 
-    Event detail                    Session
-    [Event + venue] [Join pass]      [Back to event]
-    [Meeting-point list]            [Title + expiry]
-                                    [Form or shared roster]
+The ride form is two panels beside one shared map with both pins; a toggle chooses which
+pin a tap places. Session rooms use a main column plus a side column (map and meeting
+point for a matched group, destination and invite for the waiting pool); on phones the
+matched group's map and meeting point come first.
 
-Plan critique: the first idea used identical feature cards, which would be interchangeable
-with a generic app. Replace them with one connected sequence and a single departure-pass
-illustration grounded in this product. Do not introduce invented savings, safety claims,
-matching results or fake route data to make the design look complete.
+Removed as noise: the driver panel, fake prices and passenger counts, the trust strip,
+manual coordinate entry, and repeated per-card "ficticio" labels (one page note remains).
+The hero illustration states real rules (groups of 2–3, fare by distance) and no
+invented data.
 
 ## 4. Contract
 
@@ -58,9 +54,9 @@ already been assigned. Exact destinations remain private to the requesting parti
 
 Check long fictional event names, zero events, empty roster, loading, backend error, no willing
 delegate and expired session. Use narrow-screen stacking, minimum 44px controls and visible
-keyboard focus. Respect reduced-motion preferences; no unsolicited page animations. Fonts are
-self-hosted by next/font at build time. Keep manual coordinate entry honestly labeled until
-address/map entry is implemented as a separate product slice.
+keyboard focus. Respect reduced-motion preferences; the only unsolicited animation is the
+hero routes drawing in once, disabled under reduced motion. Fonts are self-hosted by
+next/font at build time.
 
 ## 6. Verification
 

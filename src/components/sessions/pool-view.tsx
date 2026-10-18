@@ -2,6 +2,7 @@
 
 import { forwardRef, useEffect, useState } from "react";
 import {
+  ArrowRight,
   Check,
   CarFront,
   Copy,
@@ -46,9 +47,7 @@ export const PoolView = forwardRef<
 
   const shareUrl = () =>
     `https://wa.me/?text=${encodeURIComponent(
-      `Sal conmigo en un taxi compartido con Jala: ${
-        typeof window === "undefined" ? "" : window.location.href
-      }`,
+      `Sal conmigo en un taxi compartido con Jala: ${window.location.href}`,
     )}`;
 
   return (
@@ -61,113 +60,121 @@ export const PoolView = forwardRef<
           <h2 id="waiting-title" ref={headingRef} tabIndex={-1}>
             Ya estás en la sala.
           </h2>
-          <p>
-            Tu destino quedó guardado. Comparte el enlace para reunir a más
-            personas.
-          </p>
+          <p>Tu destino quedó guardado. Cuando quieras, busca tu grupo.</p>
         </div>
       </header>
-      <div className="own-destination">
-        <MapPin size={23} aria-hidden="true" />
-        <div>
-          <span>Tu destino</span>
-          <strong>{room.me.destinationLabel}</strong>
-        </div>
-      </div>
-      <div className="roster-heading">
-        <h3>Quiénes están esperando</h3>
-        <span role="status" className="roster-count">
-          {room.participants.length}{" "}
-          {room.participants.length === 1 ? "persona" : "personas"}
-        </span>
-      </div>
-      <ul className="roster">
-        {room.participants.map((person) => (
-          <li key={person.id}>
-            <span
-              className={`person-avatar ${person.delegatePreference === "delegate" ? "person-delegate" : ""}`}
-              aria-hidden="true"
-            >
-              {person.displayName.trim().slice(0, 1).toLocaleUpperCase("es")}
+      <div className="room-grid">
+        <div className="room-main">
+          <div className="roster-heading">
+            <h3>Quiénes están esperando</h3>
+            <span role="status" className="roster-count">
+              {room.participants.length}{" "}
+              {room.participants.length === 1 ? "persona" : "personas"}
             </span>
-            <div className="person-name">
-              <strong>{person.displayName}</strong>
-              {person.id === room.me.id && <span>Tú</span>}
-            </div>
-            <span className="person-role">
-              {person.delegatePreference === "delegate" && (
-                <CarFront size={17} aria-hidden="true" />
-              )}
-              {person.delegatePreference === "delegate"
-                ? "Puede reservar el taxi"
-                : "Pasajero"}
-            </span>
-          </li>
-        ))}
-      </ul>
-      {!room.participants.some(
-        (person) => person.delegatePreference === "delegate",
-      ) && (
-        <p className="delegate-missing">
-          <CarFront size={20} aria-hidden="true" />
-          Aún falta alguien que pueda reservar el taxi.
-        </p>
-      )}
-      <div className="share-row">
-        <button
-          type="button"
-          onClick={copy}
-          className="action action-secondary share-button"
-        >
-          {copied ? (
-            <Check size={18} aria-hidden="true" />
-          ) : (
-            <Copy size={18} aria-hidden="true" />
+          </div>
+          <ul className="roster">
+            {room.participants.map((person) => (
+              <li key={person.id}>
+                <span
+                  className={`person-avatar ${person.delegatePreference === "delegate" ? "person-delegate" : ""}`}
+                  aria-hidden="true"
+                >
+                  {person.displayName
+                    .trim()
+                    .slice(0, 1)
+                    .toLocaleUpperCase("es")}
+                </span>
+                <div className="person-name">
+                  <strong>{person.displayName}</strong>
+                  {person.id === room.me.id && <span>Tú</span>}
+                </div>
+                <span className="person-role">
+                  {person.delegatePreference === "delegate" && (
+                    <CarFront size={17} aria-hidden="true" />
+                  )}
+                  {person.delegatePreference === "delegate"
+                    ? "Puede reservar el taxi"
+                    : "Pasajero"}
+                </span>
+              </li>
+            ))}
+          </ul>
+          {!room.participants.some(
+            (person) => person.delegatePreference === "delegate",
+          ) && (
+            <p className="delegate-missing">
+              <CarFront size={20} aria-hidden="true" />
+              Aún falta alguien que pueda reservar el taxi.
+            </p>
           )}
-          {copied ? "Enlace copiado" : "Copiar enlace"}
-        </button>
-        <a
-          className="action action-secondary share-button"
-          href={shareUrl()}
-          target="_blank"
-          rel="noreferrer"
-        >
-          <MessageCircle size={18} aria-hidden="true" />
-          Compartir por WhatsApp
-          <span className="sr-only"> (se abre en otra pestaña)</span>
-        </a>
-      </div>
-      <span role="status" className="sr-only">
-        {copied ? "Enlace copiado" : ""}
-      </span>
-      <p className="privacy-note">
-        <ShieldCheck size={19} aria-hidden="true" />
-        <span>
-          Las otras personas ven tu nombre y si pueden reservar. Tu dirección
-          exacta permanece privada.
-        </span>
-      </p>
-      {!closed && (
-        <button
-          type="button"
-          onClick={onMatch}
-          disabled={busy || signedOut}
-          className="action action-primary"
-        >
-          {busy ? "Calculando rutas…" : "Buscar mi grupo"}
-        </button>
-      )}
-      <p role="status" className="wait-note">
-        {notice}
-      </p>
-      <div className="milestone-note">
-        <strong>Un grupo compatible para compartir el taxi.</strong>
-        <p>
-          Buscamos grupos de dos o tres con alguien que pueda reservar y un
-          desvío máximo de cinco minutos por persona. Al encontrar un grupo,
-          compartimos los destinos exactos solo entre sus integrantes. Jala no
-          reserva el taxi.
-        </p>
+          {!closed && (
+            <div className="match-action">
+              <button
+                type="button"
+                onClick={onMatch}
+                disabled={busy || signedOut}
+                className="action action-primary"
+              >
+                {busy ? "Calculando rutas…" : "Buscar mi grupo"}
+                {!busy && <ArrowRight size={18} aria-hidden="true" />}
+              </button>
+              <p className="fine">
+                Grupos de 2 o 3, con alguien que pueda reservar y hasta cinco
+                minutos de desvío por persona.
+              </p>
+            </div>
+          )}
+          <p role="status" className="wait-note">
+            {notice}
+          </p>
+        </div>
+        <aside className="room-side">
+          <div className="own-destination">
+            <MapPin size={23} aria-hidden="true" />
+            <div>
+              <span>Tu destino</span>
+              <strong>{room.me.destinationLabel}</strong>
+            </div>
+          </div>
+          <div className="share-block">
+            <h3>Invita a quien salga contigo</h3>
+            <div className="share-row">
+              <button
+                type="button"
+                onClick={copy}
+                className="action action-secondary"
+              >
+                {copied ? (
+                  <Check size={18} aria-hidden="true" />
+                ) : (
+                  <Copy size={18} aria-hidden="true" />
+                )}
+                {copied ? "Enlace copiado" : "Copiar enlace"}
+              </button>
+              <a
+                className="action action-secondary"
+                href="https://wa.me/"
+                onClick={(event) => {
+                  event.currentTarget.href = shareUrl();
+                }}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <MessageCircle size={18} aria-hidden="true" />
+                WhatsApp
+                <span className="sr-only"> (se abre en otra pestaña)</span>
+              </a>
+            </div>
+            <span role="status" className="sr-only">
+              {copied ? "Enlace copiado" : ""}
+            </span>
+          </div>
+          <p className="fine">
+            <ShieldCheck size={16} aria-hidden="true" />
+            Los demás ven tu nombre y si puedes reservar. Tu dirección es
+            privada.
+          </p>
+        </aside>
       </div>
     </section>
   );
