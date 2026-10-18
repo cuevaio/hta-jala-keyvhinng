@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { LocateFixed, MapPin, Search } from "lucide-react";
+import { LocateFixed, MapPin } from "lucide-react";
 import {
   reverseGeocode,
   searchAddress,
@@ -20,7 +20,7 @@ type Lookup = "idle" | "loading" | "failed";
 type Locate = "idle" | "locating" | "denied" | "unsupported";
 
 /**
- * One place on the map: current location, address search, map pin and an editable
+ * One address field per place: search, current location and map picks share its
  * label. The parent owns the value; every way of choosing reports through `onChange`.
  */
 export function LocationPicker({
@@ -51,18 +51,30 @@ export function LocationPicker({
   const [lookup, setLookup] = useState<Lookup>("idle");
   const [locating, setLocating] = useState<Locate>("idle");
   const [focus, setFocus] = useState<GeoPoint | null>(null);
-  const [query, setQuery] = useState("");
   const [results, setResults] = useState<AddressMatch[] | null>(null);
   const [searching, setSearching] = useState(false);
   const labelEdited = useRef(false);
   const lookupAbort = useRef<AbortController | null>(null);
+  const searchAbort = useRef<AbortController | null>(null);
   const valueRef = useRef(value);
   const onChangeRef = useRef(onChange);
   useEffect(() => {
     valueRef.current = value;
     onChangeRef.current = onChange;
   });
-  useEffect(() => () => lookupAbort.current?.abort(), []);
+  useEffect(
+    () => () => {
+      lookupAbort.current?.abort();
+      searchAbort.current?.abort();
+    },
+    [],
+  );
+
+  function clearSearch() {
+    searchAbort.current?.abort();
+    setSearching(false);
+    setResults(null);
+  }
 
   function resolveLabel(point: GeoPoint) {
     lookupAbort.current?.abort();
@@ -87,6 +99,7 @@ export function LocationPicker({
   }
 
   function pick(point: GeoPoint) {
+    clearSearch();
     onChange({ point, label: value?.label ?? "" });
     resolveLabel(point);
   }
@@ -98,23 +111,28 @@ export function LocationPicker({
     setLookup("idle");
     onChange({ point: match.point, label: match.label.slice(0, 200) });
     setFocus(match.point);
-    setResults(null);
+    clearSearch();
   }
 
   async function search() {
-    const text = query.trim();
+    const text = value?.label.trim() ?? "";
     if (text.length < 3) return;
+    searchAbort.current?.abort();
+    const controller = new AbortController();
+    searchAbort.current = controller;
     setSearching(true);
     try {
-      setResults(await searchAddress(text));
+      const matches = await searchAddress(text, { signal: controller.signal });
+      if (!controller.signal.aborted) setResults(matches);
     } catch {
-      setResults([]);
+      if (!controller.signal.aborted) setResults([]);
     } finally {
-      setSearching(false);
+      if (!controller.signal.aborted) setSearching(false);
     }
   }
 
   function useMyLocation() {
+    clearSearch();
     if (!("geolocation" in navigator)) {
       setLocating("unsupported");
       return;
@@ -150,6 +168,9 @@ export function LocationPicker({
   function editCoordinate(axis: keyof GeoPoint, raw: string) {
     const number = Number(raw);
     if (raw === "" || !Number.isFinite(number)) return;
+    clearSearch();
+    lookupAbort.current?.abort();
+    setLookup("idle");
     onChange({
       point: {
         latitude: value?.point?.latitude ?? mapCenter.latitude,
@@ -185,68 +206,69 @@ export function LocationPicker({
           </p>
         </div>
       )}
-      <div className="form-section">
-        <label htmlFor={`${id}-label`}>Dirección o referencia</label>
-        <div className="input-with-icon">
-          <MapPin size={19} aria-hidden="true" />
-          <input
-            id={`${id}-label`}
-            className="form-input"
-            required
-            minLength={3}
-            maxLength={200}
-            value={value?.label ?? ""}
-            onChange={(event) => {
-              labelEdited.current = event.target.value !== "";
-              onChange({
-                point: value?.point ?? null,
-                label: event.target.value,
-              });
-            }}
-            placeholder="Se completa al marcar el mapa"
-          />
-        </div>
-        <p className="input-help" role="status">
-          {lookup === "loading" && "Buscando la dirección…"}
-          {lookup === "failed" &&
-            "No encontramos la dirección. Escríbela tú; el punto del mapa se guarda igual."}
-        </p>
-      </div>
-      <div className="address-search" role="search">
-        <label htmlFor={`${id}-query`}>Buscar una dirección</label>
+      <div className="address-search">
+        <label htmlFor={`${id}-label`}>
+          {variant === "origin" ? "Origen" : "Destino"}
+        </label>
         <div className="address-search-row">
           <div className="input-with-icon">
-            <Search size={19} aria-hidden="true" />
+            <MapPin size={19} aria-hidden="true" />
             <input
-              id={`${id}-query`}
+              id={`${id}-label`}
               className="form-input"
-              type="search"
+              required
+              minLength={3}
+              maxLength={200}
               enterKeyHint="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              aria-describedby={`${id}-address-help`}
+              value={value?.label ?? ""}
+              onChange={(event) => {
+                lookupAbort.current?.abort();
+                clearSearch();
+                setLookup("idle");
+                labelEdited.current = event.target.value !== "";
+                onChange({ point: null, label: event.target.value });
+              }}
               onKeyDown={(event) => {
                 if (event.key === "Enter") {
                   event.preventDefault();
                   void search();
                 }
               }}
-              placeholder="Ej. Av. Larco 345, Miraflores"
+              placeholder={
+                variant === "origin" ? "¿Desde dónde sales?" : "¿A dónde vas?"
+              }
             />
           </div>
           <button
             type="button"
             className="action action-secondary"
-            disabled={searching || query.trim().length < 3}
+            aria-label={
+              variant === "origin" ? "Buscar origen" : "Buscar destino"
+            }
+            disabled={searching || (value?.label.trim().length ?? 0) < 3}
             onClick={() => void search()}
           >
             {searching ? "Buscando…" : "Buscar"}
           </button>
         </div>
+        <p id={`${id}-address-help`} className="input-help" role="status">
+          {lookup === "loading"
+            ? "Buscando la dirección…"
+            : lookup === "failed"
+              ? "No encontramos la dirección. Escríbela aquí; el punto del mapa se guarda igual."
+              : !value?.point
+                ? "Escribe una dirección y búscala, o marca el punto en el mapa."
+                : "Puedes buscar otra dirección o ajustar el punto en el mapa."}
+        </p>
         {results && (
           <ul
             className="address-results"
-            role="listbox"
-            aria-label="Resultados"
+            aria-label={
+              variant === "origin"
+                ? "Resultados de origen"
+                : "Resultados de destino"
+            }
           >
             {results.length === 0 && (
               <li className="input-help" role="status">
@@ -255,12 +277,7 @@ export function LocationPicker({
             )}
             {results.map((match) => (
               <li key={`${match.point.latitude},${match.point.longitude}`}>
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={false}
-                  onClick={() => choose(match)}
-                >
+                <button type="button" onClick={() => choose(match)}>
                   {match.label}
                 </button>
               </li>

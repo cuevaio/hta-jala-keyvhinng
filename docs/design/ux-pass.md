@@ -12,7 +12,14 @@ Fixes from a manual review of the phone-after-a-venue journey.
 - Leaving is styled as destructive and states how many people it affects.
 - Branded `not-found`, `error` and `loading` pages.
 - Type floor: 14px body copy, 12px metadata. Inputs are 16px so iOS does not zoom.
-- Join form: address search (Nominatim, only on submit), a visible reason when the join
+- **Usar mi ubicación** is available for origin only; denied permission leaves address
+  search and map selection available.
+- Ride and join forms: one address field per location, labeled **Origen** or **Destino**.
+  The same field displays the selected address and searches on **Buscar** or Enter;
+  choosing a result fills the field and moves the pin. Editing it clears the old point
+  until a result or map point is selected. Searches are canceled when the input or
+  selected point changes so stale results cannot replace the current choice.
+- Join form: address search (Nominatim, only on explicit search), a visible reason when the join
   button is disabled, two-finger map gestures on touch, accessible map labels.
 - Room loads on the server (no spinner), polling pauses in hidden tabs, focus moves to the
   new heading on every screen change, WhatsApp share and a "copied" state that resets.
@@ -23,8 +30,6 @@ Fixes from a manual review of the phone-after-a-venue journey.
 
 **Not done, on purpose**
 
-- "Use my location": the pickup is the place's meeting point and the destination is not
-  where the person is, so GPS would add a permission prompt without helping the join.
 - Replacing the hand-written stylesheet with Tailwind/shadcn components and adding
   success/warning tokens: a larger refactor best done as its own change.
 - The dark theme was deleted instead of being finished.

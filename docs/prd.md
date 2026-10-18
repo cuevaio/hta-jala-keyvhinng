@@ -57,8 +57,11 @@ Existing fee tables/functions do not establish a working revenue feature.
 
 ## 3. Current journey and terminology
 
-1. Open `/ride`; use geolocation, address search or map selection to set origin and
-   destination. Choose now, 15, 30 or 60 minutes.
+1. Open `/ride`; use one **Origen** field and one **Destino** field. Each field both
+   displays the selected address and searches it with **Buscar** or Enter; choosing a
+   result sets its map point. Editing an address clears its previous point until a new
+   result or map point is selected. Geolocation is available for origin only. Choose
+   now, 15, 30 or 60 minutes.
 2. Search publicly for nearby compatible pools. Join one or create one; authentication
    is required for those mutations. The UI carries the draft through sign-in.
 3. Wait in the shared room, optionally share its link, and request matching.
