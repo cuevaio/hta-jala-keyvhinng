@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { sessionApi } from "./session-api";
 import { MAX_SELFIE_DATA_URL_LENGTH } from "@/modules/sessions/domain/selfie";
 
 export function SelfieUpload({
@@ -30,9 +31,16 @@ export function SelfieUpload({
         throw new Error("Elige una foto JPG, PNG o WebP.");
       if (file.size > 10_000_000)
         throw new Error("La foto debe pesar menos de 10 MB.");
-      const bitmap = await createImageBitmap(file, {
-        imageOrientation: "from-image",
-      });
+      let bitmap: ImageBitmap;
+      try {
+        bitmap = await createImageBitmap(file, {
+          imageOrientation: "from-image",
+        });
+      } catch {
+        throw new Error(
+          "No pudimos leer tu foto. Elige otra foto JPG, PNG o WebP.",
+        );
+      }
       try {
         const scale = Math.min(1, 400 / Math.max(bitmap.width, bitmap.height));
         const canvas = document.createElement("canvas");
@@ -47,6 +55,12 @@ export function SelfieUpload({
         const photo = canvas.toDataURL("image/jpeg", 0.8);
         if (photo.length > MAX_SELFIE_DATA_URL_LENGTH)
           throw new Error("Elige una foto más pequeña.");
+        if (current !== selection.current) return;
+        await sessionApi(
+          "/api/selfies/validate",
+          { selfieDataUrl: photo },
+          AbortSignal.timeout(20_000),
+        );
         if (current === selection.current) onChange(photo);
       } finally {
         bitmap.close();
@@ -77,11 +91,14 @@ export function SelfieUpload({
         disabled={disabled}
         aria-describedby={error ? "selfie-hint selfie-error" : "selfie-hint"}
         aria-invalid={Boolean(error)}
-        onChange={(event) => void select(event.target.files?.[0])}
+        onChange={(event) => {
+          void select(event.target.files?.[0]);
+          event.target.value = "";
+        }}
       />
       {processing && (
         <p role="status" className="fine">
-          Preparando tu selfie…
+          Comprobando que se vea tu rostro…
         </p>
       )}
       {error && (
@@ -98,7 +115,9 @@ export function SelfieUpload({
             width={96}
             height={96}
           />
-          <figcaption className="fine">Tu selfie está lista.</figcaption>
+          <figcaption className="fine">
+            Rostro detectado. Tu selfie está lista.
+          </figcaption>
         </figure>
       )}
     </div>

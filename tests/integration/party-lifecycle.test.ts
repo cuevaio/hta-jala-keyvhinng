@@ -104,6 +104,20 @@ describe.skipIf(!url)("party lifecycle", () => {
     await sql.end();
   });
 
+  it("keeps formed groups usable after the waiting room expires", async () => {
+    const s = await matchedSession();
+    await db
+      .update(schema.sessions)
+      .set({ closesAt: new Date(Date.now() - 1) })
+      .where(eq(schema.sessions.id, s.id));
+    expect((await room(s.id, 0)).acceptingJoins).toBe(false);
+    expect((await room(s.id, 0)).party).not.toBeNull();
+    for (const user of userIds.slice(0, 3))
+      await parties.apply(s.id, user, "confirm");
+    await parties.apply(s.id, userIds[0], "start");
+    await parties.apply(s.id, userIds[0], "complete");
+    expect((await room(s.id, 0)).party!.status).toBe("completed");
+  });
   it("runs confirm → start → complete and books the ride record", async () => {
     const s = await matchedSession();
     const [a, b, c] = userIds;

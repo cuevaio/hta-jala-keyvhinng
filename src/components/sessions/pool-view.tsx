@@ -58,18 +58,23 @@ export const PoolView = forwardRef<
         </span>
         <div>
           <h2 id="waiting-title" ref={headingRef} tabIndex={-1}>
-            Estás en la sala de espera.
+            {closed ? "La espera terminó." : "Estás en la sala de espera."}
           </h2>
           <p>
-            Tu destino quedó guardado. Cuando quieras, buscamos tu grupo de
-            viaje.
+            {closed
+              ? "Puedes revisar quiénes estaban esperando o buscar otra sala."
+              : "Tu destino quedó guardado. Busca tu grupo de viaje antes de que cierre la sala."}
           </p>
         </div>
       </header>
       <div className="room-grid">
         <div className="room-main">
           <div className="roster-heading">
-            <h3>Quiénes están esperando</h3>
+            <h3>
+              {closed
+                ? "Quiénes estaban en la sala"
+                : "Quiénes están esperando"}
+            </h3>
             <span role="status" className="roster-count">
               {room.participants.length}{" "}
               {room.participants.length === 1 ? "persona" : "personas"}
@@ -139,39 +144,41 @@ export const PoolView = forwardRef<
               <strong>{room.me.destinationLabel}</strong>
             </div>
           </div>
-          <div className="share-block">
-            <h3>Invita a quien salga contigo</h3>
-            <div className="share-row">
-              <button
-                type="button"
-                onClick={copy}
-                className="action action-secondary"
-              >
-                {copied ? (
-                  <Check size={18} aria-hidden="true" />
-                ) : (
-                  <Copy size={18} aria-hidden="true" />
-                )}
-                {copied ? "Enlace copiado" : "Copiar enlace"}
-              </button>
-              <a
-                className="action action-secondary"
-                href="https://wa.me/"
-                onClick={(event) => {
-                  event.currentTarget.href = shareUrl();
-                }}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <MessageCircle size={18} aria-hidden="true" />
-                WhatsApp
-                <span className="sr-only"> (se abre en otra pestaña)</span>
-              </a>
+          {!closed && (
+            <div className="share-block">
+              <h3>Invita a quien salga contigo</h3>
+              <div className="share-row">
+                <button
+                  type="button"
+                  onClick={copy}
+                  className="action action-secondary"
+                >
+                  {copied ? (
+                    <Check size={18} aria-hidden="true" />
+                  ) : (
+                    <Copy size={18} aria-hidden="true" />
+                  )}
+                  {copied ? "Enlace copiado" : "Copiar enlace"}
+                </button>
+                <a
+                  className="action action-secondary"
+                  href="https://wa.me/"
+                  onClick={(event) => {
+                    event.currentTarget.href = shareUrl();
+                  }}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <MessageCircle size={18} aria-hidden="true" />
+                  WhatsApp
+                  <span className="sr-only"> (se abre en otra pestaña)</span>
+                </a>
+              </div>
+              <span role="status" className="sr-only">
+                {copied ? "Enlace copiado" : ""}
+              </span>
             </div>
-            <span role="status" className="sr-only">
-              {copied ? "Enlace copiado" : ""}
-            </span>
-          </div>
+          )}
           <p className="fine">
             <ShieldCheck size={16} aria-hidden="true" />
             La sala ve tu nombre y si puedes reservar. Tu destino solo se

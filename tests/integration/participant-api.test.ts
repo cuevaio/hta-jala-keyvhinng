@@ -150,6 +150,29 @@ describe.skipIf(!base || !url)(
           )
         ).status,
       ).toBe(400);
+      const noFace = "data:image/jpeg;base64,/9j/4AAQ/9k=";
+      expect(
+        (await post("/api/selfies/validate", { selfieDataUrl }, cookieA))
+          .status,
+      ).toBe(200);
+      expect(
+        (
+          await post(
+            "/api/selfies/validate",
+            { selfieDataUrl: noFace },
+            cookieA,
+          )
+        ).status,
+      ).toBe(400);
+      expect(
+        (
+          await post(
+            "/api/groups",
+            { ...input, selfieDataUrl: noFace, departInMinutes: 15 },
+            cookieA,
+          )
+        ).status,
+      ).toBe(400);
       const opened = await post(
         "/api/groups",
         { ...input, departInMinutes: 15 },
@@ -167,7 +190,21 @@ describe.skipIf(!base || !url)(
       expect((await fetch(`${base}/api/groups/search?olat=north`)).status).toBe(
         400,
       );
+      const timing = await fetch(`${base}/api/sessions/${sessionId}`);
+      expect(timing.headers.get("cache-control")).toContain("no-store");
+      expect(
+        Number.isFinite(Date.parse((await timing.json()).data.serverNow)),
+      ).toBe(true);
       const path = `/api/sessions/${sessionId}/waiting-room`;
+      expect(
+        (
+          await post(
+            `/api/sessions/${sessionId}/join`,
+            { ...input, selfieDataUrl: noFace },
+            cookieB,
+          )
+        ).status,
+      ).toBe(400);
       expect((await fetch(`${base}${path}`)).status).toBe(401);
       expect(
         (await fetch(`${base}${path}`, { headers: { cookie: cookieB } }))

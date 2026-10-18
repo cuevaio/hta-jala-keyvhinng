@@ -55,7 +55,9 @@ export default async function SessionPage({
         <p>{session.name}</p>
       </header>
       <WaitingRoom
+        key={session.id}
         sessionId={session.id}
+        initialServerNow={new Date().toISOString()}
         group={{
           pickupLabel: session.pickupLabel,
           pickup: session.pickup,

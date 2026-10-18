@@ -5,6 +5,8 @@ import Link from "next/link";
 import { ArrowRight, Clock3, MapPin, Users } from "lucide-react";
 import type { GeoPoint } from "@/modules/places/domain/place";
 import type { PartyCommand } from "@/modules/parties/domain/party-lifecycle";
+import { roomDeadline } from "./room-clock";
+import { useRoomClock } from "./use-room-clock";
 import { PartyView } from "./party-view";
 import { PoolView } from "./pool-view";
 import type { Room } from "./room";
@@ -30,6 +32,7 @@ export interface GroupRoute {
 
 export function WaitingRoom({
   sessionId,
+  initialServerNow,
   group,
   closesAt,
   initiallyOpen,
@@ -39,6 +42,7 @@ export function WaitingRoom({
   accountName,
 }: {
   sessionId: string;
+  initialServerNow: string;
   group: GroupRoute;
   closesAt: string;
   initiallyOpen: boolean;
@@ -56,75 +60,139 @@ export function WaitingRoom({
   const [pollError, setPollError] = useState("");
   const [notice, setNotice] = useState("");
   const [left, setLeft] = useState(false);
-  const [now, setNow] = useState(() => Date.now());
+  const { now, synchronize } = useRoomClock(initialServerNow);
+  const deadline = roomDeadline(closesAt, now);
   const hadParty = useRef(initialRoom?.party != null);
+  const lastRoomSample = useRef(
+    Date.parse(initialRoom?.serverNow ?? initialServerNow),
+  );
   const heading = useRef<HTMLHeadingElement>(null);
-  const expired = now >= Date.parse(closesAt);
+  const expired = deadline.phase === "closed";
 
-  const apply = useCallback((result: Room) => {
-    if (hadParty.current && !result.party)
-      setNotice(
-        "Tu grupo de viaje se deshizo porque alguien salió. Sigues en la sala de espera; busca compañeros de nuevo cuando quieras.",
-      );
-    hadParty.current = result.party !== null;
-    setRoom(result);
-    setSignedOut(false);
-  }, []);
+  const apply = useCallback(
+    (result: Room, roundTripMs = 0) => {
+      const sampledAt = Date.parse(result.serverNow);
+      if (sampledAt < lastRoomSample.current) return;
+      lastRoomSample.current = sampledAt;
+      if (hadParty.current && !result.party)
+        setNotice(
+          "Tu grupo de viaje se deshizo porque alguien salió. Sigues en la sala de espera; busca compañeros de nuevo cuando quieras.",
+        );
+      hadParty.current = result.party !== null;
+      synchronize(result.serverNow, roundTripMs);
+      setRoom(result);
+      setSignedOut(false);
+    },
+    [synchronize],
+  );
 
   useEffect(() => {
     let stopped = false;
     let timer: ReturnType<typeof setTimeout>;
+    let active: AbortController | null = null;
     async function poll() {
-      // Hidden tabs skip the request; becoming visible again polls immediately.
-      if (document.visibilityState === "visible") {
-        try {
-          const result = await sessionApi<Room>(
-            `/api/sessions/${sessionId}/waiting-room`,
-          );
-          if (!stopped) {
-            apply(result);
-            setPollError("");
+      clearTimeout(timer);
+      active?.abort();
+      const controller = new AbortController();
+      active = controller;
+      const startedAt = performance.now();
+      const timeout = setTimeout(() => controller.abort(), 10_000);
+      try {
+        if (document.visibilityState !== "visible") return;
+        const result = await sessionApi<Room>(
+          `/api/sessions/${sessionId}/waiting-room`,
+          undefined,
+          controller.signal,
+        );
+        if (!stopped && active === controller && !controller.signal.aborted) {
+          apply(result, performance.now() - startedAt);
+          setPollError("");
+        }
+      } catch (error) {
+        if (
+          !stopped &&
+          active === controller &&
+          document.visibilityState === "visible" &&
+          error instanceof SessionRequestError
+        ) {
+          if (error.status === 401) {
+            setSignedOut(true);
+            setRoom(null);
           }
-        } catch (error) {
-          if (!stopped && error instanceof SessionRequestError) {
-            if (error.status === 401) {
-              setSignedOut(true);
-              setRoom(null);
-            } else if (error.status !== 403) {
-              setPollError(
-                "No pudimos actualizar la sala. Reintentaremos automáticamente.",
+          if (error.status === 401 || error.status === 403) {
+            // Visitors and people who have not joined still get fresh server time.
+            try {
+              const timing = await sessionApi<{ serverNow: string }>(
+                `/api/sessions/${sessionId}`,
+                undefined,
+                controller.signal,
               );
+              if (
+                !stopped &&
+                active === controller &&
+                !controller.signal.aborted
+              ) {
+                synchronize(timing.serverNow, performance.now() - startedAt);
+                setPollError("");
+              }
+            } catch {
+              if (
+                !stopped &&
+                active === controller &&
+                document.visibilityState === "visible"
+              )
+                setPollError(
+                  "No pudimos actualizar la sala. Reintentaremos automáticamente.",
+                );
             }
+          } else {
+            setPollError(
+              "No pudimos actualizar la sala. Reintentaremos automáticamente.",
+            );
           }
         }
-        if (!stopped) setNow(Date.now());
+      } finally {
+        clearTimeout(timeout);
+        if (
+          !stopped &&
+          active === controller &&
+          document.visibilityState === "visible"
+        )
+          timer = setTimeout(poll, POLL_MS);
       }
-      if (!stopped) timer = setTimeout(poll, POLL_MS);
     }
     const onVisible = () => {
-      if (document.visibilityState !== "visible") return;
-      clearTimeout(timer);
-      void poll();
+      if (document.visibilityState === "visible") void poll();
+      else {
+        clearTimeout(timer);
+        active?.abort();
+      }
     };
-    timer = setTimeout(poll, POLL_MS);
+    timer = setTimeout(poll, 0);
     document.addEventListener("visibilitychange", onVisible);
     return () => {
       stopped = true;
       clearTimeout(timer);
+      active?.abort();
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [sessionId, apply]);
+  }, [sessionId, apply, synchronize]);
+
+  const closed =
+    expired || !initiallyOpen || (room !== null && !room.acceptingJoins);
 
   // Move focus to the new heading whenever the screen changes, never on first paint.
   const stage = left
     ? "left"
-    : signedOut && !room
-      ? "signed-out"
-      : !room
-        ? "join"
-        : room.party?.plan
-          ? `party:${room.party.status}`
-          : "pool";
+    : closed && !room?.party
+      ? "closed"
+      : signedOut && !room
+        ? "signed-out"
+        : !room
+          ? "join"
+          : room.party?.plan
+            ? `party:${room.party.status}`
+            : "pool";
   const previousStage = useRef(stage);
   useEffect(() => {
     if (previousStage.current !== stage) heading.current?.focus();
@@ -191,8 +259,6 @@ export function WaitingRoom({
 
   // Matching forms parties of two or three, whatever the vehicle holds.
   const taxiSize = vehicleCapacity > 2 ? "2 o 3" : "2";
-  const closed =
-    expired || !initiallyOpen || (room !== null && !room.acceptingJoins);
   const placeLink = (
     <Link className="action action-secondary" href="/ride">
       Buscar otra sala
@@ -210,27 +276,6 @@ export function WaitingRoom({
           quedan. Puedes buscar otra sala o crear una.
         </p>
         {placeLink}
-      </div>
-    );
-  if (signedOut && !room)
-    return (
-      <div className="session-closed">
-        <h2 ref={heading} tabIndex={-1}>
-          Inicia sesión para unirte.
-        </h2>
-        <p>Necesitas una cuenta para guardar tu ruta en la sala.</p>
-        <Link
-          className="action action-primary"
-          href={`/sign-in?next=${encodeURIComponent(`/sessions/${sessionId}`)}`}
-        >
-          Iniciar sesión
-        </Link>
-        <Link
-          className="action action-secondary"
-          href={`/sign-up?next=${encodeURIComponent(`/sessions/${sessionId}`)}`}
-        >
-          Crear cuenta
-        </Link>
       </div>
     );
 
@@ -252,9 +297,35 @@ export function WaitingRoom({
             <Users size={14} aria-hidden="true" />
             {taxiSize} personas por taxi
           </span>
-          <span className="tag">Sala abierta hasta {limaTime(closesAt)}</span>
+          <span className="tag">
+            {closed
+              ? "Sala cerrada"
+              : `Cierra a las ${limaTime(closesAt)} (Lima)`}
+          </span>
+          {!closed && (
+            <span
+              className="tag room-countdown"
+              role="timer"
+              aria-live="off"
+              aria-label="Tiempo restante para unirse y formar un grupo"
+            >
+              Cierra en {deadline.label}
+            </span>
+          )}
         </div>
       </div>
+      <p
+        role="status"
+        className={`room-deadline ${!closed && deadline.phase === "closing" ? "room-deadline-warning" : ""}`}
+      >
+        {closed
+          ? room?.party
+            ? "La sala está cerrada para nuevas personas. Tu grupo ya está formado y sigue disponible."
+            : "La sala cerró. Ya no puedes unirte ni formar un grupo de viaje."
+          : deadline.phase === "closing"
+            ? "La sala cierra en 5 minutos o menos. Únete o busca compañeros antes de que termine la espera."
+            : "La sala cierra 30 minutos después de la hora de salida. Después no podrás unirte ni formar un grupo. Los grupos ya formados pueden continuar su viaje."}
+      </p>
       {actionError && (
         <p role="alert" className="form-error">
           {actionError}
@@ -267,12 +338,33 @@ export function WaitingRoom({
       )}
       {closed && !room?.party && (
         <div role="status" className="session-closed">
-          <h2>Esta sala ya no admite personas.</h2>
+          <h2 ref={!room ? heading : undefined} tabIndex={-1}>
+            Sala cerrada
+          </h2>
           <p>Puedes buscar otra sala o crear una.</p>
           {placeLink}
         </div>
       )}
-      {room?.party?.plan ? (
+      {signedOut && !room && !closed ? (
+        <div className="session-closed">
+          <h2 ref={heading} tabIndex={-1}>
+            Inicia sesión para unirte.
+          </h2>
+          <p>Necesitas una cuenta para guardar tu ruta en la sala.</p>
+          <Link
+            className="action action-primary"
+            href={`/sign-in?next=${encodeURIComponent(`/sessions/${sessionId}`)}`}
+          >
+            Iniciar sesión
+          </Link>
+          <Link
+            className="action action-secondary"
+            href={`/sign-up?next=${encodeURIComponent(`/sessions/${sessionId}`)}`}
+          >
+            Crear cuenta
+          </Link>
+        </div>
+      ) : room?.party?.plan ? (
         <PartyView
           ref={heading}
           sessionId={sessionId}

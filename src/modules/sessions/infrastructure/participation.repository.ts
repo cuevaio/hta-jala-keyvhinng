@@ -526,6 +526,7 @@ export function createParticipationRepository(db: Database) {
           const now = new Date();
           return {
             session,
+            serverNow: now.toISOString(),
             me: meWithoutSelfie,
             party: party ? { ...party, members } : null,
             participants,

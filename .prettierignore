@@ -7,3 +7,6 @@ docs
 .claude
 .grok
 .github
+
+# Vendored face model: preserve the upstream manifest unchanged.
+src/modules/sessions/infrastructure/face-model/model.json
