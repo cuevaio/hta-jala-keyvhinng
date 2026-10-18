@@ -141,7 +141,9 @@ jobs:
           DEPLOYMENT: ${{ steps.deploy.outputs.url }}
         run: |
           probe() {
-            bunx $VERCEL_CLI curl "$1" --deployment "$DEPLOYMENT" --yes --token="$VERCEL_TOKEN" \
+            # Reads VERCEL_TOKEN from the environment: `vercel curl` hands any
+            # flag it does not own, --token included, to curl itself.
+            bunx $VERCEL_CLI curl "$1" --deployment "$DEPLOYMENT" --yes \
               -- -s -o /dev/null -w '%{http_code}' "${@:3}" | tail -1
           }
           check() {
