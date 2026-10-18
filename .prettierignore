@@ -10,3 +10,6 @@ docs
 
 # Vendored face model: preserve the upstream manifest unchanged.
 src/modules/sessions/infrastructure/face-model/model.json
+
+# Pitch deck, exported as one self-contained page.
+public/pitch.html
