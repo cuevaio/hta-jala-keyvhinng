@@ -5,6 +5,7 @@ import { createMatchingRepository } from "@/modules/matching/infrastructure/matc
 import { createRoadMatchingService } from "@/modules/matching/domain/road-matching";
 import { createOsrmRoutingProvider } from "@/modules/routing/infrastructure/osrm-routing-provider";
 import { createPartyRepository } from "@/modules/parties/infrastructure/party.repository";
+import { createPartyMessageRepository } from "@/modules/parties/infrastructure/party-message.repository";
 import { createParticipationRepository } from "@/modules/sessions/infrastructure/participation.repository";
 import { getDb } from "@/db";
 import { createAuthService } from "@/modules/auth/application/auth.service";
@@ -34,6 +35,7 @@ export function getServices() {
     ),
     participation: createParticipationRepository(db),
     parties: createPartyRepository(db),
+    partyMessages: createPartyMessageRepository(db),
     places: createPlaceService(createPlaceRepository(db)),
     sessions: createSessionService(createSessionRepository(db)),
   };

@@ -24,4 +24,18 @@ for every member). The UI also offers a display-only fare calculator: the group 
 taxi fare and `apportionMinor` splits integer céntimos by the saved basis points.
 Nothing about the fare is persisted and Jala still neither books nor charges the taxi.
 
+## Group chat
+
+`GET /api/sessions/:id/party/messages?after=<seq>` and `POST` with `{ "body": "…" }`
+(1–500 characters, trimmed). Only current members of the caller's party in that session
+can read or write (`404 party_not_found` otherwise), so leaving or a dissolve ends access
+and a re-match starts a fresh chat. Members write while the party is `forming`,
+`confirmed` or `in_progress`; a `completed` party stays readable (`canPost: false`,
+`409 chat_closed` on write). Posting is limited to 20 messages a minute per user.
+
+Messages live in `party_messages` (migration `0002_party_messages`). `seq` is the read
+cursor: a post locks the party row, so a party's messages commit in `seq` order and a
+poll with the last seen `seq` never skips one. The room polls every three seconds while
+the tab is visible; there is no push, so a closed tab learns nothing.
+
 Demo: `bun run demo` migrates, seeds five fictional passengers and prints the session URL.

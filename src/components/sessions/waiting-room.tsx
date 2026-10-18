@@ -274,6 +274,7 @@ export function WaitingRoom({
       {room?.party?.plan ? (
         <PartyView
           ref={heading}
+          sessionId={sessionId}
           party={room.party}
           meId={room.me.id}
           busy={busy}

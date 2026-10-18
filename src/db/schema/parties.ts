@@ -1,6 +1,7 @@
 import type { MatchingRoutePlan } from "@/modules/matching/domain/route-plan";
 import { sql } from "drizzle-orm";
 import {
+  bigint,
   check,
   index,
   integer,
@@ -110,5 +111,33 @@ export const rides = pgTable(
   (t) => [
     uniqueIndex("rides_party_uq").on(t.partyId),
     index("rides_status_idx").on(t.status),
+  ],
+);
+
+/** Chat between the members of one ride party, so they can find each other and coordinate. */
+export const partyMessages = pgTable(
+  "party_messages",
+  {
+    id: id(),
+    /** Read cursor; inserts lock the party row, so a party's messages commit in this order. */
+    seq: bigint("seq", { mode: "number" }).generatedAlwaysAsIdentity(),
+    partyId: uuid("party_id")
+      .notNull()
+      .references(() => rideParties.id, { onDelete: "cascade" }),
+    participantId: uuid("participant_id")
+      .notNull()
+      .references(() => sessionParticipants.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    unique("party_messages_seq_uq").on(t.seq),
+    index("party_messages_party_seq_idx").on(t.partyId, t.seq),
+    check(
+      "party_messages_body_length",
+      sql`char_length(${t.body}) BETWEEN 1 AND 500`,
+    ),
   ],
 );

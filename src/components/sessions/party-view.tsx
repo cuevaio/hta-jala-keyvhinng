@@ -4,6 +4,7 @@ import { forwardRef, useEffect, useRef, useState } from "react";
 import { Check, CarFront, ExternalLink, MapPin } from "lucide-react";
 import type { PartyCommand } from "@/modules/parties/domain/party-lifecycle";
 import { apportionMinor } from "@/modules/payments/domain/fare-allocation";
+import { PartyChat } from "./party-chat";
 import type { Room, PartyStatus } from "./room";
 import { RouteMap } from "./route-map";
 
@@ -35,12 +36,13 @@ const percent = (bps: number) =>
 export const PartyView = forwardRef<
   HTMLHeadingElement,
   {
+    sessionId: string;
     party: NonNullable<Room["party"]>;
     meId: string;
     busy: boolean;
     onAction: (action: PartyCommand) => void;
   }
->(function PartyView({ party, meId, busy, onAction }, headingRef) {
+>(function PartyView({ sessionId, party, meId, busy, onAction }, headingRef) {
   const plan = party.plan!;
   const [fareInput, setFareInput] = useState("");
   const [confirmingLeave, setConfirmingLeave] = useState(false);
@@ -253,6 +255,10 @@ export const PartyView = forwardRef<
                 Salir del grupo
               </button>
             ))}
+
+          {party.status !== "cancelled" && (
+            <PartyChat key={party.id} sessionId={sessionId} meId={meId} />
+          )}
 
           <p className="fine">
             Jala no reserva ni cobra. El reparto se calcula por distancia, suma

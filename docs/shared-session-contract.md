@@ -16,6 +16,8 @@ All endpoints use `{ data }` or `{ error: { code, message, details? } }`. IDs ar
 | `POST /api/groups` | join body + `departInMinutes` (0, 15, 30, 60), session cookie | New group (capacity 3) with the caller joined |
 | `POST /api/sessions/:id/join` | `{ displayName, originLabel, originLatitude, originLongitude, destinationLabel, latitude, longitude, delegatePreference }` (409 `group_mismatch` / `group_full` / `already_in_group`), session cookie | Own persisted participant; retries update the same row |
 | `GET /api/sessions/:id/waiting-room` | member session cookie | `{ session, me, participants, party, acceptingJoins }` |
+| `GET /api/sessions/:id/party/messages?after=<seq>` | party member session cookie | `{ canPost, messages: { seq, participantId, displayName, body, createdAt }[] }`, oldest first (see [party lifecycle](party-lifecycle.md)) |
+| `POST /api/sessions/:id/party/messages` | `{ body }` (1–500 chars), party member session cookie | The saved message; 409 `chat_closed` after the trip, 429 when throttled |
 
 `delegatePreference`: `delegate` or `passenger`. Names: 1–60 characters; destination label: 3–200 characters. Coordinates must be finite and in valid global ranges. A label and coordinates are user supplied and are not geocoded or independently verified. The form resolves an address or selects exact coordinates on a map.
 

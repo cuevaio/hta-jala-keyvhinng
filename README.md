@@ -6,8 +6,8 @@ delegate books a taxi through an existing service (e.g. Uber), and costs are spl
 percentages. Jala operates no vehicles and processes no payments in the MVP.
 
 Status: **the core journey works end to end** (sign up, pick a place, join with a destination,
-road-based matching, confirm the split, start and finish the trip). Contact between members,
-notifications, departure times, safety features and place administration are not built yet.
+road-based matching, confirm the split, chat with the group, start and finish the trip).
+Notifications, departure times, safety features and place administration are not built yet.
 All seeded data is fictional. See [docs/status.md](docs/status.md) for what is done, what is
 missing and what comes next.
 

@@ -21,7 +21,7 @@ and tracks the group through confirm, start and finish. Jala does not book or ch
 | Confirm, leave, start, complete                            | Done        | Leaving dissolves the group (ADR 0005); only the booker starts/ends   |
 | Ride record and completed-ride counter                     | Done        | `rides` row; `users.completed_rides` incremented                      |
 | Share the room (copy link, WhatsApp)                       | Done        |                                                                       |
-| Contact between group members                              | **Missing** | Members only see names; no phone, chat or WhatsApp group              |
+| Contact between group members                             | Done        | Group chat in the room (polling, quick replies); read-only after the trip; no phone or push |
 | Notifications (group found, everyone confirmed)            | **Missing** | The room polls; a closed tab learns nothing                           |
 | Arbitrary departure time ("I leave at 10 pm")              | **Missing** | Only now / 15 / 30 / 60 minutes                                       |
 | Background matching                                        | **Missing** | A person must press "Buscar mi grupo"                                 |
@@ -57,11 +57,10 @@ whole product is about half.
 
 ## Next, in order
 
-1. Share contact between members once everyone confirms (WhatsApp link or phone).
-2. Real-device check of geolocation and the new ride flow.
-3. Notify people when a group forms and when everyone has confirmed.
-4. Expire stalled groups and handle no-shows.
-5. Minimal admin page to create places and meeting points.
+1. Real-device check of geolocation and the new ride flow.
+2. Notify people when a group forms and when everyone has confirmed.
+3. Expire stalled groups and handle no-shows.
+4. Minimal admin page to create places and meeting points.
 
 ## Where things are documented
 

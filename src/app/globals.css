@@ -1945,6 +1945,124 @@ ol.roster {
   flex: 1 1 200px;
 }
 
+/* ---------- Party chat ---------- */
+.party-chat {
+  margin-top: 28px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+.party-chat h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 16px;
+}
+.chat-log {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 260px;
+  padding: 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 12px;
+  background: var(--surface);
+}
+.chat-log:focus-visible {
+  outline: 3px solid var(--orange);
+  outline-offset: 2px;
+}
+.chat-empty {
+  margin: auto;
+  max-width: 280px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--muted-text);
+}
+.chat-message {
+  align-self: flex-start;
+  max-width: 85%;
+  padding: 8px 12px;
+  border-radius: 12px 12px 12px 4px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(18 52 59 / 0.06);
+}
+.chat-message p {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.chat-mine {
+  align-self: flex-end;
+  border-radius: 12px 12px 4px 12px;
+  background: var(--ink);
+  color: #fff;
+}
+.chat-meta {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted-text);
+}
+.chat-mine .chat-meta {
+  color: #b9cdcb;
+}
+.chat-quick {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+.chat-chip {
+  flex-shrink: 0;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.chat-chip:hover:not(:disabled) {
+  border-color: var(--ink);
+}
+.chat-chip:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.chat-form {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.chat-form input {
+  flex: 1;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--input);
+  border-radius: 10px;
+  background: #fff;
+  font-size: 16px;
+}
+.chat-form input:focus-visible {
+  outline: 3px solid var(--orange);
+  outline-offset: 2px;
+}
+.chat-form .action {
+  flex-shrink: 0;
+  width: 48px;
+  min-height: 48px;
+  padding: 0;
+}
+.party-chat .fine {
+  margin-top: 12px;
+}
+
 /* ---------- Auth ---------- */
 .auth-page {
   max-width: 480px;
@@ -2068,7 +2186,7 @@ ol.roster {
   }
   .place-detail-grid,
   .room-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .room-side {
     position: static;
