@@ -11,7 +11,7 @@ import {
   Users,
   Wallet,
 } from "lucide-react";
-import { HeroSearch } from "@/components/home/hero-search";
+import { HeroRegistration } from "@/components/home/hero-registration";
 import { RouteVisual } from "@/components/home/route-visual";
 import { PlaceCard } from "@/components/shared/place-card";
 import { logger } from "@/lib/logger";
@@ -89,7 +89,7 @@ export default async function LandingPage() {
             Comparte un taxi con personas que salen cerca de ti y van hacia tu
             misma zona. Cada quien llega a su puerta y paga su parte.
           </p>
-          <HeroSearch />
+          <HeroRegistration />
           <p className="hero-note">
             <ShieldCheck size={17} aria-hidden="true" /> Tu destino exacto solo
             se comparte con tu grupo de viaje.
