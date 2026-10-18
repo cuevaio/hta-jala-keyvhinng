@@ -19,3 +19,15 @@ export function isSelfieDataUrl(value: string): boolean {
     bytes.charCodeAt(bytes.length - 1) === 217
   );
 }
+
+/**
+ * Where a party member's photo is served. The version changes whenever the stored photo
+ * can change, so browsers may cache each URL indefinitely instead of re-downloading it.
+ */
+export function selfiePath(
+  sessionId: string,
+  participantId: string,
+  version: Date,
+): string {
+  return `/api/sessions/${sessionId}/participants/${participantId}/selfie?v=${version.getTime()}`;
+}

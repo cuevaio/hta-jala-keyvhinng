@@ -7,9 +7,12 @@ import {
   eq,
   gt,
   inArray,
+  isNotNull,
   lte,
   ne,
+  sql,
 } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import type { Database } from "@/db";
 import {
   meetingPoints,
@@ -41,6 +44,7 @@ import {
   type Affinity,
   type RideIntent,
 } from "../domain/affinity";
+import { selfiePath } from "../domain/selfie";
 import type {
   CreateGroupInput,
   JoinSessionInput,
@@ -506,12 +510,14 @@ export function createParticipationRepository(db: Database) {
               ),
             );
           // Same for every member, so group members always see an identical party.
-          const members = party
+          // Photos are served by their own cacheable URL so polls stay a few KB.
+          const memberRows = party
             ? await tx
                 .select({
-                  selfieDataUrl: sessionParticipants.selfieDataUrl,
                   participantId: ridePartyMembers.participantId,
                   status: ridePartyMembers.status,
+                  hasSelfie: sql<boolean>`${sessionParticipants.selfieDataUrl} is not null`,
+                  photoVersion: sessionParticipants.updatedAt,
                 })
                 .from(ridePartyMembers)
                 .innerJoin(
@@ -521,6 +527,14 @@ export function createParticipationRepository(db: Database) {
                 .where(eq(ridePartyMembers.partyId, party.id))
                 .orderBy(asc(ridePartyMembers.dropOffOrder))
             : [];
+          const members = memberRows.map(
+            ({ hasSelfie, photoVersion, ...member }) => ({
+              ...member,
+              selfieUrl: hasSelfie
+                ? selfiePath(sessionId, member.participantId, photoVersion)
+                : null,
+            }),
+          );
           const { selfieDataUrl: _selfie, ...meWithoutSelfie } = me;
           void _selfie;
           const now = new Date();
@@ -539,6 +553,40 @@ export function createParticipationRepository(db: Database) {
         },
         { isolationLevel: "repeatable read", accessMode: "read only" },
       );
+    },
+    /**
+     * A party member's photo, only for members of that same party (including the
+     * participant). Null when the requester may not see it or there is no photo.
+     */
+    async selfieFor(
+      sessionId: string,
+      userId: string,
+      participantId: string,
+    ): Promise<string | null> {
+      const requester = alias(ridePartyMembers, "requester");
+      const [row] = await db
+        .select({ selfieDataUrl: sessionParticipants.selfieDataUrl })
+        .from(ridePartyMembers)
+        .innerJoin(
+          requester,
+          and(
+            eq(requester.partyId, ridePartyMembers.partyId),
+            eq(requester.userId, userId),
+          ),
+        )
+        .innerJoin(rideParties, eq(rideParties.id, ridePartyMembers.partyId))
+        .innerJoin(
+          sessionParticipants,
+          eq(sessionParticipants.id, ridePartyMembers.participantId),
+        )
+        .where(
+          and(
+            eq(ridePartyMembers.participantId, participantId),
+            eq(rideParties.sessionId, sessionId),
+            isNotNull(sessionParticipants.selfieDataUrl),
+          ),
+        );
+      return row?.selfieDataUrl ?? null;
     },
   };
 }

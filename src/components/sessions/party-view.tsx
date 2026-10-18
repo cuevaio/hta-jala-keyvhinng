@@ -58,7 +58,7 @@ export const PartyView = forwardRef<
   }, [confirmingLeave]);
 
   const selfies = new Map(
-    party.members.map((member) => [member.participantId, member.selfieDataUrl]),
+    party.members.map((member) => [member.participantId, member.selfieUrl]),
   );
   const mine = party.members.find((m) => m.participantId === meId);
   const me = plan.stops.find((s) => s.participantId === meId);
@@ -145,7 +145,7 @@ export const PartyView = forwardRef<
               <li key={stop.participantId}>
                 <span className="person-avatar" aria-hidden="true">
                   {selfies.get(stop.participantId) ? (
-                    // Private inline photo; bypass the public image optimizer.
+                    // Private, per-viewer photo; bypass the public image optimizer.
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={selfies.get(stop.participantId)!}

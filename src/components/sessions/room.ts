@@ -13,7 +13,8 @@ export interface Room {
     members: {
       participantId: string;
       status: string;
-      selfieDataUrl: string | null;
+      /** Private, versioned photo URL; null when the member has no photo. */
+      selfieUrl: string | null;
     }[];
   } | null;
   me: {

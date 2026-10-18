@@ -111,9 +111,20 @@ describe.skipIf(!url)("durable matching", () => {
     );
     expect(rooms[0].party).toEqual(rooms[1].party);
     expect(rooms[1].party).toEqual(rooms[2].party);
+    // Photos travel by their own URL, never inside the polled room.
+    expect(JSON.stringify(rooms[0])).not.toContain(selfieDataUrl);
+    const members = rooms[0].party!.members;
     expect(
-      rooms[0].party!.members.every((m) => m.selfieDataUrl === selfieDataUrl),
+      members.every((m) =>
+        m.selfieUrl?.startsWith(
+          `/api/sessions/${session.id}/participants/${m.participantId}/selfie?v=`,
+        ),
+      ),
     ).toBe(true);
+    for (const m of members)
+      expect(
+        await participation.selfieFor(session.id, userIds[2], m.participantId),
+      ).toBe(selfieDataUrl);
     const plan = rooms[0].party!.plan!;
     expect(plan.routingSource).toBe("fixture");
     expect(plan.stops).toHaveLength(3);
@@ -127,6 +138,13 @@ describe.skipIf(!url)("durable matching", () => {
     const outsider = await participation.waitingRoom(session.id, userIds[3]);
     expect(outsider.party).toBeNull();
     expect(JSON.stringify(outsider)).not.toContain(selfieDataUrl);
+    expect(
+      await participation.selfieFor(
+        session.id,
+        userIds[3],
+        members[0].participantId,
+      ),
+    ).toBeNull();
     await expect(app.match(session.id, userIds[4])).rejects.toMatchObject({
       status: 403,
     });
