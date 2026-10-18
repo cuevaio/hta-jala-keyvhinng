@@ -123,13 +123,21 @@ describe.skipIf(!url)("party lifecycle", () => {
     const [a, b, c] = userIds;
     expect(await parties.apply(s.id, a, "confirm")).toEqual({
       partyStatus: "forming",
+      event: null,
     });
     expect(await parties.apply(s.id, a, "confirm")).toEqual({
       partyStatus: "forming",
+      event: null,
     }); // idempotent retry
     await parties.apply(s.id, b, "confirm");
+    // Only the last confirmation is news worth telling everyone.
     expect(await parties.apply(s.id, c, "confirm")).toEqual({
       partyStatus: "confirmed",
+      event: {
+        kind: "confirmed",
+        actorUserId: c,
+        memberUserIds: expect.arrayContaining([a, b, c]),
+      },
     });
     expect((await room(s.id, 1)).party!.members.map((m) => m.status)).toEqual([
       "confirmed",

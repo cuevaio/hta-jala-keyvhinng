@@ -63,7 +63,7 @@ export const PoolView = forwardRef<
           <p>
             {closed
               ? "Puedes revisar quiénes estaban esperando o buscar otra sala."
-              : "Tu destino quedó guardado. Busca tu grupo de viaje antes de que cierre la sala."}
+              : "Tu destino quedó guardado. Te agrupamos automáticamente en cuanto llegue alguien compatible."}
           </p>
         </div>
       </header>
@@ -123,7 +123,7 @@ export const PoolView = forwardRef<
                 disabled={busy || signedOut}
                 className="action action-primary"
               >
-                {busy ? "Calculando rutas…" : "Encontrar compañeros de viaje"}
+                {busy ? "Calculando rutas…" : "Buscar compañeros ahora"}
                 {!busy && <ArrowRight size={18} aria-hidden="true" />}
               </button>
               <p className="fine">

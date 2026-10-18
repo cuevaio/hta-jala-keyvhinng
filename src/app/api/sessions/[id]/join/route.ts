@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { consume } from "@/lib/rate-limit";
 import { ApiError, assertSameOrigin, handle, ok, readJson } from "@/lib/http";
 import { getServices } from "@/lib/services";
@@ -8,6 +9,8 @@ import {
   sessionIdParams,
 } from "@/modules/sessions/schemas/session.schema";
 
+// Room for background matching, which routes the group after the response is sent.
+export const maxDuration = 60;
 export const POST = handle(
   async (request: Request, ctx: RouteContext<"/api/sessions/[id]/join">) => {
     assertSameOrigin(request);
@@ -21,6 +24,9 @@ export const POST = handle(
         "Demasiados intentos. Espera un minuto e intenta de nuevo.",
       );
     await assertSelfieHasFace(input.selfieDataUrl);
-    return ok(await getServices().participation.join(id, userId, input));
+    const services = getServices();
+    const participant = await services.participation.join(id, userId, input);
+    after(() => services.roomEvents.joined(id, userId));
+    return ok(participant);
   },
 );

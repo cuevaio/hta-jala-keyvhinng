@@ -21,7 +21,9 @@ export const POST = handle(
       );
     }
     try {
-      const response = ok(await getServices().matching.match(id, userId));
+      const { createdPartyCount, alreadyMatched } =
+        await getServices().matching.match(id, userId);
+      const response = ok({ createdPartyCount, alreadyMatched });
       response.headers.set("Cache-Control", "private, no-store");
       return response;
     } catch (error) {

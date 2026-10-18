@@ -148,6 +148,19 @@ function fingerprint(s: MatchingSnapshot) {
   });
 }
 
+export interface MatchingOutcome {
+  createdPartyCount: number;
+  alreadyMatched: boolean;
+  /** Account IDs of each party this round created, for notifying them. */
+  partyUserIds: string[][];
+}
+
+export const alreadyAssigned = (): MatchingOutcome => ({
+  createdPartyCount: 0,
+  alreadyMatched: true,
+  partyUserIds: [],
+});
+
 export function createMatchingRepository(db: Database) {
   return {
     snapshot: (sessionId: string, userId: string) =>
@@ -157,7 +170,7 @@ export function createMatchingRepository(db: Database) {
       userId: string,
       snapshot: MatchingSnapshot,
       plans: MatchingRoutePlan[],
-    ) {
+    ): Promise<MatchingOutcome> {
       return db.transaction(async (tx) => {
         await tx
           .select({ id: sessions.id })
@@ -165,8 +178,7 @@ export function createMatchingRepository(db: Database) {
           .where(eq(sessions.id, sessionId))
           .for("update");
         const current = await load(tx, sessionId, userId);
-        if (current.kind === "assigned")
-          return { createdPartyCount: 0, alreadyMatched: true };
+        if (current.kind === "assigned") return alreadyAssigned();
         if (fingerprint(current) !== fingerprint(snapshot)) {
           throw new MatchingError(
             409,
@@ -205,7 +217,11 @@ export function createMatchingRepository(db: Database) {
         }
         if (plans.length) await bumpRoomRevision(tx, sessionId);
         // The pool stays open so unmatched people can join later matching rounds.
-        return { createdPartyCount: plans.length, alreadyMatched: false };
+        return {
+          createdPartyCount: plans.length,
+          alreadyMatched: false,
+          partyUserIds: plans.map((plan) => plan.stops.map((s) => s.userId)),
+        };
       });
     },
   };

@@ -1,6 +1,7 @@
 import { createLogMailer, createResendMailer } from "@/lib/mailer";
 import { getEnv } from "@/lib/env";
 import { createMatchingApplication } from "@/modules/matching/application/matching.service";
+import { createRoomEvents } from "@/modules/notifications/application/room-events";
 import { createMatchingRepository } from "@/modules/matching/infrastructure/matching.repository";
 import { createRoadMatchingService } from "@/modules/matching/domain/road-matching";
 import { createOsrmRoutingProvider } from "@/modules/routing/infrastructure/osrm-routing-provider";
@@ -18,14 +19,16 @@ import { createSessionRepository } from "@/modules/sessions/infrastructure/sessi
 /** Composition root: wires repositories into application services. */
 export function getServices() {
   const db = getDb();
-  return {
-    matching: createMatchingApplication(
-      createMatchingRepository(db),
-      createRoadMatchingService(
-        createOsrmRoutingProvider({ baseUrl: getEnv().ROUTING_BASE_URL }),
-      ),
-      "osrm",
+  const matching = createMatchingApplication(
+    createMatchingRepository(db),
+    createRoadMatchingService(
+      createOsrmRoutingProvider({ baseUrl: getEnv().ROUTING_BASE_URL }),
     ),
+    "osrm",
+  );
+  return {
+    matching,
+    roomEvents: createRoomEvents({ matching }),
     auth: createAuthService(
       createAuthRepository(db),
       getEnv().RESEND_API_KEY

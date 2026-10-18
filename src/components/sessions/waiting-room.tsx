@@ -78,7 +78,7 @@ export function WaitingRoom({
       lastRoomSample.current = sampledAt;
       if (hadParty.current && !result.party)
         setNotice(
-          "Tu grupo de viaje se deshizo porque alguien salió. Sigues en la sala de espera; busca compañeros de nuevo cuando quieras.",
+          "Tu grupo de viaje se deshizo porque alguien salió. Sigues en la sala de espera y te buscamos un grupo nuevo automáticamente.",
         );
       hadParty.current = result.party !== null;
       revision.current = result.revision;
@@ -256,7 +256,7 @@ export function WaitingRoom({
       apply(result);
       if (!result.party)
         setNotice(
-          "Aún no encontramos compañeros de viaje compatibles. Sigues en la sala de espera; intenta de nuevo cuando lleguen más personas.",
+          "Aún no encontramos compañeros de viaje compatibles. Sigues en la sala de espera; te agrupamos automáticamente cuando lleguen más personas.",
         );
     }, "No pudimos buscar compañeros de viaje.");
   }

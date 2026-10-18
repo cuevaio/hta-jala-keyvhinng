@@ -16,7 +16,7 @@ and tracks the group through confirm, start and finish. Jala does not book or ch
 | Find open groups by route affinity, or create one          | Done        | ADR 0007; pickup 1.5 km, destination 3 km, departure ±30 min          |
 | Browse places, filter by kind                              | Done        | Optional pickup anchors; start a request from a place                 |
 | Join with exact destination (map pin or address search)    | Done        | Reverse and forward lookup via public Nominatim                       |
-| Match into groups of 2–3 by road time                      | Done        | OSRM, 5-minute detour cap, one booker per group; user-triggered       |
+| Match into groups of 2–3 by road time                      | Done        | OSRM, 5-minute detour cap, one booker per group; automatic (ADR 0008) |
 | Saved route plan, route map, fare shares                   | Done        | Basis points; soles view from a fare the group types in               |
 | Confirm, leave, start, complete                            | Done        | Leaving dissolves the group (ADR 0005); only the booker starts/ends   |
 | Ride record and completed-ride counter                     | Done        | `rides` row; `users.completed_rides` incremented                      |
@@ -24,7 +24,7 @@ and tracks the group through confirm, start and finish. Jala does not book or ch
 | Contact between group members                             | Done        | Group chat in the room (polling, quick replies); read-only after the trip; no phone or push |
 | Notifications (group found, everyone confirmed)            | **Missing** | The room polls; a closed tab learns nothing                           |
 | Arbitrary departure time ("I leave at 10 pm")              | **Missing** | Only now / 15 / 30 / 60 minutes                                       |
-| Background matching                                        | **Missing** | A person must press "Buscar mi grupo"                                 |
+| Background matching                                        | Done        | Runs after each join and after a dissolve (ADR 0008); button retries  |
 | Expiry of stalled groups, no-show handling                 | **Missing** | A group nobody confirms never expires                                 |
 | Identity or email verification, ratings, reporting, blocks | **Missing** | `verified` / `no_show` member states exist but are unused             |
 | Fee ledger entries on completion                           | **Missing** | Rule and table exist; nothing writes entries; fare is never persisted |
@@ -72,4 +72,4 @@ whole product is about half.
 | Accounts, sessions, abuse controls | [auth.md](auth.md)                                                   |
 | Join and waiting-room contract     | [shared-session-contract.md](shared-session-contract.md)             |
 | UX review and what was fixed       | [design/ux-pass.md](design/ux-pass.md)                               |
-| Decisions                          | [decisions/](decisions/) (0005 leaving dissolves, 0006 places, 0007 ride groups) |
+| Decisions                          | [decisions/](decisions/) (0005 leaving dissolves, 0006 places, 0007 ride groups, 0008 automatic matching) |

@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { ApiError, assertSameOrigin, handle, ok } from "@/lib/http";
 import { consume } from "@/lib/rate-limit";
 import { getServices } from "@/lib/services";
@@ -6,6 +7,8 @@ import { partyCommandBody } from "@/modules/parties/schemas/party.schema";
 import { requireIdentity } from "@/modules/participants/infrastructure/browser-identity";
 import { sessionIdParams } from "@/modules/sessions/schemas/session.schema";
 
+// Room for re-matching a dissolved party after the response is sent.
+export const maxDuration = 60;
 export const POST = handle(
   async (request: Request, ctx: { params: Promise<{ id: string }> }) => {
     assertSameOrigin(request);
@@ -19,9 +22,14 @@ export const POST = handle(
         "Espera un momento antes de volver a intentarlo.",
       );
     try {
-      const response = ok(
-        await getServices().parties.apply(id, userId, action),
+      const services = getServices();
+      const { partyStatus, event } = await services.parties.apply(
+        id,
+        userId,
+        action,
       );
+      if (event) after(() => services.roomEvents.partyChanged(id, event));
+      const response = ok({ partyStatus });
       response.headers.set("Cache-Control", "private, no-store");
       return response;
     } catch (error) {

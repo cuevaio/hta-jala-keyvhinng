@@ -1,7 +1,7 @@
 import { selfieDataUrl } from "../fixtures/selfie";
 import { randomUUID } from "node:crypto";
 import { groupAnchors, originFields } from "./group-fixture";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { eq, inArray } from "drizzle-orm";
 import postgres from "postgres";
@@ -94,6 +94,12 @@ describe.skipIf(!url)("room revision", () => {
     await db
       .insert(schema.users)
       .values(userIds.map((id) => ({ id, displayName: "Revision fixture" })));
+  });
+  // Earlier tests leave these accounts in live parties, which would block joining.
+  beforeEach(async () => {
+    await db
+      .delete(schema.sessions)
+      .where(eq(schema.sessions.placeId, placeId));
   });
   afterAll(async () => {
     await db
