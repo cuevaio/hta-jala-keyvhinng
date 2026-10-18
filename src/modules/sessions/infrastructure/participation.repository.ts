@@ -45,6 +45,7 @@ import {
   type RideIntent,
 } from "../domain/affinity";
 import { selfiePath } from "../domain/selfie";
+import { bumpOtherRoomRevisions, bumpRoomRevision } from "./room-revision";
 import type {
   CreateGroupInput,
   JoinSessionInput,
@@ -139,7 +140,7 @@ async function claimExclusivity(tx: Tx, sessionId: string, userId: string) {
       "already_in_group",
       "Ya estás en un grupo de viaje activo. Termínalo o sal de él antes de entrar a otra sala.",
     );
-  await tx
+  const released = await tx
     .update(sessionParticipants)
     .set({ status: "withdrawn" })
     .where(
@@ -148,7 +149,12 @@ async function claimExclusivity(tx: Tx, sessionId: string, userId: string) {
         eq(sessionParticipants.status, "waiting"),
         ne(sessionParticipants.sessionId, sessionId),
       ),
-    );
+    )
+    .returning({ sessionId: sessionParticipants.sessionId });
+  await bumpOtherRoomRevisions(
+    tx,
+    released.map((r) => r.sessionId),
+  );
 }
 
 /** Caller holds the session row lock. */
@@ -242,6 +248,7 @@ async function joinLocked(
       set: values,
     })
     .returning();
+  await bumpRoomRevision(tx, session.id);
   return participant;
 }
 
@@ -540,6 +547,7 @@ export function createParticipationRepository(db: Database) {
           const now = new Date();
           return {
             session,
+            revision: session.revision,
             serverNow: now.toISOString(),
             me: meWithoutSelfie,
             party: party ? { ...party, members } : null,
@@ -553,6 +561,34 @@ export function createParticipationRepository(db: Database) {
         },
         { isolationLevel: "repeatable read", accessMode: "read only" },
       );
+    },
+    /**
+     * The room's current revision, with the same membership rule as `waitingRoom`.
+     * One indexed read, so polls can skip the full room when nothing changed.
+     */
+    async roomRevision(sessionId: string, userId: string) {
+      const [row] = await db
+        .select({
+          revision: sessions.revision,
+          status: sessionParticipants.status,
+        })
+        .from(sessions)
+        .leftJoin(
+          sessionParticipants,
+          and(
+            eq(sessionParticipants.sessionId, sessions.id),
+            eq(sessionParticipants.userId, userId),
+          ),
+        )
+        .where(eq(sessions.id, sessionId));
+      if (!row) throw new NotFoundError("Session");
+      if (!row.status || row.status === "withdrawn")
+        throw new ApiError(
+          403,
+          "membership_required",
+          "Entra a esta sala para ver quiénes esperan.",
+        );
+      return row.revision;
     },
     /**
      * A party member's photo, only for members of that same party (including the

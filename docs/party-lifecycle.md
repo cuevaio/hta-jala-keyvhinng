@@ -35,7 +35,8 @@ and a re-match starts a fresh chat. Members write while the party is `forming`,
 
 Messages live in `party_messages` (migration `0002_party_messages`). `seq` is the read
 cursor: a post locks the party row, so a party's messages commit in `seq` order and a
-poll with the last seen `seq` never skips one. The room polls every three seconds while
-the tab is visible; there is no push, so a closed tab learns nothing.
+poll with the last seen `seq` never skips one. A post also bumps the room revision, and the
+chat fetches new messages whenever the room poll sees a new revision (see the [room
+revision contract](shared-session-contract.md#room-revision-and-polling)).
 
 Demo: `bun run demo` migrates, seeds five fictional passengers and prints the session URL.

@@ -9,11 +9,10 @@ import { roomDeadline } from "./room-clock";
 import { useRoomClock } from "./use-room-clock";
 import { PartyView } from "./party-view";
 import { PoolView } from "./pool-view";
-import type { Room } from "./room";
+import { FULL_REFRESH_MS, nextPollDelay } from "./poll-delay";
+import type { Room, RoomUnchanged } from "./room";
 import { RideForm, type RideValues } from "./ride-form";
 import { sessionApi, SessionRequestError } from "./session-api";
-
-const POLL_MS = 4000;
 
 const limaTime = (iso: string) =>
   new Date(iso).toLocaleTimeString("es-PE", {
@@ -66,6 +65,9 @@ export function WaitingRoom({
   const lastRoomSample = useRef(
     Date.parse(initialRoom?.serverNow ?? initialServerNow),
   );
+  // Last revision applied, and when the last full room arrived (server render counts).
+  const revision = useRef<number | null>(initialRoom?.revision ?? null);
+  const lastFullAt = useRef(0);
   const heading = useRef<HTMLHeadingElement>(null);
   const expired = deadline.phase === "closed";
 
@@ -79,6 +81,8 @@ export function WaitingRoom({
           "Tu grupo de viaje se deshizo porque alguien salió. Sigues en la sala de espera; busca compañeros de nuevo cuando quieras.",
         );
       hadParty.current = result.party !== null;
+      revision.current = result.revision;
+      lastFullAt.current = performance.now();
       synchronize(result.serverNow, roundTripMs);
       setRoom(result);
       setSignedOut(false);
@@ -90,6 +94,8 @@ export function WaitingRoom({
     let stopped = false;
     let timer: ReturnType<typeof setTimeout>;
     let active: AbortController | null = null;
+    let failures = 0;
+    if (revision.current !== null) lastFullAt.current = performance.now();
     async function poll() {
       clearTimeout(timer);
       active?.abort();
@@ -97,15 +103,28 @@ export function WaitingRoom({
       active = controller;
       const startedAt = performance.now();
       const timeout = setTimeout(() => controller.abort(), 10_000);
+      const failed = () => {
+        failures += 1;
+        setPollError(
+          "No pudimos actualizar la sala. Reintentaremos automáticamente.",
+        );
+      };
       try {
         if (document.visibilityState !== "visible") return;
-        const result = await sessionApi<Room>(
-          `/api/sessions/${sessionId}/waiting-room`,
+        // Ask only "anything new?" unless a periodic full refresh is due.
+        const known = revision.current;
+        const full =
+          known === null || startedAt - lastFullAt.current >= FULL_REFRESH_MS;
+        const result = await sessionApi<Room | RoomUnchanged>(
+          `/api/sessions/${sessionId}/waiting-room${full ? "" : `?rev=${known}`}`,
           undefined,
           controller.signal,
         );
         if (!stopped && active === controller && !controller.signal.aborted) {
-          apply(result, performance.now() - startedAt);
+          const roundTripMs = performance.now() - startedAt;
+          if ("unchanged" in result) synchronize(result.serverNow, roundTripMs);
+          else apply(result, roundTripMs);
+          failures = 0;
           setPollError("");
         }
       } catch (error) {
@@ -118,6 +137,7 @@ export function WaitingRoom({
           if (error.status === 401) {
             setSignedOut(true);
             setRoom(null);
+            revision.current = null;
           }
           if (error.status === 401 || error.status === 403) {
             // Visitors and people who have not joined still get fresh server time.
@@ -133,6 +153,7 @@ export function WaitingRoom({
                 !controller.signal.aborted
               ) {
                 synchronize(timing.serverNow, performance.now() - startedAt);
+                failures = 0;
                 setPollError("");
               }
             } catch {
@@ -141,14 +162,10 @@ export function WaitingRoom({
                 active === controller &&
                 document.visibilityState === "visible"
               )
-                setPollError(
-                  "No pudimos actualizar la sala. Reintentaremos automáticamente.",
-                );
+                failed();
             }
           } else {
-            setPollError(
-              "No pudimos actualizar la sala. Reintentaremos automáticamente.",
-            );
+            failed();
           }
         }
       } finally {
@@ -158,7 +175,7 @@ export function WaitingRoom({
           active === controller &&
           document.visibilityState === "visible"
         )
-          timer = setTimeout(poll, POLL_MS);
+          timer = setTimeout(poll, nextPollDelay(failures));
       }
     }
     const onVisible = () => {
@@ -370,6 +387,7 @@ export function WaitingRoom({
           sessionId={sessionId}
           party={room.party}
           meId={room.me.id}
+          revision={room.revision}
           busy={busy}
           onAction={partyAction}
         />

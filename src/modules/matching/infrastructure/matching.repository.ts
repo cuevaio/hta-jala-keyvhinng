@@ -12,6 +12,7 @@ import {
 import { NotFoundError } from "@/lib/errors";
 import { MATCHING_BATCH_SIZE } from "../domain/road-matching";
 import type { MatchingRoutePlan } from "../domain/route-plan";
+import { bumpRoomRevision } from "@/modules/sessions/infrastructure/room-revision";
 
 /** Transport-independent command failures; the HTTP adapter translates the status. */
 export class MatchingError extends Error {
@@ -202,6 +203,7 @@ export function createMatchingRepository(db: Database) {
               ),
             );
         }
+        if (plans.length) await bumpRoomRevision(tx, sessionId);
         // The pool stays open so unmatched people can join later matching rounds.
         return { createdPartyCount: plans.length, alreadyMatched: false };
       });

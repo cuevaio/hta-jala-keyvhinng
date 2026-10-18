@@ -39,10 +39,15 @@ export const PartyView = forwardRef<
     sessionId: string;
     party: NonNullable<Room["party"]>;
     meId: string;
+    /** Room revision; the chat fetches new messages when it changes. */
+    revision: number;
     busy: boolean;
     onAction: (action: PartyCommand) => void;
   }
->(function PartyView({ sessionId, party, meId, busy, onAction }, headingRef) {
+>(function PartyView(
+  { sessionId, party, meId, revision, busy, onAction },
+  headingRef,
+) {
   const plan = party.plan!;
   const [fareInput, setFareInput] = useState("");
   const [confirmingLeave, setConfirmingLeave] = useState(false);
@@ -272,7 +277,12 @@ export const PartyView = forwardRef<
             ))}
 
           {party.status !== "cancelled" && (
-            <PartyChat key={party.id} sessionId={sessionId} meId={meId} />
+            <PartyChat
+              key={party.id}
+              sessionId={sessionId}
+              meId={meId}
+              revision={revision}
+            />
           )}
 
           <p className="fine">

@@ -8,8 +8,6 @@ import {
 } from "@/modules/parties/domain/party-message";
 import { sessionApi, SessionRequestError } from "./session-api";
 
-const POLL_MS = 3000;
-
 /** JSON shape of a party message; dates arrive as ISO strings. */
 interface ChatMessage {
   seq: number;
@@ -38,9 +36,11 @@ function merge(current: ChatMessage[], incoming: ChatMessage[]) {
 export function PartyChat({
   sessionId,
   meId,
+  revision,
 }: {
   sessionId: string;
   meId: string;
+  revision: number;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [canPost, setCanPost] = useState(true);
@@ -48,6 +48,7 @@ export function PartyChat({
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
+  const [attempt, setAttempt] = useState(0);
   const lastSeq = useRef(0);
   const list = useRef<HTMLOListElement>(null);
   const stickToBottom = useRef(true);
@@ -59,44 +60,36 @@ export function PartyChat({
       list.current.scrollTop = list.current.scrollHeight;
   }, [messages]);
 
+  // New messages bump the room revision, which the room poll already watches, so the
+  // chat fetches only when something changed instead of running its own timer.
   useEffect(() => {
-    let stopped = false;
-    let timer: ReturnType<typeof setTimeout>;
-    async function poll() {
-      let keepPolling = true;
-      if (document.visibilityState === "visible") {
-        try {
-          const result = await sessionApi<{
-            canPost: boolean;
-            messages: ChatMessage[];
-          }>(`${path}?after=${lastSeq.current}`);
-          if (stopped) return;
-          setMessages((current) => merge(current, result.messages));
-          setCanPost(result.canPost);
-          setLoaded(true);
-          // A finished ride's history no longer changes.
-          keepPolling = result.canPost;
-        } catch (e) {
-          // The room's own poll reports lost access; a 404 here means the party is gone.
-          if (e instanceof SessionRequestError && e.status === 404)
-            keepPolling = false;
-        }
-      }
-      if (!stopped && keepPolling) timer = setTimeout(poll, POLL_MS);
-    }
-    const onVisible = () => {
-      if (document.visibilityState !== "visible") return;
-      clearTimeout(timer);
-      void poll();
-    };
-    void poll();
-    document.addEventListener("visibilitychange", onVisible);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10_000);
+    let retry: ReturnType<typeof setTimeout> | undefined;
+    sessionApi<{ canPost: boolean; messages: ChatMessage[] }>(
+      `${path}?after=${lastSeq.current}`,
+      undefined,
+      controller.signal,
+    )
+      .then((result) => {
+        setMessages((current) => merge(current, result.messages));
+        setCanPost(result.canPost);
+        setLoaded(true);
+      })
+      .catch((e) => {
+        if (controller.signal.aborted) return;
+        // A 404 means the party is gone; the room poll reports that. Anything else
+        // retries soon, since an unchanged room would not trigger another fetch.
+        if (!(e instanceof SessionRequestError && e.status === 404))
+          retry = setTimeout(() => setAttempt((n) => n + 1), 5000);
+      })
+      .finally(() => clearTimeout(timeout));
     return () => {
-      stopped = true;
-      clearTimeout(timer);
-      document.removeEventListener("visibilitychange", onVisible);
+      clearTimeout(timeout);
+      clearTimeout(retry);
+      controller.abort();
     };
-  }, [path]);
+  }, [path, revision, attempt]);
 
   async function send(body: string) {
     const text = body.trim();

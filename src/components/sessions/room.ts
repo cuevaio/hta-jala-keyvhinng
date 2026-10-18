@@ -5,6 +5,8 @@ export type PartyStatus =
 
 /** JSON shape of GET /api/sessions/:id/waiting-room, as the client consumes it. */
 export interface Room {
+  /** Changes whenever anything a member can see changes, including chat. */
+  revision: number;
   serverNow: string;
   party: {
     id: string;
@@ -31,4 +33,11 @@ export interface Room {
     status: string;
   }[];
   acceptingJoins: boolean;
+}
+
+/** A poll that sent the current revision: only the server clock is fresh. */
+export interface RoomUnchanged {
+  unchanged: true;
+  revision: number;
+  serverNow: string;
 }

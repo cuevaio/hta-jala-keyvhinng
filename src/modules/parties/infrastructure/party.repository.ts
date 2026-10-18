@@ -11,6 +11,7 @@ import {
 } from "@/db/schema";
 import { NotFoundError } from "@/lib/errors";
 import { calculatePlatformFee } from "@/modules/payments/domain/fees";
+import { bumpRoomRevision } from "@/modules/sessions/infrastructure/room-revision";
 import {
   decide,
   PartyError,
@@ -68,6 +69,8 @@ export function createPartyRepository(db: Database) {
           userId,
           command,
         );
+        // Every command but a no-op changes what members see.
+        if (decision.kind !== "noop") await bumpRoomRevision(tx, sessionId);
         const now = new Date();
         const setParty = (status: typeof party.status) =>
           tx
