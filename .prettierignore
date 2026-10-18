@@ -3,3 +3,7 @@ node_modules
 bun.lock
 src/db/migrations
 docs
+.agents
+.claude
+.grok
+.github

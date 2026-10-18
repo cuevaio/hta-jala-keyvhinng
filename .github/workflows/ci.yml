@@ -1,0 +1,145 @@
+name: CI/CD
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  DATABASE_URL: postgres://jala:jala@localhost:5432/jala_ci
+  TEST_DATABASE_URL: postgres://jala:jala@localhost:5432/jala_ci
+  NEXT_PUBLIC_APP_URL: http://localhost:3000
+  LOG_LEVEL: warn
+  NEXT_TELEMETRY_DISABLED: "1"
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: jala
+          POSTGRES_PASSWORD: jala
+          POSTGRES_DB: jala_ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U jala"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.x
+      - uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+      - run: bun install --frozen-lockfile
+
+      - name: Format
+        run: bun run format:check
+      - name: Lint
+        run: bun run lint
+      - name: Typecheck
+        run: bun run typecheck
+
+      # A schema change without a generated migration would deploy code that
+      # expects columns production does not have.
+      - name: Migration history is consistent
+        run: bun run db:check
+      - name: Schema matches migrations
+        run: |
+          bunx drizzle-kit generate --name ci_drift
+          git status --porcelain src/db/migrations
+          test -z "$(git status --porcelain src/db/migrations)" || {
+            echo "::error::Schema changed without a migration. Run 'bun run db:generate' and commit it."
+            exit 1
+          }
+
+      - name: Apply migrations to an empty database
+        run: bun scripts/migrate.ts
+      - name: Unit and integration tests
+        run: bun run test
+
+      - name: Build
+        run: bun run build
+      - name: HTTP boundary tests against the built app
+        run: |
+          bun run start &
+          for i in $(seq 1 30); do
+            curl -fs localhost:3000/api/health && break
+            sleep 1
+          done
+          TEST_APP_URL=http://localhost:3000 bunx vitest run tests/integration/participant-api.test.ts
+
+  deploy:
+    name: Migrate and deploy to production
+    needs: verify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_URL }}
+    # Never two deploys at once, and never cancel one mid-migration.
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    env:
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_CLI: vercel@64.5.0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.x
+      - run: bun install --frozen-lockfile
+
+      - name: Pull production settings
+        run: bunx $VERCEL_CLI pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      # Migrations are additive and run BEFORE the new code ships, so the code that
+      # is still serving traffic keeps working against the new schema.
+      - name: Migrate production database
+        run: |
+          set -a
+          . .vercel/.env.production.local
+          set +a
+          DATABASE_URL="${POSTGRES_URL_NON_POOLING:-$DATABASE_URL}" bun scripts/migrate.ts
+
+      - name: Build
+        run: bunx $VERCEL_CLI build --prod --token="$VERCEL_TOKEN"
+      - name: Deploy
+        run: bunx $VERCEL_CLI deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+
+      # A deploy that cannot serve its own database queries is a failed deploy.
+      - name: Smoke test
+        run: |
+          base="${{ vars.PRODUCTION_URL }}"
+          check() {
+            for i in $(seq 1 12); do
+              code=$(curl -s -o /dev/null -w '%{http_code}' "$base$1")
+              [ "$code" = "200" ] && return 0
+              sleep 5
+            done
+            echo "::error::$1 returned $code"
+            return 1
+          }
+          check /api/health
+          check "/api/groups/search?olat=-12.12&olng=-77.03&dlat=-12.09&dlng=-77.0&depart=0"
+          check /ride
