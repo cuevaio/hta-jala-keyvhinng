@@ -3,6 +3,7 @@ import { createMatchingApplication } from "@/modules/matching/application/matchi
 import { createMatchingRepository } from "@/modules/matching/infrastructure/matching.repository";
 import { createRoadMatchingService } from "@/modules/matching/domain/road-matching";
 import { createOsrmRoutingProvider } from "@/modules/routing/infrastructure/osrm-routing-provider";
+import { createPartyRepository } from "@/modules/parties/infrastructure/party.repository";
 import { createParticipationRepository } from "@/modules/sessions/infrastructure/participation.repository";
 import { getDb } from "@/db";
 import { createAuthService } from "@/modules/auth/application/auth.service";
@@ -25,6 +26,7 @@ export function getServices() {
     ),
     auth: createAuthService(createAuthRepository(db)),
     participation: createParticipationRepository(db),
+    parties: createPartyRepository(db),
     events: createEventService(createEventRepository(db)),
     sessions: createSessionService(createSessionRepository(db)),
   };

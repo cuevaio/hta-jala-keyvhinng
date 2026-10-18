@@ -189,11 +189,22 @@ export function createParticipationRepository(db: Database) {
                 eq(rideParties.sessionId, sessionId),
               ),
             );
+          // Same for every member, so group members always see an identical party.
+          const members = party
+            ? await tx
+                .select({
+                  participantId: ridePartyMembers.participantId,
+                  status: ridePartyMembers.status,
+                })
+                .from(ridePartyMembers)
+                .where(eq(ridePartyMembers.partyId, party.id))
+                .orderBy(asc(ridePartyMembers.dropOffOrder))
+            : [];
           const now = new Date();
           return {
             session,
             me,
-            party: party ?? null,
+            party: party ? { ...party, members } : null,
             participants,
             acceptingJoins:
               event.status !== "ended" &&

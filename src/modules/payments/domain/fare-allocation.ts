@@ -119,3 +119,29 @@ export function createRoadFareAllocationService(
     },
   };
 }
+
+/**
+ * Splits a fare (integer minor units, e.g. céntimos) by basis-point shares using the
+ * largest-remainder method, so the parts always add up to exactly `totalMinor`.
+ * Display-only: the provider's metered fare is still settled outside Jala.
+ */
+export function apportionMinor(
+  totalMinor: number,
+  sharesBps: readonly number[],
+): number[] {
+  if (!Number.isSafeInteger(totalMinor) || totalMinor < 0)
+    throw new RangeError("Fare must be a non-negative integer of minor units");
+  if (sharesBps.reduce((a, b) => a + b, 0) !== TOTAL_BASIS_POINTS)
+    throw new RangeError("Shares must total 10,000 basis points");
+  const exact = sharesBps.map((s) => (totalMinor * s) / TOTAL_BASIS_POINTS);
+  const parts = exact.map(Math.floor);
+  let remaining = totalMinor - parts.reduce((a, b) => a + b, 0);
+  const order = exact
+    .map((value, index) => ({ index, remainder: value - Math.floor(value) }))
+    .sort((a, b) => b.remainder - a.remainder || a.index - b.index);
+  for (const { index } of order) {
+    if (remaining-- <= 0) break;
+    parts[index] += 1;
+  }
+  return parts;
+}

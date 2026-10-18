@@ -145,6 +145,11 @@ async function main() {
   console.log(
     "Seeded fictional data: 2 events, 3 meeting points, 1 session, 5 passengers.",
   );
+  const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  console.log(
+    `\nDemo: sign up at ${base}/sign-up, then open ${base}/sessions/${session.id}\n` +
+      "Join with a destination, press 'Buscar mi grupo', then confirm, start and finish the trip.",
+  );
 }
 
 try {
