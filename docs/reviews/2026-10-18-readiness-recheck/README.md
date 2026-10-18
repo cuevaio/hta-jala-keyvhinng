@@ -4,6 +4,8 @@
 
 The browser walkthrough and initial checks used `56390b7`, which matched the production deployment inspected. During review, main advanced to `04741e3` (shared selfie camera in the live form). The review branch was rebased, that source delta was inspected, and the updated live form was opened successfully. Screenshots below record the actual capture revision; the live waiting-room capture was taken before the rebase. The backend findings are unaffected by that UI-only change.
 
+The branch was subsequently rebased onto `4ac689a`, which shortens the waiting-room join grace from 30 to five minutes and updates its tests/docs. This does not add forming-party expiry or delegate recovery. The waiting-room screenshot predates that change and shows the former 30-minute clock. Final verification passed lint, type checking, all 219 tests with zero skipped, and a production build at `04741e3`; the post-grace-change checks are reported in the handoff.
+
 ## What was verified
 
 - Local browser: name entry, homepage, live address suggestions, selected origin/destination on the map, sample selfie entry, sample group, fixed-code verification, fare split, saved trip, and mobile history at 390 × 844. Used public landmarks, a fictional name, and the provided example photo.
