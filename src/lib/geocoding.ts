@@ -34,13 +34,24 @@ export async function reverseGeocode(
   return parsed.success ? parsed.data.display_name : null;
 }
 
-const searchSchema = z.array(
-  z.object({
-    display_name: z.string().min(1),
-    lat: z.string(),
-    lon: z.string(),
-  }),
-);
+const PHOTON_URL = "https://photon.komoot.io/api/";
+
+const photonText = z.string().min(1).optional();
+const searchSchema = z.object({
+  features: z.array(
+    z.object({
+      geometry: z.object({ coordinates: z.tuple([z.number(), z.number()]) }),
+      properties: z.object({
+        name: photonText,
+        housenumber: photonText,
+        street: photonText,
+        district: photonText,
+        city: photonText,
+        state: photonText,
+      }),
+    }),
+  ),
+});
 
 export interface AddressMatch {
   label: string;
@@ -48,20 +59,24 @@ export interface AddressMatch {
 }
 
 /**
- * Forward search biased to Peru. Same Nominatim limits as `reverseGeocode`: call it
- * only on a deliberate user action (a submitted search), never while typing.
+ * Forward search restricted to Peru, safe to call while the person types.
+ *
+ * Uses komoot's public Photon (same OpenStreetMap data as Nominatim), which is built
+ * for search-as-you-type; Nominatim's policy forbids autocomplete. Callers debounce
+ * keystrokes and pass a `signal` so each new keystroke cancels the older request.
+ * Photon has no Spanish locale, so labels use OSM's local (Spanish) names.
  */
 export async function searchAddress(
   query: string,
   options: { signal?: AbortSignal; fetch?: typeof fetch } = {},
 ): Promise<AddressMatch[]> {
-  const url = new URL(NOMINATIM_URL.replace("/reverse", "/search"));
+  const url = new URL(PHOTON_URL);
   url.search = new URLSearchParams({
-    format: "jsonv2",
     q: query,
-    countrycodes: "pe",
+    countrycode: "PE",
     limit: "5",
-    "accept-language": "es",
+    // Photon has no Spanish; without this it follows the browser's language.
+    lang: "default",
   }).toString();
   const response = await (options.fetch ?? fetch)(url, {
     signal: options.signal,
@@ -69,13 +84,30 @@ export async function searchAddress(
   if (!response.ok) return [];
   const parsed = searchSchema.safeParse(await response.json());
   if (!parsed.success) return [];
-  return parsed.data
-    .map((row) => ({
-      label: row.display_name,
-      point: { latitude: Number(row.lat), longitude: Number(row.lon) },
-    }))
-    .filter(
-      (m) =>
-        Number.isFinite(m.point.latitude) && Number.isFinite(m.point.longitude),
-    );
+  const seen = new Set<string>();
+  return parsed.data.features
+    .map(({ geometry, properties: p }) => {
+      const street = p.street
+        ? [p.street, p.housenumber].filter(Boolean).join(" ")
+        : undefined;
+      const parts = [p.name, street, p.district, p.city, p.state];
+      return {
+        label: parts
+          .filter((part, i): part is string =>
+            Boolean(part && parts.indexOf(part) === i),
+          )
+          .join(", "),
+        point: {
+          latitude: geometry.coordinates[1],
+          longitude: geometry.coordinates[0],
+        },
+      };
+    })
+    .filter((m) => {
+      if (!m.label || seen.has(m.label)) return false;
+      seen.add(m.label);
+      return (
+        Number.isFinite(m.point.latitude) && Number.isFinite(m.point.longitude)
+      );
+    });
 }

@@ -34,31 +34,62 @@ describe("reverseGeocode", () => {
 });
 
 describe("searchAddress", () => {
-  it("searches Peru in Spanish and returns numeric points", async () => {
+  const feature = (
+    coordinates: [number, number],
+    properties: Record<string, string>,
+  ) => ({
+    type: "Feature",
+    geometry: { type: "Point", coordinates },
+    properties,
+  });
+
+  it("searches Peru on Photon and builds labels from the address parts", async () => {
     const fetchMock = vi.fn(
       async () =>
         new Response(
-          JSON.stringify([
-            {
-              display_name: "Av. Larco 345, Miraflores",
-              lat: "-12.12",
-              lon: "-77.03",
-            },
-            { display_name: "Broken", lat: "x", lon: "y" },
-          ]),
+          JSON.stringify({
+            type: "FeatureCollection",
+            features: [
+              feature([-77.03, -12.12], {
+                name: "Parque Kennedy",
+                street: "Avenida José Larco",
+                housenumber: "345",
+                district: "Miraflores",
+                city: "Lima",
+                state: "Lima",
+              }),
+              // Another segment of the same avenue: same label, dropped.
+              feature([-77.04, -12.13], {
+                name: "Parque Kennedy",
+                street: "Avenida José Larco",
+                housenumber: "345",
+                district: "Miraflores",
+                city: "Lima",
+              }),
+              feature([-77.08, -12.04], {
+                name: "Avenida Morales Duarez",
+                city: "Lima",
+              }),
+            ],
+          }),
         ),
     );
-    const matches = await searchAddress("Av. Larco 345", {
+    const matches = await searchAddress("larco", {
       fetch: fetchMock as unknown as typeof fetch,
     });
     const url = String((fetchMock.mock.calls[0] as unknown[])[0]);
-    expect(url).toContain("/search");
-    expect(url).toContain("countrycodes=pe");
-    expect(url).toContain("accept-language=es");
+    expect(url).toContain("photon.komoot.io/api");
+    expect(url).toContain("q=larco");
+    expect(url).toContain("countrycode=PE");
+    expect(url).toContain("lang=default");
     expect(matches).toEqual([
       {
-        label: "Av. Larco 345, Miraflores",
+        label: "Parque Kennedy, Avenida José Larco 345, Miraflores, Lima",
         point: { latitude: -12.12, longitude: -77.03 },
+      },
+      {
+        label: "Avenida Morales Duarez, Lima",
+        point: { latitude: -12.04, longitude: -77.08 },
       },
     ]);
   });

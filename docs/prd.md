@@ -118,7 +118,8 @@ P2 follows validated demand. Priorities below are proposed product decisions.
   discovery returns group anchors. Review URL/history/referrer exposure and anchor
   precision before collecting real home addresses. Keep research artifacts anonymized.
 - **Dependencies:** PostgreSQL stores users, pools, memberships, plans and rides.
-  OSRM supplies road estimates; Nominatim supplies address lookup. Public endpoints
+  OSRM supplies road estimates; Photon supplies search-as-you-type address lookup and
+  Nominatim names map pins. Public endpoints
   are prototype dependencies; establish suitable services before sustained usage.
 - **Estimates:** detours depend on routing estimates, not live traffic guarantees.
   A discovery fit can fail road matching. Do not promise a match or departure time.

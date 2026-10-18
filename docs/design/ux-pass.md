@@ -19,7 +19,7 @@ Fixes from a manual review of the phone-after-a-venue journey.
   choosing a result fills the field and moves the pin. Editing it clears the old point
   until a result or map point is selected. Searches are canceled when the input or
   selected point changes so stale results cannot replace the current choice.
-- Join form: address search (Nominatim, only on explicit search), a visible reason when the join
+- Join form: address search as you type (Photon, debounced; Nominatim forbids autocomplete), a visible reason when the join
   button is disabled, two-finger map gestures on touch, accessible map labels.
 - Room loads on the server (no spinner), polling pauses in hidden tabs, focus moves to the
   new heading on every screen change, WhatsApp share and a "copied" state that resets.

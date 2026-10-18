@@ -1404,9 +1404,6 @@ fieldset legend {
   flex: 1;
   min-width: 0;
 }
-.address-search-row .action {
-  padding-inline: 16px;
-}
 .address-results {
   margin-top: 8px;
   overflow: hidden;
@@ -2386,11 +2383,6 @@ ol.roster {
   }
   .place-art {
     height: 96px;
-  }
-}
-@media (max-width: 340px) {
-  .address-search-row {
-    flex-direction: column;
   }
 }
 @media (prefers-reduced-motion: reduce) {
