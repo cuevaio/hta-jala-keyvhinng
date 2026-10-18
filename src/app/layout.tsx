@@ -1,12 +1,14 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import "@/components/journey/journey.css";
 
-const font = Plus_Jakarta_Sans({
+// Self-hosted (SIL OFL, see fonts/OFL.txt) so builds and dev never depend on
+// reaching Google Fonts. One variable file covers weights 400–800 for Spanish text.
+const font = localFont({
+  src: "./fonts/plus-jakarta-sans-latin.woff2",
+  weight: "200 800",
   variable: "--font-body",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
 });
 
