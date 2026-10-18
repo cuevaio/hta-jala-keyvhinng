@@ -1,6 +1,7 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import type { Database } from "@/db";
 import {
+  feeLedgerEntries,
   rideParties,
   ridePartyMembers,
   rides,
@@ -9,6 +10,7 @@ import {
   users,
 } from "@/db/schema";
 import { NotFoundError } from "@/lib/errors";
+import { calculatePlatformFee } from "@/modules/payments/domain/fees";
 import {
   decide,
   PartyError,
@@ -134,10 +136,11 @@ export function createPartyRepository(db: Database) {
           }
           case "complete": {
             await setParty("completed");
-            await tx
+            const [ride] = await tx
               .update(rides)
               .set({ status: "completed", completedAt: now, updatedAt: now })
-              .where(eq(rides.partyId, party.id));
+              .where(eq(rides.partyId, party.id))
+              .returning({ id: rides.id });
             await tx
               .update(ridePartyMembers)
               .set({ status: "dropped_off", updatedAt: now })
@@ -151,6 +154,23 @@ export function createPartyRepository(db: Database) {
                   members.map((m) => m.userId),
                 ),
               );
+            // The transition table allows "complete" once, so each member is charged once.
+            for (const member of members) {
+              const fee = calculatePlatformFee({ role: member.role });
+              await tx.insert(feeLedgerEntries).values({
+                userId: member.userId,
+                rideId: ride.id,
+                entryType: fee.entryType,
+                amountMinor: fee.amountMinor,
+              });
+              if (fee.amountMinor > 0)
+                await tx
+                  .update(users)
+                  .set({
+                    creditBalanceMinor: sql`${users.creditBalanceMinor} - ${fee.amountMinor}`,
+                  })
+                  .where(eq(users.id, member.userId));
+            }
             return { partyStatus: "completed" as const };
           }
         }

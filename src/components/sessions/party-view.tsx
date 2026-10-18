@@ -4,6 +4,7 @@ import { forwardRef, useEffect, useRef, useState } from "react";
 import { Check, CarFront, ExternalLink, MapPin } from "lucide-react";
 import type { PartyCommand } from "@/modules/parties/domain/party-lifecycle";
 import { apportionMinor } from "@/modules/payments/domain/fare-allocation";
+import { formatSoles } from "@/modules/payments/domain/fees";
 import { PartyChat } from "./party-chat";
 import type { Room, PartyStatus } from "./room";
 import { RouteMap } from "./route-map";
@@ -29,7 +30,6 @@ export function parseFareMinor(value: string): number | null {
   if (!match) return null;
   return Number(match[1]) * 100 + Number((match[2] ?? "").padEnd(2, "0"));
 }
-const soles = (minor: number) => `S/ ${(minor / 100).toFixed(2)}`;
 const percent = (bps: number) =>
   `${(bps / 100).toLocaleString("es-PE", { maximumFractionDigits: 0 })}%`;
 
@@ -105,7 +105,7 @@ export const PartyView = forwardRef<
             <div className="my-share" aria-live="polite">
               <span>Tu parte</span>
               <strong>
-                {split ? soles(split[myIndex]) : percent(me.fareShareBps)}
+                {split ? formatSoles(split[myIndex]) : percent(me.fareShareBps)}
               </strong>
               <small>
                 {split
@@ -181,7 +181,7 @@ export const PartyView = forwardRef<
                 </div>
                 <span className="person-share">
                   <strong>
-                    {split ? soles(split[i]) : percent(stop.fareShareBps)}
+                    {split ? formatSoles(split[i]) : percent(stop.fareShareBps)}
                   </strong>
                   {split && <small>{percent(stop.fareShareBps)}</small>}
                 </span>

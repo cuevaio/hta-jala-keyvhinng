@@ -572,6 +572,15 @@ fieldset legend {
   font-size: 14px;
   font-weight: 700;
 }
+.auth-balance {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
 .menu-toggle {
   display: none;
   margin-left: auto;

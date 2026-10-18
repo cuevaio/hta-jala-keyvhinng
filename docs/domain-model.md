@@ -23,7 +23,7 @@ Ride 1 ──< FeeLedgerEntry >── 1 User
 - **Ride** – the actual coordinated journey for a party (one per party), with an external
   provider reference. Lifecycle: pending → requested → in_progress → completed | cancelled.
 - **FeeLedgerEntry** – append-only record of the platform fee (`platform_fee`) or its waiver
-  (`free_ride_waiver`) per user and ride.
+  (`free_ride_waiver`, for the delegate) per user and ride; the audit trail for each user's credit balance.
 
 ## Vocabulary
 
@@ -50,6 +50,12 @@ inside it. `/api/groups` and `GroupMatch` keep their names; they mean pools.
 
 ## Business rules (encoded so far)
 
-- Regular passengers ride free for their first five completed rides; afterwards PEN 0.10 per ride.
-  Delegates never pay (`payments/domain/fees.ts`). `users.completed_rides` is a denormalised counter.
+- Every account starts with PEN 5.00 of prepaid credit (`users.credit_balance_minor`, default 500).
+- When a ride completes, each passenger is debited PEN 0.10; the delegate rides free
+  (`payments/domain/fees.ts`). Every member gets a `fee_ledger_entries` row (`platform_fee` or
+  `free_ride_waiver`), written in the same transaction as the debit.
+- Joining a sala requires credit for at least one ride (`402 insufficient_credit`), because
+  matching may assign anyone the passenger role. The balance is not constrained to be
+  non-negative: a ride that already happened is always recorded.
+- The balance is shown in the header and on `/ride`. There is no top-up yet.
 - No real payment processing; cash is settled between passengers.

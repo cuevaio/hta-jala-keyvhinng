@@ -109,6 +109,27 @@ describe.skipIf(!url)("ride groups and shared sessions", () => {
     ).not.toContain(sessionId);
   });
 
+  it("starts accounts with S/ 5.00 and rejects joins without credit for one ride", async () => {
+    const credit = (minor: number) =>
+      db
+        .update(schema.users)
+        .set({ creditBalanceMinor: minor })
+        .where(eq(schema.users.id, userIds[2]));
+    const [fresh] = await db
+      .select({ creditBalanceMinor: schema.users.creditBalanceMinor })
+      .from(schema.users)
+      .where(eq(schema.users.id, userIds[2]));
+    expect(fresh.creditBalanceMinor).toBe(500);
+    await credit(9);
+    try {
+      await expect(
+        repo.join(sessionId, userIds[2], input),
+      ).rejects.toMatchObject({ status: 402, code: "insufficient_credit" });
+    } finally {
+      await credit(500);
+    }
+  });
+
   it("concurrent duplicate joins preserve one participant and exact destination", async () => {
     const joined = await Promise.all(
       Array.from({ length: 5 }, () => repo.join(sessionId, userIds[0], input)),

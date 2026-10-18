@@ -34,7 +34,7 @@ Rules:
 | `matching`     | implemented            | Bounded road matching, saved route plans and atomic participant assignment                            |
 | `routing`      | contract + OSRM    | `RoutingProvider` contract, `RoutingError`, OSRM adapter (`ROUTING_BASE_URL`)     |
 | `parties`      | implemented        | Group lifecycle (confirm, leave, start, complete); `RideProviderAdapter` boundary |
-| `payments`     | partial            | Fare allocation and soles split are used; the fee rule is not wired to completion |
+| `payments`     | implemented        | Fare split in soles; PEN 5.00 welcome credit, PEN 0.10 passenger fee debited on completion |
 | `verification` | not created        | QR verification; add when there is code to put in it                              |
 
 `routing` and `matching` never reference a mapping vendor. `RideProviderAdapter` keeps external

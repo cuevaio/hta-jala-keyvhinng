@@ -129,7 +129,25 @@ describe.skipIf(!url)("party lifecycle", () => {
     await expect(parties.apply(s.id, c, "leave")).rejects.toMatchObject({
       code: "ride_started",
     });
+    const balances = async () =>
+      new Map(
+        (
+          await db
+            .select({
+              id: schema.users.id,
+              credit: schema.users.creditBalanceMinor,
+            })
+            .from(schema.users)
+            .where(inArray(schema.users.id, [a, b, c]))
+        ).map((u) => [u.id, u.credit]),
+      );
+    const before = await balances();
     await parties.apply(s.id, a, "complete");
+    const after = await balances();
+    // `a` is the delegate and rides free; passengers pay S/ 0.10 each.
+    expect(after.get(a)).toBe(before.get(a));
+    expect(after.get(b)).toBe(before.get(b)! - 10);
+    expect(after.get(c)).toBe(before.get(c)! - 10);
     const party = (await room(s.id, 2)).party!;
     expect(party.status).toBe("completed");
     const [ride] = await db
@@ -138,6 +156,17 @@ describe.skipIf(!url)("party lifecycle", () => {
       .where(eq(schema.rides.partyId, party.id));
     expect(ride.status).toBe("completed");
     expect(ride.startedAt).not.toBeNull();
+    const fees = await db
+      .select()
+      .from(schema.feeLedgerEntries)
+      .where(eq(schema.feeLedgerEntries.rideId, ride.id));
+    expect(
+      Object.fromEntries(fees.map((f) => [f.userId, f.entryType])),
+    ).toEqual({
+      [a]: "free_ride_waiver",
+      [b]: "platform_fee",
+      [c]: "platform_fee",
+    });
     const [user] = await db
       .select()
       .from(schema.users)

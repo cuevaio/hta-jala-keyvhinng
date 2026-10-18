@@ -20,7 +20,11 @@ export async function readIdentity() {
   const token = await readToken();
   if (!token) return null;
   const [identity] = await getDb()
-    .select({ userId: browserSessions.userId, displayName: users.displayName })
+    .select({
+      userId: browserSessions.userId,
+      displayName: users.displayName,
+      creditBalanceMinor: users.creditBalanceMinor,
+    })
     .from(browserSessions)
     .innerJoin(users, eq(users.id, browserSessions.userId))
     .where(

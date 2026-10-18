@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "credit_balance_minor" integer DEFAULT 500 NOT NULL;
