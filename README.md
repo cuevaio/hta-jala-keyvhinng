@@ -15,6 +15,14 @@ missing and what comes next.
 See the [product requirements document](docs/prd.md) for the current MVP contract,
 acceptance criteria, validation plan and hackathon rubric alignment.
 
+## Reference passenger flow and validation panel
+
+The home route (`/`) now presents the supplied mobile journey as an explicitly labeled, interactive **sample experience**: name entry, home, destination/time/role selection, selfie, group, temporary chat, route, safety sheet, QR code, sample verification, fare split, saved trip, history, and companion ratings. It works without a database. Only sample trip summaries and ratings are stored in this browser; photos and chat stay in memory and clear when the sample trip starts. Refreshing resets an active sample.
+
+The **Viajes en vivo** link opens `/ride`, preserving the existing authenticated matching and group-chat workflow. **Continuar con correo** uses real email/password authentication and returns to `/ride`. SMS delivery, production QR scanning, server-backed history/ratings, live location sharing, and the five-free-trip offer are not connected to production services in the sample flow.
+
+`/admin` is a public **synthetic validation simulator**, matching the desktop reference. Departure point, passenger count, vehicle capacity, direction tolerance, and regeneration update the plotted routes, group table, and calculated metrics. It exposes no production user data or privileged administration. Its planar distance model is separate from the live OSRM road-matching service.
+
 ## Stack
 
 Next.js 16 (App Router) · TypeScript (strict) · Bun · PostgreSQL 17 · Drizzle ORM · Tailwind CSS 4 ·
