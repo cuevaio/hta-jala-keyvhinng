@@ -8,7 +8,6 @@ import {
   ArrowRight,
   ArrowUpRight,
   Circle,
-  Camera,
   Check,
   Clock3,
   Home,
@@ -43,6 +42,7 @@ import {
   type DemoTrip,
 } from "./demo-history";
 import { JourneyMap } from "./journey-map";
+import { SelfieCapture } from "./selfie-capture";
 
 type Screen =
   | "login"
@@ -236,7 +236,6 @@ export function PassengerJourney() {
   const [leaving, setLeaving] = useState(false);
   const [error, setError] = useState("");
   const heading = useRef<HTMLHeadingElement>(null);
-  const photoInput = useRef<HTMLInputElement>(null);
   const chatEnd = useRef<HTMLDivElement>(null);
   const fareMinor = parseFareMinor(fare);
   const split = fareMinor !== null ? apportionMinor(fareMinor, SHARES) : null;
@@ -725,80 +724,33 @@ export function PassengerJourney() {
                 <span className="j-pink-dot" /> Encontramos tu grupo: 2 personas
                 · Grupo Rosa 04
               </div>
-              <div className="j-camera-preview">
-                {selfie ? (
-                  <Image
-                    src={selfie}
-                    alt="Tu selfie seleccionada"
-                    fill
-                    unoptimized
-                    className="j-photo"
-                  />
-                ) : (
-                  <>
-                    <div className="j-face-guide" />
-                    <p>Centra tu rostro dentro del óvalo</p>
-                  </>
-                )}
-              </div>
-              <p className="j-selfie-copy">
-                Antes de confirmar el grupo, toma una selfie. Solo la verán tus
-                compañeros en el chat temporal para reconocerte, y se borra
-                cuando el chat se cierra.
-              </p>
-              <input
-                ref={photoInput}
-                type="file"
-                className="sr-only"
-                accept="image/jpeg,image/png,image/webp"
-                capture="user"
-                aria-label="Seleccionar selfie"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  if (
-                    file.size > 5 * 1024 * 1024 ||
-                    !["image/jpeg", "image/png", "image/webp"].includes(
-                      file.type,
-                    )
-                  ) {
-                    setError("Elige una imagen JPG, PNG o WebP de hasta 5 MB.");
-                    return;
-                  }
-                  const reader = new FileReader();
-                  reader.onload = () => {
-                    setSelfie(String(reader.result));
-                    setError("");
-                  };
-                  reader.onerror = () =>
-                    setError("No pudimos leer la foto. Inténtalo otra vez.");
-                  reader.readAsDataURL(file);
-                }}
-              />
-              <Primary
-                onClick={() =>
-                  selfie ? nav("group") : photoInput.current?.click()
+              <SelfieCapture
+                value={selfie}
+                onChange={setSelfie}
+                hint={
+                  <p className="j-selfie-copy">
+                    Antes de confirmar el grupo, toma una selfie. Solo la verán
+                    tus compañeros en el chat temporal para reconocerte, y se
+                    borra cuando el chat se cierra.
+                  </p>
                 }
-              >
-                {selfie ? (
-                  <>
+                confirm={
+                  <Primary onClick={() => nav("group")}>
                     <Check size={21} /> Confirmar y ver mi grupo
-                  </>
-                ) : (
-                  <>
-                    <Camera size={21} /> Tomar selfie
-                  </>
-                )}
-              </Primary>
-              <button
-                className="j-secondary"
-                onClick={() => {
-                  setSelfie("/demo/example-selfie.jpg");
-                  nav("group");
-                }}
-              >
-                Usar foto de ejemplo
-              </button>
+                  </Primary>
+                }
+              />
+              {!selfie && (
+                <button
+                  className="j-secondary"
+                  onClick={() => {
+                    setSelfie("/demo/example-selfie.jpg");
+                    nav("group");
+                  }}
+                >
+                  Usar foto de ejemplo
+                </button>
+              )}
               <p className="j-fine">
                 {departure ? `Salida en ${departure} min` : "Salida ahora"} ·{" "}
                 {delegate ? "Puedes reservar" : "Vas de pasajero"}

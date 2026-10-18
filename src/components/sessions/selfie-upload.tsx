@@ -1,8 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { sessionApi } from "./session-api";
-import { MAX_SELFIE_DATA_URL_LENGTH } from "@/modules/sessions/domain/selfie";
+import { prepareSelfie } from "./selfie-photo";
 
 export function SelfieUpload({
   value,
@@ -27,44 +26,8 @@ export function SelfieUpload({
     }
     setProcessing(true);
     try {
-      if (!["image/jpeg", "image/png", "image/webp"].includes(file.type))
-        throw new Error("Elige una foto JPG, PNG o WebP.");
-      if (file.size > 10_000_000)
-        throw new Error("La foto debe pesar menos de 10 MB.");
-      let bitmap: ImageBitmap;
-      try {
-        bitmap = await createImageBitmap(file, {
-          imageOrientation: "from-image",
-        });
-      } catch {
-        throw new Error(
-          "No pudimos leer tu foto. Elige otra foto JPG, PNG o WebP.",
-        );
-      }
-      try {
-        const scale = Math.min(1, 400 / Math.max(bitmap.width, bitmap.height));
-        const canvas = document.createElement("canvas");
-        canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-        canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-        const context = canvas.getContext("2d");
-        if (!context)
-          throw new Error("No pudimos preparar tu foto. Intenta con otra.");
-        context.fillStyle = "white";
-        context.fillRect(0, 0, canvas.width, canvas.height);
-        context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-        const photo = canvas.toDataURL("image/jpeg", 0.8);
-        if (photo.length > MAX_SELFIE_DATA_URL_LENGTH)
-          throw new Error("Elige una foto más pequeña.");
-        if (current !== selection.current) return;
-        await sessionApi(
-          "/api/selfies/validate",
-          { selfieDataUrl: photo },
-          AbortSignal.timeout(20_000),
-        );
-        if (current === selection.current) onChange(photo);
-      } finally {
-        bitmap.close();
-      }
+      const photo = await prepareSelfie(file);
+      if (current === selection.current) onChange(photo);
     } catch (e) {
       if (current === selection.current)
         setError(
