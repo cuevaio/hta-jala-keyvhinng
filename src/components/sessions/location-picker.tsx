@@ -300,7 +300,11 @@ export function LocationPicker({
         {help}
       </p>
       {results && (
-        <ul className="address-results" aria-label={copy.results}>
+        <ul
+          className="address-results"
+          aria-label={copy.results}
+          data-log-private
+        >
           {results.length === 0 && (
             <li className="input-help" role="status">
               No encontramos esa dirección. Prueba con otra.

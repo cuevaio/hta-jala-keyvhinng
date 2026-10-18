@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import "@/components/journey/journey.css";
+import { InteractionLog } from "@/components/telemetry/interaction-log";
 
 // Self-hosted (SIL OFL, see fonts/OFL.txt) so builds and dev never depend on
 // reaching Google Fonts. One variable file covers weights 400–800 for Spanish text.
@@ -38,6 +39,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           Saltar al contenido
         </a>
         {children}
+        <InteractionLog />
       </body>
     </html>
   );

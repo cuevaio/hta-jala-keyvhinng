@@ -48,4 +48,8 @@ taxi providers behind an interface; the MVP has no implementation (delegates boo
 - `lib/http.ts` – response envelope (`{ data }` / `{ error: { code, message } }`) and error mapping.
 - `lib/errors.ts` – transport-agnostic errors thrown by services.
 - `lib/logger.ts` – JSON logger honoring `LOG_LEVEL`.
+- `components/telemetry/interaction-log.tsx` – browser page views, presses, submits, flow steps
+  and uncaught errors, batched to `POST /api/events` and logged as `ui.*` lines grouped by
+  `tab`. Paths drop the query string and labels come from visible text or `data-track`;
+  mark lists showing addresses or names `data-log-private`.
 - `db/` – Drizzle client, schema, SQL migrations (`src/db/migrations`).

@@ -11,6 +11,7 @@ import {
 } from "./ride-form";
 import { clearRideDraft, saveRideDraft, useSavedRideDraft } from "./ride-draft";
 import { sessionApi, SessionRequestError } from "./session-api";
+import { logStep } from "@/components/telemetry/interaction-log";
 
 const timeFormat = new Intl.DateTimeFormat("es-PE", {
   timeZone: "America/Lima",
@@ -49,21 +50,29 @@ export function RideRequest({
     setBusy(true);
     setError("");
     try {
-      const room = await sessionApi<{ id: string }>("/api/groups/assign", {
-        selfieDataUrl: values.selfieDataUrl,
-        originLabel: values.origin.label,
-        originLatitude: values.origin.point.latitude,
-        originLongitude: values.origin.point.longitude,
-        destinationLabel: values.destination.label,
-        latitude: values.destination.point.latitude,
-        longitude: values.destination.point.longitude,
-        destinationArea: values.destination.area,
-        delegatePreference: values.delegatePreference,
-        departInMinutes: values.departInMinutes,
-      });
+      const room = await sessionApi<{ id: string; created: boolean }>(
+        "/api/groups/assign",
+        {
+          selfieDataUrl: values.selfieDataUrl,
+          originLabel: values.origin.label,
+          originLatitude: values.origin.point.latitude,
+          originLongitude: values.origin.point.longitude,
+          destinationLabel: values.destination.label,
+          latitude: values.destination.point.latitude,
+          longitude: values.destination.point.longitude,
+          destinationArea: values.destination.area,
+          delegatePreference: values.delegatePreference,
+          departInMinutes: values.departInMinutes,
+        },
+      );
+      logStep(room.created ? "ride.room_opened" : "ride.room_joined");
       clearRideDraft();
       router.push(`/sessions/${room.id}`);
     } catch (e) {
+      logStep(
+        "ride.assign_failed",
+        e instanceof SessionRequestError ? String(e.status) : "network",
+      );
       if (e instanceof SessionRequestError && e.status === 401) {
         saveRideDraft(values);
         router.push(`/sign-in?next=${encodeURIComponent("/ride")}`);

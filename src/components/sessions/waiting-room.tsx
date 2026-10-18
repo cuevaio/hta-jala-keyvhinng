@@ -14,6 +14,7 @@ import { FULL_REFRESH_MS, nextPollDelay } from "./poll-delay";
 import type { Room, RoomUnchanged } from "./room";
 import { RideForm, type RideValues } from "./ride-form";
 import { sessionApi, SessionRequestError } from "./session-api";
+import { logStep } from "@/components/telemetry/interaction-log";
 
 const LEFT_COPY = {
   party: {
@@ -246,7 +247,10 @@ export function WaitingRoom({
             : "pool";
   const previousStage = useRef(stage);
   useEffect(() => {
-    if (previousStage.current !== stage) heading.current?.focus();
+    if (previousStage.current !== stage) {
+      heading.current?.focus();
+      logStep(`room.stage:${stage}`, `from ${previousStage.current}`);
+    }
     previousStage.current = stage;
   }, [stage]);
 
@@ -256,6 +260,10 @@ export function WaitingRoom({
     try {
       await task();
     } catch (error) {
+      logStep(
+        "room.action_failed",
+        error instanceof SessionRequestError ? String(error.status) : "network",
+      );
       setActionError(error instanceof Error ? error.message : fallback);
     } finally {
       setBusy(false);
