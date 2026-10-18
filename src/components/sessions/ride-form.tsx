@@ -192,7 +192,7 @@ export function RideForm({
           </fieldset>
         )}
         <div className="form-section">
-          <label htmlFor="display-name">Tu nombre para el grupo</label>
+          <label htmlFor="display-name">Tu nombre</label>
           <input
             id="display-name"
             className="form-input"
@@ -245,7 +245,8 @@ export function RideForm({
           ) : (
             <>
               <ShieldCheck size={16} aria-hidden="true" />
-              Tu dirección exacta solo la ve tu grupo.
+              Tu destino exacto se comparte con tu grupo de viaje cuando se
+              forma.
             </>
           )}
         </p>

@@ -81,7 +81,7 @@ export function RideRequest({
       setValues(next);
     } catch (e) {
       setError(
-        e instanceof Error ? e.message : "No pudimos buscar grupos ahora.",
+        e instanceof Error ? e.message : "No pudimos buscar salas ahora.",
       );
     } finally {
       setBusy(false);
@@ -100,7 +100,7 @@ export function RideRequest({
         router.push(`/sign-in?next=${encodeURIComponent(next)}`);
         return;
       }
-      setError(e instanceof Error ? e.message : "No pudimos unirte al grupo.");
+      setError(e instanceof Error ? e.message : "No pudimos entrar a la sala.");
       setBusy(false);
     }
   }
@@ -125,10 +125,10 @@ export function RideRequest({
         <header className="form-heading">
           <h2 id="ride-results-title" tabIndex={-1}>
             {groups.length === 0
-              ? "Aún no hay grupos para tu ruta."
+              ? "Aún no hay salas de espera para tu ruta."
               : groups.length === 1
-                ? "Encontramos 1 grupo para tu ruta."
-                : `Encontramos ${groups.length} grupos para tu ruta.`}
+                ? "Encontramos 1 sala de espera para tu ruta."
+                : `Encontramos ${groups.length} salas de espera para tu ruta.`}
           </h2>
           <p className="ride-route-summary">
             <MapPin size={17} aria-hidden="true" />
@@ -204,7 +204,7 @@ export function RideRequest({
                     )
                   }
                 >
-                  {busy ? "Uniéndote…" : "Unirme a este grupo"}
+                  {busy ? "Entrando…" : "Unirme a esta sala"}
                   {!busy && <ArrowRight size={17} aria-hidden="true" />}
                 </button>
               </li>
@@ -214,8 +214,8 @@ export function RideRequest({
         <div className="ride-create">
           <p>
             {groups.length === 0
-              ? "Crea el primero: otras personas con tu ruta podrán unirse."
-              : "¿Ninguno te sirve? Empieza uno con tu ruta."}
+              ? "Crea una: entrarás automáticamente y otras personas con tu ruta podrán unirse."
+              : "¿Ninguna te sirve? Crea una con tu ruta y entrarás automáticamente."}
           </p>
           <button
             className={`action ${groups.length === 0 ? "action-primary" : "action-secondary"}`}
@@ -228,7 +228,7 @@ export function RideRequest({
               )
             }
           >
-            {busy ? "Creando…" : "Crear un grupo nuevo"}
+            {busy ? "Creando…" : "Crear una sala"}
           </button>
           <button
             className="action action-link"
@@ -250,17 +250,17 @@ export function RideRequest({
       {active && (
         <aside className="notice active-group" role="status">
           <div>
-            <strong>Ya estás en un grupo: {active.name}</strong>
+            <strong>Ya estás en una sala: {active.name}</strong>
             <span>
               Sale a las {timeFormat.format(new Date(active.departsAt))} (Lima).
-              Termínalo o sal de él antes de unirte a otro.
+              Si entras a otra sala, dejarás esta.
             </span>
           </div>
           <Link
             className="action action-primary"
             href={`/sessions/${active.sessionId}`}
           >
-            Volver a mi grupo
+            Volver a mi sala
           </Link>
         </aside>
       )}
@@ -273,8 +273,8 @@ export function RideRequest({
         initial={draft}
         defaultName={values?.displayName ?? defaultName}
         showTime
-        submitLabel="Buscar grupos"
-        busyLabel="Buscando grupos…"
+        submitLabel="Buscar salas de espera"
+        busyLabel="Buscando salas…"
         busy={busy}
         mapCenter={
           draft.origin?.point ?? draft.destination?.point ?? DEFAULT_MAP_CENTER

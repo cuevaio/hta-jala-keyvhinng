@@ -9,7 +9,7 @@ import { sessionApi } from "@/components/sessions/session-api";
 const COPY = {
   "sign-in": {
     title: "Inicia sesión",
-    intro: "Entra para unirte a una salida compartida.",
+    intro: "Entra para compartir un taxi.",
     submit: "Iniciar sesión",
     busy: "Entrando…",
     switchText: "¿No tienes cuenta?",
@@ -18,7 +18,7 @@ const COPY = {
   },
   "sign-up": {
     title: "Crea tu cuenta",
-    intro: "Con tu cuenta entras a salas de salida y coordinas tu grupo.",
+    intro: "Con tu cuenta entras a salas de espera y coordinas tu viaje.",
     submit: "Crear cuenta",
     busy: "Creando cuenta…",
     switchText: "¿Ya tienes cuenta?",

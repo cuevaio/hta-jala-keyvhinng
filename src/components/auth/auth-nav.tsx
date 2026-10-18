@@ -36,7 +36,7 @@ export function AuthNav() {
 
   const cta = (
     <Link href="/ride" className="action action-primary action-small">
-      Pedir un grupo
+      Compartir un taxi
       <ArrowRight size={16} aria-hidden="true" />
     </Link>
   );

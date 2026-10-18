@@ -44,7 +44,7 @@ export function createPartyRepository(db: Database) {
           throw new PartyError(
             404,
             "party_not_found",
-            "Todavía no tienes un grupo en esta sala.",
+            "Todavía no tienes un grupo de viaje en esta sala.",
           );
 
         const [party] = await tx

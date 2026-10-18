@@ -48,10 +48,10 @@ export default async function SessionPage({
     <article className="session-page">
       <Link href="/ride" className="back-link">
         <ChevronLeft size={17} aria-hidden="true" />
-        Buscar otro grupo
+        Buscar otra sala
       </Link>
       <header className="session-heading">
-        <h1>Tu grupo de salida.</h1>
+        <h1>Tu sala de espera.</h1>
         <p>{session.name}</p>
       </header>
       <WaitingRoom

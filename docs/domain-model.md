@@ -11,7 +11,7 @@ Ride 1 ──< FeeLedgerEntry >── 1 User
 ```
 
 - **Place** – somewhere people leave together: a venue, university, mall or station. Has a location and predefined **MeetingPoints**.
-- **Session** (a _ride group_) – an open pool of people starting near the same pickup, heading
+- **Session** (the _pool_) – an open pool of people starting near the same pickup, heading
   to the same area and leaving around `departs_at`. Holds pickup and destination anchors and the
   vehicle capacity used for matching. `place_id` is set only when the pickup snapped to a place.
 - **SessionParticipant** – a user in a session with their own start (origin), an exact destination (latitude/longitude) and
@@ -24,6 +24,22 @@ Ride 1 ──< FeeLedgerEntry >── 1 User
   provider reference. Lifecycle: pending → requested → in_progress → completed | cancelled.
 - **FeeLedgerEntry** – append-only record of the platform fee (`platform_fee`) or its waiver
   (`free_ride_waiver`) per user and ride.
+
+## Vocabulary
+
+Code, comments and docs are in English; user-facing strings are in Spanish. The UI uses
+one term per concept and never calls the pool a "grupo".
+
+| Concept                  | Code                        | Spanish UI             |
+| ------------------------ | --------------------------- | ---------------------- |
+| Pool of waiting people   | `Session`, `/api/groups`    | Sala de espera         |
+| People sharing one taxi  | `RideParty`                 | Grupo de viaje         |
+| The journey itself       | `Ride`                      | Viaje                  |
+| Person booking the taxi  | `delegate`                  | Quien reserva el taxi  |
+| Entry point (`/ride`)    | ride request                | Compartir un taxi      |
+
+Entering a sala does not guarantee a ride: matching forms grupos de viaje of two or three
+inside it. `/api/groups` and `GroupMatch` keep their names; they mean pools.
 
 ## Numeric conventions
 

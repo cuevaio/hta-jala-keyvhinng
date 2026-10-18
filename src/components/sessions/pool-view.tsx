@@ -58,9 +58,12 @@ export const PoolView = forwardRef<
         </span>
         <div>
           <h2 id="waiting-title" ref={headingRef} tabIndex={-1}>
-            Ya estás en la sala.
+            Estás en la sala de espera.
           </h2>
-          <p>Tu destino quedó guardado. Cuando quieras, busca tu grupo.</p>
+          <p>
+            Tu destino quedó guardado. Cuando quieras, buscamos tu grupo de
+            viaje.
+          </p>
         </div>
       </header>
       <div className="room-grid">
@@ -115,12 +118,12 @@ export const PoolView = forwardRef<
                 disabled={busy || signedOut}
                 className="action action-primary"
               >
-                {busy ? "Calculando rutas…" : "Buscar mi grupo"}
+                {busy ? "Calculando rutas…" : "Encontrar compañeros de viaje"}
                 {!busy && <ArrowRight size={18} aria-hidden="true" />}
               </button>
               <p className="fine">
-                Grupos de 2 o 3, con alguien que pueda reservar y hasta cinco
-                minutos de desvío por persona.
+                Formamos grupos de viaje de 2 o 3, con alguien que pueda
+                reservar y hasta cinco minutos de desvío por persona.
               </p>
             </div>
           )}
@@ -171,8 +174,8 @@ export const PoolView = forwardRef<
           </div>
           <p className="fine">
             <ShieldCheck size={16} aria-hidden="true" />
-            Los demás ven tu nombre y si puedes reservar. Tu dirección es
-            privada.
+            La sala ve tu nombre y si puedes reservar. Tu destino solo se
+            comparte con tu grupo de viaje.
           </p>
         </aside>
       </div>

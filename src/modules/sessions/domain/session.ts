@@ -20,7 +20,7 @@ export const PARTICIPANT_STATUSES = [
 ] as const;
 export type ParticipantStatus = (typeof PARTICIPANT_STATUSES)[number];
 
-/** An open ride group: nearby people heading the same way around the same time. */
+/** A pool ("sala de espera" in the UI): nearby people heading the same way around the same time. */
 export interface Session {
   id: string;
   /** Set when the pickup was snapped to a known place. */

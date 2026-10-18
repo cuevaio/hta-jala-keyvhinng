@@ -30,7 +30,7 @@ export default async function PlacesPage({
         <p>
           Universidades, centros comerciales, conciertos y estaciones con puntos
           de encuentro definidos. ¿Estás en otro sitio?{" "}
-          <Link href="/ride">Pide un grupo desde tu ubicación</Link>.
+          <Link href="/ride">Comparte un taxi desde tu ubicación</Link>.
         </p>
       </header>
       <nav className="kind-filter" aria-label="Tipo de lugar">
@@ -58,7 +58,7 @@ export default async function PlacesPage({
           <h2>No hay lugares de este tipo todavía.</h2>
           <p>
             Prueba con otro filtro o{" "}
-            <Link href="/ride">pide un grupo desde tu ubicación</Link>.
+            <Link href="/ride">comparte un taxi desde tu ubicación</Link>.
           </p>
         </div>
       ) : (

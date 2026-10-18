@@ -17,7 +17,7 @@ export const POST = handle(
       throw new ApiError(
         429,
         "rate_limited",
-        "Espera un momento antes de volver a buscar tu grupo.",
+        "Espera un momento antes de volver a buscar compañeros de viaje.",
       );
     }
     try {

@@ -8,18 +8,18 @@ import type { Room, PartyStatus } from "./room";
 import { RouteMap } from "./route-map";
 
 const TITLES: Record<PartyStatus, string> = {
-  forming: "Encontramos tu grupo.",
-  confirmed: "Grupo confirmado.",
+  forming: "Encontramos tu grupo de viaje.",
+  confirmed: "Grupo de viaje confirmado.",
   in_progress: "Viaje en curso.",
   completed: "Viaje completado.",
-  cancelled: "Grupo cancelado.",
+  cancelled: "Grupo de viaje cancelado.",
 };
 const HINTS: Record<PartyStatus, string> = {
   forming: "Revisa la ruta y confirma tu lugar. El taxi aún no está reservado.",
   confirmed: "Todos confirmaron. Quien reserva el taxi inicia el viaje.",
   in_progress: "Buen viaje. Quien reserva el taxi lo finaliza al llegar.",
   completed: "Gracias por compartir el viaje.",
-  cancelled: "Este grupo ya no está activo.",
+  cancelled: "Este grupo de viaje ya no está activo.",
 };
 
 /** "45.5" or "45,50" → 4550 céntimos; null when empty or not a plain amount. */
@@ -179,7 +179,7 @@ export const PartyView = forwardRef<
               disabled={busy}
               onClick={() => onAction("confirm")}
             >
-              Confirmo mi lugar y el reparto
+              Confirmar mi lugar y el reparto
             </button>
           )}
           {party.status === "forming" && mine?.status === "confirmed" && (
@@ -195,7 +195,7 @@ export const PartyView = forwardRef<
               disabled={busy}
               onClick={() => onAction("start")}
             >
-              Salimos: iniciar viaje
+              Iniciar viaje
             </button>
           )}
           {isDelegate && party.status === "in_progress" && (
@@ -205,7 +205,7 @@ export const PartyView = forwardRef<
               disabled={busy}
               onClick={() => onAction("complete")}
             >
-              Llegamos: finalizar viaje
+              Finalizar viaje
             </button>
           )}
           {live &&
@@ -218,11 +218,12 @@ export const PartyView = forwardRef<
                 aria-describedby="leave-body"
                 className="leave-panel"
               >
-                <strong id="leave-title">¿Salir del grupo?</strong>
+                <strong id="leave-title">¿Salir del grupo de viaje?</strong>
                 <p id="leave-body">
                   Esto afecta a {others} {others === 1 ? "persona" : "personas"}{" "}
-                  más: el grupo se deshace y vuelven a la sala para recalcular
-                  la ruta y el reparto. Tú tendrás que unirte de nuevo.
+                  más: el grupo se deshace y vuelven a la sala de espera para
+                  recalcular la ruta y el reparto. Tú tendrás que unirte de
+                  nuevo.
                 </p>
                 <div className="leave-actions">
                   <button
@@ -255,7 +256,7 @@ export const PartyView = forwardRef<
 
           <p className="fine">
             Jala no reserva ni cobra. El reparto se calcula por distancia, suma
-            100% y solo tu grupo ve estas direcciones.
+            100% y solo tu grupo de viaje ve estas direcciones.
           </p>
         </div>
         <aside className="room-side">

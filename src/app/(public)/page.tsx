@@ -31,8 +31,8 @@ const steps = [
   },
   {
     icon: Users,
-    title: "Únete o crea un grupo",
-    text: "Te mostramos grupos cercanos hacia tu zona. Si no hay, creas uno y otros se suman.",
+    title: "Entra a una sala de espera",
+    text: "Reunimos a quienes van hacia tu zona y formamos grupos de viaje de 2 o 3 para compartir el taxi.",
   },
 ];
 
@@ -50,12 +50,12 @@ const benefits = [
   {
     icon: ShieldCheck,
     title: "Tu dirección exacta es privada",
-    text: "Solo la ven las personas de tu grupo, y solo cuando el grupo se forma.",
+    text: "Solo se comparte con tu grupo de viaje, cuando se forma.",
   },
   {
     icon: CarFront,
     title: "Ustedes reservan el taxi",
-    text: "Una persona del grupo lo reserva en su app de siempre. Jala no reserva ni cobra.",
+    text: "Una persona del grupo de viaje lo reserva en su app de siempre. Jala no reserva ni cobra.",
   },
 ];
 
@@ -98,7 +98,7 @@ export default async function LandingPage() {
           />
           <p className="hero-note">
             <ShieldCheck size={17} aria-hidden="true" /> Tu destino exacto solo
-            lo ve tu grupo.
+            se comparte con tu grupo de viaje.
           </p>
         </div>
         <RouteVisual />
@@ -134,8 +134,8 @@ export default async function LandingPage() {
             <p className="eyebrow">Misma ruta. Mejor viaje.</p>
             <h2>Lo bueno de compartir empieza en el camino.</h2>
             <p>
-              Ese asiento vacío puede ser tu próximo ahorro. Jala arma el grupo
-              y calcula el reparto; el viaje lo hacen ustedes.
+              Ese asiento vacío puede ser tu próximo ahorro. Jala forma el grupo
+              de viaje y calcula el reparto; el viaje lo hacen ustedes.
             </p>
             <Link className="text-link" href="/ride">
               Encuentra tu próximo viaje
@@ -184,7 +184,7 @@ export default async function LandingPage() {
           <h2>El próximo regreso, hagámoslo juntos.</h2>
         </div>
         <Link href="/ride" className="action action-primary">
-          Pedir un grupo
+          Compartir un taxi
           <ArrowRight size={18} aria-hidden="true" />
         </Link>
       </section>

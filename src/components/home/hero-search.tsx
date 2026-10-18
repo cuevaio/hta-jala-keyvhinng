@@ -64,7 +64,7 @@ export function HeroSearch({ origins }: { origins: OriginChoice[] }) {
         />
       </label>
       <button className="action action-primary" type="submit">
-        Buscar mi grupo
+        Buscar compañeros de viaje
         <ArrowRight size={18} aria-hidden="true" />
       </button>
     </form>

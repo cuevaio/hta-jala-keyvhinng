@@ -69,7 +69,7 @@ function memberOf(party: PartyState, userId: string) {
     throw new PartyError(
       403,
       "membership_required",
-      "No eres parte de este grupo.",
+      "No eres parte de este grupo de viaje.",
     );
   return member;
 }

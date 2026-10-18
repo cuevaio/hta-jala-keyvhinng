@@ -69,8 +69,9 @@ Existing fee tables/functions do not establish a working revenue feature.
 5. Each party member confirms. The delegate books the taxi externally and marks start.
 6. The delegate marks completion. Jala records completion; actual payment remains external.
 
-The UI calls a discoverable session a “group.” Internally distinguish the **pool**
-(`session`, up to 20 waiting people) from the **taxi party** (`ride_party`, 2–3 riders).
+The UI calls the **pool** (`session`, up to 20 waiting people) a “sala de espera” and the
+**taxi party** (`ride_party`, 2–3 riders) a “grupo de viaje”; see the vocabulary in
+`domain-model.md`.
 A search result is a candidate pool, not a guaranteed seat in a feasible shared taxi.
 Places are optional pickup anchors; selecting a place is no longer the mandatory entry.
 

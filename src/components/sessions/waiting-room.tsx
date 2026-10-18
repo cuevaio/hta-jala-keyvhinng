@@ -64,7 +64,7 @@ export function WaitingRoom({
   const apply = useCallback((result: Room) => {
     if (hadParty.current && !result.party)
       setNotice(
-        "Tu grupo se deshizo porque alguien salió. Busca otro grupo cuando quieras.",
+        "Tu grupo de viaje se deshizo porque alguien salió. Sigues en la sala de espera; busca compañeros de nuevo cuando quieras.",
       );
     hadParty.current = result.party !== null;
     setRoom(result);
@@ -170,9 +170,9 @@ export function WaitingRoom({
       apply(result);
       if (!result.party)
         setNotice(
-          "Aún no encontramos un grupo compatible para ti. Sigues en la sala; puedes intentar cuando lleguen más personas.",
+          "Aún no encontramos compañeros de viaje compatibles. Sigues en la sala de espera; intenta de nuevo cuando lleguen más personas.",
         );
-    }, "No pudimos buscar tu grupo.");
+    }, "No pudimos buscar compañeros de viaje.");
   }
 
   function partyAction(action: PartyCommand) {
@@ -188,11 +188,13 @@ export function WaitingRoom({
     }, "No pudimos completar la acción.");
   }
 
+  // Matching forms parties of two or three, whatever the vehicle holds.
+  const taxiSize = vehicleCapacity > 2 ? "2 o 3" : "2";
   const closed =
     expired || !initiallyOpen || (room !== null && !room.acceptingJoins);
   const placeLink = (
     <Link className="action action-secondary" href="/ride">
-      Buscar otro grupo
+      Buscar otra sala
     </Link>
   );
 
@@ -200,11 +202,11 @@ export function WaitingRoom({
     return (
       <div className="session-closed" role="status">
         <h2 ref={heading} tabIndex={-1}>
-          Saliste del grupo.
+          Saliste del grupo de viaje.
         </h2>
         <p>
           El grupo se deshizo para recalcular rutas y reparto con quienes
-          quedan. Puedes buscar otro grupo o crear uno nuevo.
+          quedan. Puedes buscar otra sala o crear una.
         </p>
         {placeLink}
       </div>
@@ -215,7 +217,7 @@ export function WaitingRoom({
         <h2 ref={heading} tabIndex={-1}>
           Inicia sesión para unirte.
         </h2>
-        <p>Necesitas una cuenta para guardar tu ruta en el grupo.</p>
+        <p>Necesitas una cuenta para guardar tu ruta en la sala.</p>
         <Link
           className="action action-primary"
           href={`/sign-in?next=${encodeURIComponent(`/sessions/${sessionId}`)}`}
@@ -247,9 +249,9 @@ export function WaitingRoom({
           </span>
           <span className="tag">
             <Users size={14} aria-hidden="true" />
-            Hasta {Math.min(vehicleCapacity, 3)} personas
+            {taxiSize} personas por taxi
           </span>
-          <span className="tag">Abierto hasta {limaTime(closesAt)}</span>
+          <span className="tag">Sala abierta hasta {limaTime(closesAt)}</span>
         </div>
       </div>
       {actionError && (
@@ -264,8 +266,8 @@ export function WaitingRoom({
       )}
       {closed && !room?.party && (
         <div role="status" className="session-closed">
-          <h2>Esta sala ya no admite pasajeros.</h2>
-          <p>Puedes buscar otro grupo o crear uno nuevo.</p>
+          <h2>Esta sala ya no admite personas.</h2>
+          <p>Puedes buscar otra sala o crear una.</p>
           {placeLink}
         </div>
       )}
@@ -298,7 +300,7 @@ export function WaitingRoom({
             initial={{ origin: null, destination: null, departInMinutes: 0 }}
             defaultName={accountName}
             showTime={false}
-            submitLabel="Unirme al grupo"
+            submitLabel="Entrar a la sala"
             busyLabel="Guardando tu ruta…"
             busy={busy}
             mapCenter={group.pickup}

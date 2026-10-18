@@ -58,7 +58,7 @@ function assertOpen(session: SessionRow, now: Date) {
     throw new ApiError(
       409,
       "session_unavailable",
-      "Este grupo ya no está abierto. Busca otro o crea uno nuevo.",
+      "Esta sala ya no está abierta. Busca otra o crea una.",
     );
   }
 }
@@ -128,7 +128,7 @@ async function claimExclusivity(tx: Tx, sessionId: string, userId: string) {
     throw new ApiError(
       409,
       "already_in_group",
-      "Ya estás en un grupo activo. Termínalo o sal de él antes de unirte a otro.",
+      "Ya estás en un grupo de viaje activo. Termínalo o sal de él antes de entrar a otra sala.",
     );
   await tx
     .update(sessionParticipants)
@@ -172,7 +172,7 @@ async function joinLocked(
     throw new ApiError(
       409,
       "group_mismatch",
-      "Este grupo sale de otra zona o va hacia otro lado. Busca uno que te quede mejor.",
+      "Esta sala sale de otra zona o va hacia otro lado. Busca una que te quede mejor.",
     );
   const [existing] = await tx
     .select()
@@ -184,7 +184,11 @@ async function joinLocked(
       ),
     );
   if (existing?.status === "matched")
-    throw new ApiError(409, "already_matched", "Ya perteneces a un grupo.");
+    throw new ApiError(
+      409,
+      "already_matched",
+      "Ya perteneces a un grupo de viaje.",
+    );
   if (
     existing?.status !== "waiting" &&
     (await waitingCount(tx, session.id)) >= MAX_GROUP_SIZE
@@ -192,7 +196,7 @@ async function joinLocked(
     throw new ApiError(
       409,
       "group_full",
-      "Este grupo ya está lleno. Busca otro o crea uno nuevo.",
+      "Esta sala ya está llena. Busca otra o crea una.",
     );
   await claimExclusivity(tx, session.id, userId);
   await tx
@@ -443,7 +447,7 @@ export function createParticipationRepository(db: Database) {
             throw new ApiError(
               403,
               "membership_required",
-              "Únete a este grupo para ver a sus participantes.",
+              "Entra a esta sala para ver quiénes esperan.",
             );
           const participants = await tx
             .select({

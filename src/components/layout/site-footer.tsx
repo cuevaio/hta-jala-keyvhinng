@@ -10,7 +10,7 @@ export function SiteFooter() {
           <p>Tu ruta, nuestro viaje.</p>
         </div>
         <nav aria-label="Pie de página">
-          <Link href="/ride">Pedir un grupo</Link>
+          <Link href="/ride">Compartir un taxi</Link>
           <Link href="/places">Lugares</Link>
           <Link href="/#como-funciona">Cómo funciona</Link>
         </nav>

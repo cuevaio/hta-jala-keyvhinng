@@ -60,7 +60,7 @@ export default async function PlaceDetailPage({
           <section className="meeting-section" aria-labelledby="puntos">
             <h2 id="puntos">Puntos para encontrarse</h2>
             <p className="section-help">
-              Los grupos que salen de aquí se encuentran en el primer punto.
+              Quienes salen de aquí se encuentran en el primer punto.
             </p>
             {place.meetingPoints.length === 0 ? (
               <p className="empty-state">
@@ -87,8 +87,8 @@ export default async function PlaceDetailPage({
           </span>
           <h2>Sal desde aquí.</h2>
           <p>
-            Dinos a dónde vas y te mostramos los grupos que salen de este lugar
-            hacia tu zona, o creas uno nuevo.
+            Dinos a dónde vas y te mostramos las salas de espera que salen de
+            este lugar hacia tu zona, o creas una.
           </p>
           {place.status === "active" ? (
             <Link
@@ -99,7 +99,7 @@ export default async function PlaceDetailPage({
                 olabel: start.label,
               })}`}
             >
-              Pedir un grupo desde aquí
+              Compartir un taxi desde aquí
               <ArrowRight size={18} aria-hidden="true" />
             </Link>
           ) : (

@@ -44,7 +44,7 @@ async function load(db: Reader, sessionId: string, userId: string) {
     throw new MatchingError(
       403,
       "membership_required",
-      "Únete a la sala para buscar un grupo.",
+      "Entra a la sala para buscar compañeros de viaje.",
     );
   // Retries after assignment do not route or create additional groups.
   if (me.status === "matched") return { kind: "assigned" as const };
@@ -170,7 +170,7 @@ export function createMatchingRepository(db: Database) {
           throw new MatchingError(
             409,
             "matching_snapshot_changed",
-            "La sala cambió. Busca tu grupo otra vez.",
+            "La sala cambió. Busca compañeros de viaje otra vez.",
           );
         }
         for (const plan of plans) {

@@ -7,7 +7,7 @@ import { getServices } from "@/lib/services";
 import { DEPARTURE_CHOICES } from "@/modules/sessions/domain/affinity";
 import { readIdentity } from "@/modules/participants/infrastructure/browser-identity";
 
-export const metadata: Metadata = { title: "Pedir un grupo" };
+export const metadata: Metadata = { title: "Compartir un taxi" };
 
 const coordinate = (bound: number) =>
   z.coerce.number().finite().min(-bound).max(bound);
@@ -82,10 +82,10 @@ export default async function RidePage({ searchParams }: PageProps<"/ride">) {
   return (
     <div className="ride-page">
       <header className="page-heading">
-        <h1>Encuentra tu grupo.</h1>
+        <h1>Comparte un taxi.</h1>
         <p>
-          Dinos dónde estás y a dónde vas. Te mostramos grupos cercanos hacia tu
-          zona, o creas uno para que otros se sumen.
+          Dinos dónde estás y a dónde vas. Te mostramos salas de espera con
+          personas hacia tu zona, o creas una para que otros se sumen.
         </p>
       </header>
       <RideRequest
