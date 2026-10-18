@@ -60,7 +60,7 @@ bun dev                        # http://localhost:3000
 | `bun run format`                  | Prettier                                                   |
 | `bun run db:up`                   | Start PostgreSQL via Docker Compose                        |
 | `bun run db:generate`             | Generate SQL migration from schema changes                 |
-| `bun run db:migrate`              | Apply migrations                                           |
+| `bun run db:migrate`              | Apply migrations locally (production runs in CI/CD)        |
 | `bun run db:reset`                | Drop and recreate the local database                       |
 | `bun run db:seed`                 | Reseed fictional data (re-runnable)                        |
 | `bun run demo`                    | Reset, migrate and seed; prints demo URLs                  |

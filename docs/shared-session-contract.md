@@ -14,7 +14,7 @@ All endpoints use `{ data }` or `{ error: { code, message, details? } }`. IDs ar
 | `GET /api/auth/me` | session cookie | `{ userId, displayName }` or `null` |
 | `GET /api/groups/search?olat&olng&dlat&dlng&depart` | none | Open groups that fit the ride, best first (ADR 0007) |
 | `POST /api/groups` | join body + `departInMinutes` (0, 15, 30, 60), session cookie | New group (capacity 3) with the caller joined |
-| `POST /api/sessions/:id/join` | `{ displayName, originLabel, originLatitude, originLongitude, destinationLabel, latitude, longitude, delegatePreference }` (409 `group_mismatch` / `group_full` / `already_in_group`), session cookie | Own persisted participant; retries update the same row |
+| `POST /api/sessions/:id/join` | `{ displayName, selfieDataUrl, originLabel, originLatitude, originLongitude, destinationLabel, latitude, longitude, delegatePreference }` (409 `group_mismatch` / `group_full` / `already_in_group`), session cookie | Own persisted participant; retries update the same row |
 | `GET /api/sessions/:id/waiting-room` | member session cookie | `{ session, me, participants, party, acceptingJoins }` |
 | `GET /api/sessions/:id/party/messages?after=<seq>` | party member session cookie | `{ canPost, messages: { seq, participantId, displayName, body, createdAt }[] }`, oldest first (see [party lifecycle](party-lifecycle.md)) |
 | `POST /api/sessions/:id/party/messages` | `{ body }` (1–500 chars), party member session cookie | The saved message; 409 `chat_closed` after the trip, 429 when throttled |
@@ -53,8 +53,10 @@ Preserve existing domain interfaces in `src/modules`. Before parallel implementa
 
 ## Verification
 
+These commands prepare a local or disposable test database. Production migrations run automatically in [CI/CD](ci-cd.md) before deployment; no manual production migration is needed for a normal push to `main`.
+
 ```bash
-bun run db:migrate
+bun run db:migrate # local/test database only
 bun run lint
 bun run typecheck
 bun run test
@@ -76,8 +78,8 @@ Public verification requires an authenticated Vercel account, selected team/proj
 
 M1 is **publicly verified** at https://jala-chi.vercel.app (Vercel project `keyvhinngs-projects/jala`, Neon resource `jala-db`, Free plan, iad1). Both independent browsers joined and saw the same roster; polling and refresh persistence passed. See `docs/evidence/shared-session-checks.md`.
 
-GitHub auto-linking failed during project creation, so this release was deployed through the CLI from the working tree. Push-based deployments are not yet connected. Production runtime error scan returned no error records during verification. User research and organizer rubric confirmation still require real people; no traction evidence is fabricated.
+The initial milestone was deployed manually through the CLI. Current production releases use GitHub Actions: pushing to `main` runs verification, applies committed migrations to production, deploys, and smoke-tests the site. See [CI/CD](ci-cd.md) for the current release process. Production runtime error scan returned no error records during verification. User research and organizer rubric confirmation still require real people; no traction evidence is fabricated.
 
 ## Selfies
 
-Creating or joining a room requires `selfieDataUrl`, a base64 JPEG capped at 150 KB. The browser resizes uploads to at most 400 pixels and removes metadata by rendering to canvas. Photos are stored per participation and included only in the assigned party’s member list in the authenticated, private/no-store waiting-room response. Waiting participants receive no other participant photos. Existing participations may have no photo and render an initial. Apply the generated database migration before deploying the code. This is a visual identification aid, with no face or identity verification.
+Creating or joining a room requires `selfieDataUrl`, a base64 JPEG capped at 150 KB. The browser resizes uploads to at most 400 pixels and removes metadata by rendering to canvas. Photos are stored per participation and included only in the assigned party’s member list in the authenticated, private/no-store waiting-room response. Waiting participants receive no other participant photos. Existing participations may have no photo and render an initial. The nullable `selfie_data_url` column is added by `0003_fearless_ezekiel.sql`. CI/CD applies this committed migration to production before deploying the new code. Run `bun run db:migrate` only when preparing a local or disposable test database. This is a visual identification aid, with no face or identity verification.
