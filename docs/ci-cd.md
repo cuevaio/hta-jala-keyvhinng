@@ -27,6 +27,8 @@ still serving traffic (expand, then contract): add columns as nullable or with a
 backfill, and remove or rename in a later release. The database is forward-only; to
 roll back code use `vercel rollback`.
 
+Normal releases require committing the generated migration and pushing to `main`. GitHub Actions applies pending production migrations automatically after verification passes; do not run `bun run db:migrate` manually against production for a normal release. That command is for local or disposable test database setup.
+
 ## One-time setup
 
 Vercel's Git integration is not connected for this project, so GitHub Actions deploys.
