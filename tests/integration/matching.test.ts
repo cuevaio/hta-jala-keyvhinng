@@ -1,3 +1,4 @@
+import { selfieDataUrl } from "../fixtures/selfie";
 import { randomUUID } from "node:crypto";
 import { groupAnchors, originFields } from "./group-fixture";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -45,6 +46,7 @@ describe.skipIf(!url)("durable matching", () => {
     "fixture",
   );
   const input = {
+    selfieDataUrl,
     ...originFields,
     displayName: "Matching fixture",
     destinationLabel: "Exact fixture destination",
@@ -109,6 +111,9 @@ describe.skipIf(!url)("durable matching", () => {
     );
     expect(rooms[0].party).toEqual(rooms[1].party);
     expect(rooms[1].party).toEqual(rooms[2].party);
+    expect(
+      rooms[0].party!.members.every((m) => m.selfieDataUrl === selfieDataUrl),
+    ).toBe(true);
     const plan = rooms[0].party!.plan!;
     expect(plan.routingSource).toBe("fixture");
     expect(plan.stops).toHaveLength(3);
@@ -121,6 +126,7 @@ describe.skipIf(!url)("durable matching", () => {
     await participation.join(session.id, userIds[3], input);
     const outsider = await participation.waitingRoom(session.id, userIds[3]);
     expect(outsider.party).toBeNull();
+    expect(JSON.stringify(outsider)).not.toContain(selfieDataUrl);
     await expect(app.match(session.id, userIds[4])).rejects.toMatchObject({
       status: 403,
     });

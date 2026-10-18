@@ -1,3 +1,4 @@
+import { selfieDataUrl } from "../fixtures/selfie";
 import { randomUUID } from "node:crypto";
 import { groupAnchors, originFields } from "./group-fixture";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -45,6 +46,7 @@ describe.skipIf(!url)("party chat", () => {
   const placeId = randomUUID();
   const userIds = Array.from({ length: 4 }, () => randomUUID());
   const input = {
+    selfieDataUrl,
     ...originFields,
     displayName: "Chat fixture",
     destinationLabel: "Fixture destination",

@@ -1,8 +1,10 @@
+import { selfieDataUrl } from "../fixtures/selfie";
 import { describe, expect, it } from "vitest";
 import { joinSessionInput } from "@/modules/sessions/schemas/session.schema";
 import { assertSameOrigin, readJson } from "@/lib/http";
 
 const input = {
+  selfieDataUrl,
   displayName: " Ana ",
   originLabel: "Mi ubicación",
   originLatitude: -12.1,
@@ -20,6 +22,12 @@ describe("join input and request boundary", () => {
     });
   });
   it.each([
+    { selfieDataUrl: undefined },
+    { selfieDataUrl: "" },
+    { selfieDataUrl: "https://example.com/photo.jpg" },
+    { selfieDataUrl: "data:image/svg+xml;base64,PHN2Zz4=" },
+    { selfieDataUrl: "data:image/jpeg;base64,aGVsbG8=" },
+    { selfieDataUrl: "data:image/jpeg;base64," + "A".repeat(200004) },
     { displayName: " " },
     { latitude: 91 },
     { longitude: -181 },

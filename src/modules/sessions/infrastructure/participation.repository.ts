@@ -204,6 +204,7 @@ async function joinLocked(
     .set({ displayName: input.displayName })
     .where(eq(users.id, userId));
   const values = {
+    selfieDataUrl: input.selfieDataUrl,
     originLabel: input.originLabel,
     originLatitude: input.originLatitude,
     originLongitude: input.originLongitude,
@@ -492,17 +493,24 @@ export function createParticipationRepository(db: Database) {
           const members = party
             ? await tx
                 .select({
+                  selfieDataUrl: sessionParticipants.selfieDataUrl,
                   participantId: ridePartyMembers.participantId,
                   status: ridePartyMembers.status,
                 })
                 .from(ridePartyMembers)
+                .innerJoin(
+                  sessionParticipants,
+                  eq(sessionParticipants.id, ridePartyMembers.participantId),
+                )
                 .where(eq(ridePartyMembers.partyId, party.id))
                 .orderBy(asc(ridePartyMembers.dropOffOrder))
             : [];
+          const { selfieDataUrl: _selfie, ...meWithoutSelfie } = me;
+          void _selfie;
           const now = new Date();
           return {
             session,
-            me,
+            me: meWithoutSelfie,
             party: party ? { ...party, members } : null,
             participants,
             acceptingJoins:

@@ -11,6 +11,8 @@ export const listSessionsQuery = z.object({
 });
 export type ListSessionsQuery = z.infer<typeof listSessionsQuery>;
 
+import { isSelfieDataUrl, MAX_SELFIE_DATA_URL_LENGTH } from "../domain/selfie";
+
 const latitude = z.number().finite().min(-90).max(90);
 const longitude = z.number().finite().min(-180).max(180);
 const departure = z
@@ -20,6 +22,10 @@ const departure = z
   );
 
 export const joinSessionInput = z.object({
+  selfieDataUrl: z
+    .string()
+    .max(MAX_SELFIE_DATA_URL_LENGTH)
+    .refine(isSelfieDataUrl, "Sube una selfie en formato JPEG."),
   displayName: z.string().trim().min(1).max(60),
   originLabel: z.string().trim().min(3).max(200),
   originLatitude: latitude,
