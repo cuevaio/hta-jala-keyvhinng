@@ -6,8 +6,11 @@ export const PICKUP_RADIUS_METERS = 1500;
 export const DESTINATION_RADIUS_METERS = 3000;
 /** Groups leaving further apart than this are not offered to each other. */
 export const DEPARTURE_WINDOW_MINUTES = 30;
-/** People can still join and match this long after the target departure. */
-export const JOIN_GRACE_MINUTES = 30;
+/**
+ * People can still join and match this long after the target departure. Short on
+ * purpose: someone leaving a venue will not wait long, and demos stay brisk.
+ */
+export const JOIN_GRACE_MINUTES = 5;
 /** A group stops accepting joins here; matching works through it in rounds of 12. */
 export const MAX_GROUP_SIZE = 20;
 /** "Leave now" or in N minutes. */

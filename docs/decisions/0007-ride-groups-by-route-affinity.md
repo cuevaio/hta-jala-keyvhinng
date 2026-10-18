@@ -14,8 +14,8 @@ with a pickup, a destination anchor and a `departs_at`.
 - Joining re-checks the same spatial fit on the server. Creating a group
   (`POST /api/groups`) also joins the creator; its pickup snaps to the meeting point of an
   active place within 400 m of the start, otherwise it is the creator's own start.
-- Departure: now, 15, 30 or 60 minutes. A group stays joinable until 30 minutes after
-  `departs_at`. A group holds at most 20 waiting people; matching still runs in rounds of 12.
+- Departure: now, 15, 30 or 60 minutes. A group stays joinable until 5 minutes after
+  `departs_at` (30 until 2026-10-18; shortened so riders and demos do not wait). A group holds at most 20 waiting people; matching still runs in rounds of 12.
 - A person waits in one group at a time: joining another releases the first seat, and a
   live (forming, confirmed, in progress) party blocks joining elsewhere.
 - Places stay as optional pickup anchors (`sessions.place_id` is nullable, `ON DELETE SET NULL`).

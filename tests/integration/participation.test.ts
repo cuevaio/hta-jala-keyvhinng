@@ -77,7 +77,7 @@ describe.skipIf(!url)("ride groups and shared sessions", () => {
     expect(session.name).toBe("Hacia Mi dirección exacta");
     expect(session.destinationLatitude).toBe(input.latitude);
     expect(session.closesAt.getTime() - session.departsAt.getTime()).toBe(
-      30 * 60_000,
+      5 * 60_000,
     );
     const room = await repo.waitingRoom(session.id, userIds[0]);
     const [saved] = await db

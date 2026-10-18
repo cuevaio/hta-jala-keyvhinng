@@ -93,7 +93,7 @@ Lock order: the bump takes the session row lock, so a writer that also locks a p
 
 ## Room expiration
 
-A room closes 30 minutes after its scheduled departure. No background timer or database status update is needed: server joins, search, and matching enforce the stored `closesAt` timestamp, and matching rechecks it under the session lock before committing. Existing parties remain usable after expiry.
+A room closes 5 minutes after its scheduled departure. No background timer or database status update is needed: server joins, search, and matching enforce the stored `closesAt` timestamp, and matching rechecks it under the session lock before committing. Existing parties remain usable after expiry.
 
 The session page and private waiting-room response include server time; the public session detail response also includes `serverNow` with `Cache-Control: no-store`. The client anchors this time to a monotonic clock and updates its countdown every second independently of polling. Fresh samples on polling and tab visibility restore synchronization. Hidden tabs pause polling, and requests are cancelled on replacement/unmount and time out after 10 seconds.
 

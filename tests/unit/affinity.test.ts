@@ -77,6 +77,6 @@ describe("affinityOf", () => {
 describe("departure helpers", () => {
   it("adds minutes and a join grace period", () => {
     expect(departureFor(30, t0).getTime() - t0.getTime()).toBe(30 * 60_000);
-    expect(closesAtFor(t0).getTime() - t0.getTime()).toBe(30 * 60_000);
+    expect(closesAtFor(t0).getTime() - t0.getTime()).toBe(5 * 60_000);
   });
 });
