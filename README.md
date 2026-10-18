@@ -11,6 +11,9 @@ notifications, departure times, safety features and place administration are not
 All seeded data is fictional. See [docs/status.md](docs/status.md) for what is done, what is
 missing and what comes next.
 
+See the [product requirements document](docs/prd.md) for the current MVP contract,
+acceptance criteria, validation plan and hackathon rubric alignment.
+
 ## Stack
 
 Next.js 16 (App Router) · TypeScript (strict) · Bun · PostgreSQL 17 · Drizzle ORM · Tailwind CSS 4 ·
