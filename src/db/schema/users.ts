@@ -10,8 +10,10 @@ export const users = pgTable(
     displayName: text("display_name").notNull(),
     /** Lowercased. Null only for legacy anonymous guests, who cannot sign in. */
     email: text("email").unique(),
-    /** `scrypt$…` encoded hash; see modules/auth/domain/password.ts. */
+    /** `scrypt$…` encoded hash. Null when the account only signs in with Google. */
     passwordHash: text("password_hash"),
+    /** Google `sub`. Null for password-only accounts and legacy guests. */
+    googleSub: text("google_sub").unique(),
     phone: text("phone"),
     /** Denormalised count of completed rides. */
     completedRides: integer("completed_rides").notNull().default(0),
@@ -30,7 +32,7 @@ export const users = pgTable(
     check("users_email_lowercase", sql`${t.email} = lower(${t.email})`),
     check(
       "users_account_credentials",
-      sql`(${t.email} IS NULL) = (${t.passwordHash} IS NULL)`,
+      sql`(${t.email} IS NULL) = (${t.passwordHash} IS NULL AND ${t.googleSub} IS NULL)`,
     ),
   ],
 );

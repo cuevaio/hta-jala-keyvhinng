@@ -50,6 +50,18 @@ export const changePasswordInput = z.object({
 export type SignUpInput = z.infer<typeof signUpInput>;
 export type SignInInput = z.infer<typeof signInInput>;
 
+export const googleIdentityInput = z.object({
+  sub: z
+    .string()
+    .trim()
+    .min(1)
+    .max(255)
+    .refine((value) => !/\s/.test(value), "Identidad de Google inválida."),
+  email,
+  emailVerified: z.boolean(),
+  name: z.string().max(200).optional(),
+});
+
 /** Only same-site relative paths may be redirect targets (blocks open redirects). */
 export function safeNextPath(value: string | null | undefined): string {
   if (!value || !value.startsWith("/") || value.startsWith("//")) return "/";

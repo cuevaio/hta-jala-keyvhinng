@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { KeyRound, Mail, UserRound } from "lucide-react";
+import { GoogleMark } from "@/components/auth/google-mark";
 import { sessionApi } from "@/components/sessions/session-api";
 
 const COPY = {
@@ -27,18 +28,32 @@ const COPY = {
   },
 } as const;
 
+const GOOGLE_ERRORS: Record<string, string> = {
+  google_denied: "Cancelaste el ingreso con Google.",
+  google_unverified:
+    "Google no confirmó ese correo. Elige una cuenta con el correo verificado.",
+  google_conflict: "Ese correo ya está vinculado a otra cuenta de Google.",
+  google_failed: "No se pudo entrar con Google. Intenta de nuevo.",
+  google_rate_limited: "Demasiados intentos. Espera un momento.",
+  google_unconfigured: "El ingreso con Google no está disponible ahora.",
+};
+
 export function AuthForm({
   mode,
   next,
+  googleHref,
+  googleError,
 }: {
   mode: keyof typeof COPY;
   /** Already sanitized by the server page with safeNextPath. */
   next: string;
+  googleHref: string | null;
+  googleError?: string;
 }) {
   const copy = COPY[mode];
   const router = useRouter();
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(GOOGLE_ERRORS[googleError ?? ""] ?? "");
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -72,6 +87,18 @@ export function AuthForm({
         <h1>{copy.title}</h1>
         <p>{copy.intro}</p>
       </header>
+      {googleHref && (
+        <>
+          <a
+            className="action action-secondary action-google"
+            href={googleHref}
+          >
+            <GoogleMark />
+            Continuar con Google
+          </a>
+          <p className="auth-divider">o con tu correo</p>
+        </>
+      )}
       {mode === "sign-up" && (
         <div className="form-section">
           <label htmlFor="auth-name">¿Cómo te llamas?</label>

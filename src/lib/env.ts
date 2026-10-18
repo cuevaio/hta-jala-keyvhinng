@@ -1,5 +1,12 @@
 import { z } from "zod";
 
+/** Blank values count as unset so an empty Google secret does not break the rest of the app. */
+function blankToUndefined(value: unknown) {
+  if (typeof value !== "string") return value;
+  const trimmed = value.trim();
+  return trimmed === "" ? undefined : trimmed;
+}
+
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3000"),
@@ -11,6 +18,15 @@ const envSchema = z.object({
   VAPID_PUBLIC_KEY: z.string().min(1).optional(),
   VAPID_PRIVATE_KEY: z.string().min(1).optional(),
   VAPID_SUBJECT: z.string().min(1).default("mailto:jala@jala.oak4.xyz"),
+  /** Web OAuth client in the Google Cloud project. Both are required to show the button. */
+  GOOGLE_CLIENT_ID: z.preprocess(
+    blankToUndefined,
+    z.string().min(1).optional(),
+  ),
+  GOOGLE_CLIENT_SECRET: z.preprocess(
+    blankToUndefined,
+    z.string().min(1).optional(),
+  ),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -30,4 +46,19 @@ export function getEnv(): Env {
     cached = parsed.data;
   }
   return cached;
+}
+
+/** Present only when both Google OAuth values are set. Does not require the rest of the env. */
+export function readGoogleAuth(): {
+  clientId: string;
+  clientSecret: string;
+} | null {
+  const clientId = process.env.GOOGLE_CLIENT_ID?.trim();
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
+  if (!clientId || !clientSecret) return null;
+  return { clientId, clientSecret };
+}
+
+export function googleRedirectUri(appUrl: string): string {
+  return new URL("/api/auth/google/callback", appUrl).href;
 }

@@ -29,10 +29,13 @@ import { formatSoles } from "@/modules/payments/domain/fees";
 import { parseFareMinor } from "@/modules/payments/domain/fare-input";
 import type { GeoPoint } from "@/modules/places/domain/place";
 import type { SimGroup } from "@/modules/simulation/domain/simulation";
+import { GoogleMark } from "@/components/auth/google-mark";
+import { disablePush } from "@/components/sessions/push-client";
 import {
   LocationPicker,
   type PickedLocation,
 } from "@/components/sessions/location-picker";
+import { sessionApi } from "@/components/sessions/session-api";
 import { DEFAULT_MAP_CENTER } from "@/components/sessions/ride-form";
 import { RideMap, type RideEnd } from "@/components/sessions/ride-map";
 import {
@@ -212,7 +215,12 @@ function SafetySheet({
   );
 }
 
-export function PassengerJourney() {
+export function PassengerJourney({
+  googleHref = null,
+}: {
+  /** Real Sign in with Google start URL. The name form stays a local demo. */
+  googleHref?: string | null;
+}) {
   const [screen, setScreen] = useState<Screen>("login");
   const [name, setName] = useState("");
   const [origin, setOrigin] = useState<PickedLocation | null>(null);
@@ -247,6 +255,20 @@ export function PassengerJourney() {
     heading.current?.focus();
     window.scrollTo(0, 0);
   }, [screen]);
+  // A real session (password or Google) skips the local name form.
+  useEffect(() => {
+    let stale = false;
+    sessionApi<{ displayName: string } | null>("/api/auth/me")
+      .then((me) => {
+        if (stale || !me?.displayName) return;
+        setName(me.displayName);
+        setScreen((current) => (current === "login" ? "home" : current));
+      })
+      .catch(() => {});
+    return () => {
+      stale = true;
+    };
+  }, []);
   useEffect(() => {
     if (screen === "chat")
       chatEnd.current?.scrollIntoView({ block: "nearest" });
@@ -407,6 +429,10 @@ export function PassengerJourney() {
     setMessages([]);
     setName("");
     nav("login");
+    // The local demo and a real password/Google session share this control.
+    void disablePush()
+      .catch(() => {})
+      .then(() => sessionApi("/api/auth/sign-out", {}).catch(() => {}));
   };
 
   return (
@@ -528,6 +554,11 @@ export function PassengerJourney() {
                   </Primary>
                 </form>
                 <div className="j-divider">o</div>
+                {googleHref && (
+                  <a className="j-secondary" href={googleHref}>
+                    <GoogleMark /> Continuar con Google
+                  </a>
+                )}
                 <Link className="j-secondary" href="/sign-in?next=%2Fride">
                   <Mail size={21} /> Continuar con correo
                 </Link>

@@ -100,7 +100,7 @@ describe("auth service", () => {
           throw Object.assign(new Error("duplicate"), { code: "23505" });
         }
         const id = `user-${accounts.size + 1}`;
-        accounts.set(input.email, { id, ...input });
+        accounts.set(input.email, { id, googleSub: null, ...input });
         return { id };
       },
       // Reset and change-password persistence is covered by the integration tests.

@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import {
   EmailTakenError,
+  GoogleSignInError,
   InvalidCredentialsError,
   InvalidResetTokenError,
 } from "@/lib/errors";
@@ -10,13 +11,15 @@ import {
   hashPassword,
   verifyPassword,
 } from "@/modules/auth/domain/password";
+import { googleDisplayName } from "@/modules/auth/domain/google-link";
 import {
   isUniqueViolation,
   type AuthRepository,
 } from "@/modules/auth/infrastructure/auth.repository";
-import type {
-  SignInInput,
-  SignUpInput,
+import {
+  googleIdentityInput,
+  type SignInInput,
+  type SignUpInput,
 } from "@/modules/auth/schemas/auth.schema";
 
 export interface AuthenticatedUser {
@@ -62,6 +65,27 @@ export function createAuthService(
     },
 
     /**
+     * Enters the account tied to this Google subject, linking a password account that
+     * already uses the same verified email. Unverified Google emails are refused.
+     */
+    async signInWithGoogle(raw: {
+      sub: string;
+      email: string;
+      emailVerified: boolean;
+      name?: string;
+    }): Promise<AuthenticatedUser> {
+      const parsed = googleIdentityInput.safeParse(raw);
+      if (!parsed.success) throw new GoogleSignInError("failed");
+      if (!parsed.data.emailVerified) throw new GoogleSignInError("unverified");
+      const account = await repository.upsertFromGoogle({
+        googleSub: parsed.data.sub,
+        email: parsed.data.email,
+        displayName: googleDisplayName(parsed.data.name, parsed.data.email),
+      });
+      return { userId: account.id, displayName: account.displayName };
+    },
+
+    /**
      * Always resolves, so callers cannot learn which emails have accounts. Only the
      * hash of the emailed token is stored.
      */
@@ -95,11 +119,11 @@ export function createAuthService(
       newPassword: string,
     ): Promise<void> {
       const account = await repository.findById(userId);
-      if (
-        !account ||
-        !(await verifyPassword(currentPassword, account.passwordHash))
-      )
-        throw new InvalidCredentialsError();
+      const valid = await verifyPassword(
+        currentPassword,
+        account?.passwordHash ?? (await decoyHash()),
+      );
+      if (!account?.passwordHash || !valid) throw new InvalidCredentialsError();
       await repository.changePassword(userId, await hashPassword(newPassword));
     },
   };

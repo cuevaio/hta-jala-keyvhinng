@@ -1,12 +1,18 @@
-import { and, eq, gt } from "drizzle-orm";
+import { and, eq, gt, isNull } from "drizzle-orm";
 import type { Database } from "@/db";
 import { browserSessions, passwordResetTokens, users } from "@/db/schema";
+import { GoogleSignInError } from "@/lib/errors";
+import {
+  decideGoogleLink,
+  type LinkedAccount,
+} from "@/modules/auth/domain/google-link";
 
 export interface AccountRecord {
   id: string;
   displayName: string;
   email: string;
-  passwordHash: string;
+  passwordHash: string | null;
+  googleSub: string | null;
 }
 
 const UNIQUE_VIOLATION = "23505";
@@ -20,35 +26,129 @@ export function isUniqueViolation(error: unknown): boolean {
   return false;
 }
 
+const accountColumns = {
+  id: users.id,
+  displayName: users.displayName,
+  email: users.email,
+  passwordHash: users.passwordHash,
+  googleSub: users.googleSub,
+};
+
+function toAccount(
+  row:
+    | {
+        id: string;
+        displayName: string;
+        email: string | null;
+        passwordHash: string | null;
+        googleSub: string | null;
+      }
+    | undefined,
+): AccountRecord | null {
+  if (!row?.email) return null;
+  return {
+    id: row.id,
+    displayName: row.displayName,
+    email: row.email,
+    passwordHash: row.passwordHash,
+    googleSub: row.googleSub,
+  };
+}
+
 export function createAuthRepository(db: Database) {
+  async function findLinked(
+    tx: Pick<Database, "select">,
+    column: "email" | "googleSub",
+    value: string,
+  ): Promise<LinkedAccount | null> {
+    const [row] = await tx
+      .select(accountColumns)
+      .from(users)
+      .where(eq(column === "email" ? users.email : users.googleSub, value));
+    const account = toAccount(row);
+    return account
+      ? {
+          id: account.id,
+          displayName: account.displayName,
+          email: account.email,
+          googleSub: account.googleSub,
+        }
+      : null;
+  }
+
+  async function writeGoogleAccount(input: {
+    displayName: string;
+    email: string;
+    googleSub: string;
+  }): Promise<{ id: string; displayName: string }> {
+    return db.transaction(async (tx) => {
+      const bySub = await findLinked(tx, "googleSub", input.googleSub);
+      const byEmail = await findLinked(tx, "email", input.email);
+      const decision = decideGoogleLink(
+        { sub: input.googleSub, email: input.email },
+        bySub,
+        byEmail,
+      );
+      if (decision.type === "sign-in") {
+        return { id: decision.userId, displayName: decision.displayName };
+      }
+      if (decision.type === "reject") throw new GoogleSignInError("conflict");
+      if (decision.type === "link") {
+        const [updated] = await tx
+          .update(users)
+          .set({ googleSub: input.googleSub })
+          .where(and(eq(users.id, decision.userId), isNull(users.googleSub)))
+          .returning({ id: users.id, displayName: users.displayName });
+        if (updated) return updated;
+        const current = await findLinked(tx, "email", input.email);
+        if (current?.googleSub === input.googleSub) {
+          return { id: current.id, displayName: current.displayName };
+        }
+        throw new GoogleSignInError("conflict");
+      }
+      const [created] = await tx
+        .insert(users)
+        .values({
+          displayName: input.displayName,
+          email: input.email,
+          googleSub: input.googleSub,
+        })
+        .returning({ id: users.id, displayName: users.displayName });
+      return created;
+    });
+  }
+
   return {
     async findByEmail(email: string): Promise<AccountRecord | null> {
       const [row] = await db
-        .select({
-          id: users.id,
-          displayName: users.displayName,
-          email: users.email,
-          passwordHash: users.passwordHash,
-        })
+        .select(accountColumns)
         .from(users)
         .where(eq(users.email, email));
-      return row && row.email && row.passwordHash
-        ? { ...row, email: row.email, passwordHash: row.passwordHash }
-        : null;
+      return toAccount(row);
     },
     async findById(id: string): Promise<AccountRecord | null> {
       const [row] = await db
-        .select({
-          id: users.id,
-          displayName: users.displayName,
-          email: users.email,
-          passwordHash: users.passwordHash,
-        })
+        .select(accountColumns)
         .from(users)
         .where(eq(users.id, id));
-      return row && row.email && row.passwordHash
-        ? { ...row, email: row.email, passwordHash: row.passwordHash }
-        : null;
+      return toAccount(row);
+    },
+    /**
+     * Creates a Google account, links a verified email onto an existing password
+     * account, or returns the account already tied to this Google subject.
+     * Retries once when a concurrent insert wins the unique email or subject.
+     */
+    async upsertFromGoogle(input: {
+      displayName: string;
+      email: string;
+      googleSub: string;
+    }): Promise<{ id: string; displayName: string }> {
+      try {
+        return await writeGoogleAccount(input);
+      } catch (error) {
+        if (!isUniqueViolation(error)) throw error;
+        return writeGoogleAccount(input);
+      }
     },
     /** Replaces any earlier outstanding token, so only the newest link works. */
     async saveResetToken(userId: string, tokenHash: string, expiresAt: Date) {

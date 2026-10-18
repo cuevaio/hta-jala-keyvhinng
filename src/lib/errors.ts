@@ -26,3 +26,11 @@ export class InvalidResetTokenError extends Error {
     this.name = "InvalidResetTokenError";
   }
 }
+
+/** Sign in with Google could not finish. `reason` is safe to show as a redirect code. */
+export class GoogleSignInError extends Error {
+  constructor(readonly reason: "unverified" | "conflict" | "failed") {
+    super(reason);
+    this.name = "GoogleSignInError";
+  }
+}
