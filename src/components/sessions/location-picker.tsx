@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { LocateFixed, MapPin } from "lucide-react";
+import { LocateFixed, MapPin, MapPinned } from "lucide-react";
 import {
   reverseGeocode,
   searchAddress,
@@ -65,6 +65,12 @@ export function LocationPicker({
   autoSearch?: boolean;
 }) {
   const copy = COPY[end];
+  const mapsQuery = value?.point
+    ? `${value.point.latitude},${value.point.longitude}`
+    : value?.label.trim();
+  const mapsHref = mapsQuery
+    ? `https://www.google.com/maps/search/?${new URLSearchParams({ api: "1", query: mapsQuery })}`
+    : "https://www.google.com/maps";
   const [lookup, setLookup] = useState<Lookup>("idle");
   const [locating, setLocating] = useState<Locate>("idle");
   const [results, setResults] = useState<AddressMatch[] | null>(null);
@@ -253,32 +259,44 @@ export function LocationPicker({
         )}
       </div>
       <div className="address-search-row">
-        <input
-          id={`${id}-label`}
-          className="form-input"
-          required
-          minLength={3}
-          maxLength={200}
-          enterKeyHint="search"
-          aria-describedby={`${id}-address-help`}
-          value={value?.label ?? ""}
-          onFocus={onActivate}
-          onChange={(event) => {
-            cancelLocate();
-            lookupAbort.current?.abort();
-            clearSearch();
-            setLookup("idle");
-            labelEdited.current = event.target.value !== "";
-            onChange({ point: null, label: event.target.value });
-          }}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              void search();
-            }
-          }}
-          placeholder={copy.placeholder}
-        />
+        <div className="address-input-with-map">
+          <input
+            id={`${id}-label`}
+            className="form-input"
+            required
+            minLength={3}
+            maxLength={200}
+            enterKeyHint="search"
+            aria-describedby={`${id}-address-help`}
+            value={value?.label ?? ""}
+            onFocus={onActivate}
+            onChange={(event) => {
+              cancelLocate();
+              lookupAbort.current?.abort();
+              clearSearch();
+              setLookup("idle");
+              labelEdited.current = event.target.value !== "";
+              onChange({ point: null, label: event.target.value });
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                void search();
+              }
+            }}
+            placeholder={copy.placeholder}
+          />
+          <a
+            href={mapsHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="address-google-maps"
+            aria-label={`Abrir ${end === "origin" ? "punto de partida" : "destino"} en Google Maps (se abre en otra pestaña)`}
+            title="Abrir en Google Maps"
+          >
+            <MapPinned size={22} aria-hidden="true" />
+          </a>
+        </div>
         <button
           type="button"
           className="action action-secondary"

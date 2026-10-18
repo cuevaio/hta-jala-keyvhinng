@@ -1367,6 +1367,32 @@ fieldset legend {
   display: flex;
   gap: 8px;
 }
+.address-input-with-map {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+.address-input-with-map .form-input {
+  width: 100%;
+  padding-right: 56px;
+}
+.address-google-maps {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  color: #1a73e8;
+  background: var(--sage);
+}
+.address-google-maps:hover {
+  background: #e8f0fe;
+}
 .address-search-row .form-input {
   flex: 1;
   min-width: 0;
