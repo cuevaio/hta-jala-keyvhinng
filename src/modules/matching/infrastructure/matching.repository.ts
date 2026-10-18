@@ -48,16 +48,15 @@ async function load(db: Reader, sessionId: string, userId: string) {
     );
   // Retries after assignment do not route or create additional groups.
   if (me.status === "matched") return { kind: "assigned" as const };
-  const [place] = await db
-    .select()
-    .from(places)
-    .where(eq(places.id, session.placeId));
+  const [place] = session.placeId
+    ? await db.select().from(places).where(eq(places.id, session.placeId))
+    : [];
   const now = new Date();
   if (
     session.status !== "open" ||
     session.opensAt > now ||
     session.closesAt <= now ||
-    place.status !== "active"
+    (place && place.status !== "active")
   ) {
     throw new MatchingError(
       409,
@@ -65,23 +64,20 @@ async function load(db: Reader, sessionId: string, userId: string) {
       "Esta sala ya no admite emparejamientos.",
     );
   }
-  const [pickup] = await db
-    .select()
-    .from(meetingPoints)
-    .where(eq(meetingPoints.placeId, session.placeId))
-    .orderBy(asc(meetingPoints.createdAt), asc(meetingPoints.id))
-    .limit(1);
-  const origin = pickup
-    ? {
-        latitude: pickup.latitude,
-        longitude: pickup.longitude,
-        label: pickup.name,
-      }
-    : {
-        latitude: place.latitude,
-        longitude: place.longitude,
-        label: place.name,
-      };
+  // Groups snapped to a place meet at its first meeting point; others at their pickup.
+  const [pickup] = session.placeId
+    ? await db
+        .select()
+        .from(meetingPoints)
+        .where(eq(meetingPoints.placeId, session.placeId))
+        .orderBy(asc(meetingPoints.createdAt), asc(meetingPoints.id))
+        .limit(1)
+    : [];
+  const origin = {
+    latitude: session.pickupLatitude,
+    longitude: session.pickupLongitude,
+    label: session.pickupLabel,
+  };
   const fields = {
     participantId: sessionParticipants.id,
     userId: sessionParticipants.userId,

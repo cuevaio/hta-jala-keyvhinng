@@ -36,6 +36,9 @@ describe.skipIf(!base || !url)(
       });
     });
     afterAll(async () => {
+      await db
+        .delete(schema.sessions)
+        .where(eq(schema.sessions.placeId, placeId));
       await db.delete(schema.places).where(eq(schema.places.id, placeId));
       if (userIds.length)
         await db.delete(schema.users).where(inArray(schema.users.id, userIds));
@@ -119,25 +122,40 @@ describe.skipIf(!base || !url)(
       expect((await after.json()).data).toBeNull();
     });
     it("enforces authentication/membership and shares a persisted roster", async () => {
-      const opened = await post("/api/sessions", { placeId }, cookieA);
+      const input = {
+        displayName: "API Ana",
+        originLabel: "Fictional start",
+        originLatitude: -12,
+        originLongitude: -77,
+        destinationLabel: "Fictional exact destination",
+        latitude: -12.1,
+        longitude: -77.03,
+        delegatePreference: "delegate",
+      };
+      expect((await post("/api/groups", input, "")).status).toBe(401);
+      const opened = await post(
+        "/api/groups",
+        { ...input, departInMinutes: 15 },
+        cookieA,
+      );
       expect(opened.status).toBe(200);
       sessionId = (await opened.json()).data.id;
+      const found = await fetch(
+        `${base}/api/groups/search?olat=-12&olng=-77&dlat=-12.1&dlng=-77.03&depart=15`,
+      );
+      expect(found.status).toBe(200);
+      expect(
+        (await found.json()).data.map((g: { id: string }) => g.id),
+      ).toContain(sessionId);
+      expect((await fetch(`${base}/api/groups/search?olat=north`)).status).toBe(
+        400,
+      );
       const path = `/api/sessions/${sessionId}/waiting-room`;
       expect((await fetch(`${base}${path}`)).status).toBe(401);
       expect(
         (await fetch(`${base}${path}`, { headers: { cookie: cookieB } }))
           .status,
       ).toBe(403);
-      const input = {
-        displayName: "API Ana",
-        destinationLabel: "Fictional exact destination",
-        latitude: -12.1,
-        longitude: -77.03,
-        delegatePreference: "delegate",
-      };
-      expect(
-        (await post(`/api/sessions/${sessionId}/join`, input, cookieA)).status,
-      ).toBe(200);
       expect(
         (
           await post(
@@ -178,14 +196,14 @@ describe.skipIf(!base || !url)(
       });
       expect(malformed.status).toBe(400);
       expect((await malformed.json()).error.code).toBe("invalid_json");
-      const crossSite = await fetch(`${base}/api/sessions`, {
+      const crossSite = await fetch(`${base}/api/groups`, {
         method: "POST",
         headers: {
           cookie: cookieA,
           "Content-Type": "application/json",
           origin: "https://unrelated.test",
         },
-        body: JSON.stringify({ placeId }),
+        body: JSON.stringify({ ...{}, departInMinutes: 0 }),
       });
       expect(crossSite.status).toBe(403);
     });

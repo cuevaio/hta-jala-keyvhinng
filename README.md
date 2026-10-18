@@ -1,7 +1,7 @@
 # Jala
 
 Real-time taxi-sharing coordination for people leaving the same place (venues, universities, malls, stations) for **Hack The Andes 2026** (Lima, Perú).
-People leaving concerts, plays and festivals are grouped with compatible destinations, a volunteer
+People are grouped by where they are, where they are going and when, a volunteer
 delegate books a taxi through an existing service (e.g. Uber), and costs are split by recommended
 percentages. Jala operates no vehicles and processes no payments in the MVP.
 
@@ -67,23 +67,24 @@ bun dev                        # http://localhost:3000
 
 All responses are `{ "data": ... }` or `{ "error": { "code", "message", "details?" } }`.
 
-| Endpoint                                    | Description                                    |
-| ------------------------------------------- | ---------------------------------------------- |
-| `POST /api/auth/sign-up`                    | Create an account and establish a session      |
-| `POST /api/auth/sign-in`                    | Sign in to an existing account                 |
-| `POST /api/auth/password-reset/request`     | Email a reset link (always 200)                |
-| `POST /api/auth/password-reset/confirm`     | Set a new password with a reset token          |
-| `POST /api/auth/change-password`            | Change password; revokes other sessions        |
-| `POST /api/sessions`                        | Open/reuse an expiring departure session       |
-| `POST /api/sessions/:id/join`               | Join or update own waiting participation       |
-| `POST /api/sessions/:id/match`              | Find and persist compatible ride groups        |
-| `POST /api/sessions/:id/party`              | Group action: confirm, leave, start, complete  |
-| `GET /api/sessions/:id/waiting-room`        | Roster, own destination and own group proposal |
-| `GET /api/health`                           | Liveness + database check (503 if DB is down)  |
-| `GET /api/places?status=&kind=&limit=`      | List places                                    |
-| `GET /api/places/:id`                       | Place with meeting points                      |
-| `GET /api/sessions?placeId=&status=&limit=` | List sessions with participant counts          |
-| `GET /api/sessions/:id`                     | Session detail                                 |
+| Endpoint                                    | Description                                     |
+| ------------------------------------------- | ----------------------------------------------- |
+| `POST /api/auth/sign-up`                    | Create an account and establish a session       |
+| `POST /api/auth/sign-in`                    | Sign in to an existing account                  |
+| `POST /api/auth/password-reset/request`     | Email a reset link (always 200)                 |
+| `POST /api/auth/password-reset/confirm`     | Set a new password with a reset token           |
+| `POST /api/auth/change-password`            | Change password; revokes other sessions         |
+| `GET /api/groups/search`                    | Open groups that fit a start, destination, time |
+| `POST /api/groups`                          | Create a ride group and join it                 |
+| `POST /api/sessions/:id/join`               | Join or update own waiting participation        |
+| `POST /api/sessions/:id/match`              | Find and persist compatible ride groups         |
+| `POST /api/sessions/:id/party`              | Group action: confirm, leave, start, complete   |
+| `GET /api/sessions/:id/waiting-room`        | Roster, own destination and own group proposal  |
+| `GET /api/health`                           | Liveness + database check (503 if DB is down)   |
+| `GET /api/places?status=&kind=&limit=`      | List places                                     |
+| `GET /api/places/:id`                       | Place with meeting points                       |
+| `GET /api/sessions?placeId=&status=&limit=` | List sessions with participant counts           |
+| `GET /api/sessions/:id`                     | Session detail                                  |
 
 ## Structure
 

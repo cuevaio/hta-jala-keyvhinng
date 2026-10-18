@@ -111,9 +111,34 @@ async function main() {
     .insert(schema.sessions)
     .values({
       placeId: campus.id,
-      name: "Salida demo abierta",
+      name: "Hacia Miraflores",
+      pickupLabel: "Puerta principal",
+      pickupLatitude: -12.0893,
+      pickupLongitude: -77.0068,
+      destinationLabel: "Miraflores, Parque Kennedy",
+      destinationLatitude: -12.1219,
+      destinationLongitude: -77.0297,
+      departsAt: new Date(now + hours(0.1)),
       status: "open",
       opensAt: new Date(now - hours(1)),
+      closesAt: new Date(now + hours(11)),
+      vehicleCapacity: 3,
+    })
+    .returning();
+  const [airportGroup] = await db
+    .insert(schema.sessions)
+    .values({
+      placeId: mall.id,
+      name: "Hacia Aeropuerto Jorge Chávez",
+      pickupLabel: "Ingreso por el parque",
+      pickupLatitude: -12.1322,
+      pickupLongitude: -77.0299,
+      destinationLabel: "Aeropuerto Internacional Jorge Chávez, Callao",
+      destinationLatitude: -12.0219,
+      destinationLongitude: -77.1143,
+      departsAt: new Date(now + hours(0.5)),
+      status: "open",
+      opensAt: new Date(now - hours(0.1)),
       closesAt: new Date(now + hours(11)),
       vehicleCapacity: 3,
     })
@@ -136,9 +161,9 @@ async function main() {
     },
     {
       name: "Rosa (ficticia)",
-      label: "Surco, Jockey Plaza",
-      lat: -12.0853,
-      lng: -76.9753,
+      label: "Surquillo, Mercado N.º 1",
+      lat: -12.1117,
+      lng: -77.0128,
       pref: "passenger",
     },
     {
@@ -150,9 +175,9 @@ async function main() {
     },
     {
       name: "Camila (ficticia)",
-      label: "Magdalena, Plaza Bolívar",
-      lat: -12.0897,
-      lng: -77.0722,
+      label: "Miraflores, Larcomar",
+      lat: -12.1319,
+      lng: -77.0305,
       pref: "passenger",
     },
   ] as const;
@@ -160,14 +185,19 @@ async function main() {
   const users = await db
     .insert(schema.users)
     .values(
-      passengers.map((p) => ({ displayName: p.name, phone: "FICTIONAL" })),
+      [...passengers.map((p) => p.name), "Marco (ficticio)"].map(
+        (displayName) => ({ displayName, phone: "FICTIONAL" }),
+      ),
     )
     .returning();
 
   await db.insert(schema.sessionParticipants).values(
-    users.map((user, i) => ({
+    users.slice(0, passengers.length).map((user, i) => ({
       sessionId: session.id,
       userId: user.id,
+      originLabel: "Puerta principal",
+      originLatitude: -12.0893,
+      originLongitude: -77.0068,
       destinationLabel: passengers[i].label,
       latitude: passengers[i].lat,
       longitude: passengers[i].lng,
@@ -175,12 +205,24 @@ async function main() {
     })),
   );
 
+  await db.insert(schema.sessionParticipants).values({
+    sessionId: airportGroup.id,
+    userId: users[passengers.length].id,
+    originLabel: "Ingreso por el parque",
+    originLatitude: -12.1322,
+    originLongitude: -77.0299,
+    destinationLabel: airportGroup.destinationLabel,
+    latitude: airportGroup.destinationLatitude,
+    longitude: airportGroup.destinationLongitude,
+    delegatePreference: "delegate",
+  });
+
   console.log(
-    "Seeded fictional data: 2 places, 3 meeting points, 1 session, 5 passengers.",
+    "Seeded fictional data: 4 places, 5 meeting points, 2 ride groups, 6 passengers.",
   );
   const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   console.log(
-    `\nDemo: sign up at ${base}/sign-up, then open ${base}/sessions/${session.id}\n` +
+    `\nDemo: sign up at ${base}/sign-up, then open ${base}/ride or ${base}/sessions/${session.id}\n` +
       "Join with a destination, press 'Buscar mi grupo', then confirm, start and finish the trip.",
   );
 }

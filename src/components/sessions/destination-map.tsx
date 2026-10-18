@@ -18,12 +18,17 @@ export function DestinationMap({
   value,
   focus,
   onPick,
+  label = "Tu destino",
+  variant = "destination",
 }: {
   center: GeoPoint;
   value: GeoPoint | null;
   /** When it changes, the view moves there (e.g. after an address search). */
   focus?: GeoPoint | null;
   onPick: (point: GeoPoint) => void;
+  /** What the pin means, for assistive tech and the marker tooltip. */
+  label?: string;
+  variant?: "origin" | "destination";
 }) {
   const container = useRef<HTMLDivElement>(null);
   const onPickRef = useRef(onPick);
@@ -51,7 +56,7 @@ export function DestinationMap({
       );
       // A CSS pin avoids Leaflet's default marker images, which bundlers break.
       const icon = L.divIcon({
-        className: "destination-pin",
+        className: `destination-pin destination-pin-${variant}`,
         iconSize: [32, 32],
         iconAnchor: [16, 32],
       });
@@ -66,8 +71,8 @@ export function DestinationMap({
         marker = L.marker(latlng, {
           icon,
           draggable: true,
-          alt: "Tu destino",
-          title: "Tu destino. Arrástralo para afinarlo.",
+          alt: label,
+          title: `${label}. Arrástralo para afinarlo.`,
         }).addTo(map);
         marker.on("dragend", () => {
           const { lat, lng } = marker!.getLatLng();
@@ -102,7 +107,7 @@ export function DestinationMap({
       moveView.current = () => {};
       cleanup();
     };
-    // The map is created once; `center` only seeds the initial view.
+    // The map is created once; `center`, `label` and `variant` only seed it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -120,7 +125,7 @@ export function DestinationMap({
       ref={container}
       className="destination-map"
       role="group"
-      aria-label="Mapa para marcar tu destino. Si prefieres no usar el mapa, busca una dirección arriba."
+      aria-label={`Mapa para marcar: ${label.toLowerCase()}. Si prefieres no usar el mapa, busca una dirección arriba.`}
     />
   );
 }

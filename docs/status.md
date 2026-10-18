@@ -12,8 +12,9 @@ and tracks the group through confirm, start and finish. Jala does not book or ch
 | ---------------------------------------------------------- | ----------- | --------------------------------------------------------------------- |
 | Sign up, sign in, sign out                                 | Done        | scrypt, hashed session tokens, Postgres-backed rate limits            |
 | Password reset and change                                  | Done        | Emails go through Resend when `RESEND_API_KEY` is set; log-only otherwise |
-| Browse places, filter by kind                              | Done        | Venue, university, mall, transit, other                               |
-| Open or reuse a departure room (2 h)                       | Done        | One open room per place at a time                                     |
+| Detect current location, set destination and time          | Done        | Browser geolocation, address search or map pin; now / 15 / 30 / 60 min |
+| Find open groups by route affinity, or create one          | Done        | ADR 0007; pickup 1.5 km, destination 3 km, departure ±30 min          |
+| Browse places, filter by kind                              | Done        | Optional pickup anchors; start a request from a place                 |
 | Join with exact destination (map pin or address search)    | Done        | Reverse and forward lookup via public Nominatim                       |
 | Match into groups of 2–3 by road time                      | Done        | OSRM, 5-minute detour cap, one booker per group; user-triggered       |
 | Saved route plan, route map, fare shares                   | Done        | Basis points; soles view from a fare the group types in               |
@@ -22,7 +23,7 @@ and tracks the group through confirm, start and finish. Jala does not book or ch
 | Share the room (copy link, WhatsApp)                       | Done        |                                                                       |
 | Contact between group members                              | **Missing** | Members only see names; no phone, chat or WhatsApp group              |
 | Notifications (group found, everyone confirmed)            | **Missing** | The room polls; a closed tab learns nothing                           |
-| Departure time ("I leave at 10 pm")                        | **Missing** | Rooms are on-demand windows; matching ignores time                    |
+| Arbitrary departure time ("I leave at 10 pm")              | **Missing** | Only now / 15 / 30 / 60 minutes                                       |
 | Background matching                                        | **Missing** | A person must press "Buscar mi grupo"                                 |
 | Expiry of stalled groups, no-show handling                 | **Missing** | A group nobody confirms never expires                                 |
 | Identity or email verification, ratings, reporting, blocks | **Missing** | `verified` / `no_show` member states exist but are unused             |
@@ -57,7 +58,7 @@ whole product is about half.
 ## Next, in order
 
 1. Share contact between members once everyone confirms (WhatsApp link or phone).
-2. Add a departure time to joining and use it in matching.
+2. Real-device check of geolocation and the new ride flow.
 3. Notify people when a group forms and when everyone has confirmed.
 4. Expire stalled groups and handle no-shows.
 5. Minimal admin page to create places and meeting points.
@@ -72,4 +73,4 @@ whole product is about half.
 | Accounts, sessions, abuse controls | [auth.md](auth.md)                                                   |
 | Join and waiting-room contract     | [shared-session-contract.md](shared-session-contract.md)             |
 | UX review and what was fixed       | [design/ux-pass.md](design/ux-pass.md)                               |
-| Decisions                          | [decisions/](decisions/) (0005 leaving dissolves, 0006 places)       |
+| Decisions                          | [decisions/](decisions/) (0005 leaving dissolves, 0006 places, 0007 ride groups) |

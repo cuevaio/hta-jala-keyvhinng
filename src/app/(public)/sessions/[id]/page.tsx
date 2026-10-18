@@ -12,10 +12,7 @@ import { sessionIdParams } from "@/modules/sessions/schemas/session.schema";
 
 async function loadSession(id: string) {
   try {
-    const services = getServices();
-    const session = await services.sessions.getById(id);
-    const place = await services.places.getById(session.placeId);
-    return { session, place };
+    return await getServices().sessions.getById(id);
   } catch (error) {
     if (error instanceof NotFoundError) notFound();
     throw error;
@@ -44,24 +41,29 @@ export default async function SessionPage({
   await connection();
   const parsed = sessionIdParams.safeParse(await params);
   if (!parsed.success) notFound();
-  const { session, place } = await loadSession(parsed.data.id);
+  const session = await loadSession(parsed.data.id);
   const identity = await readIdentity();
   const initialRoom = await loadRoom(session.id, identity?.userId ?? null);
   return (
     <article className="session-page">
-      <Link href={`/places/${place.id}`} className="back-link">
+      <Link href="/ride" className="back-link">
         <ChevronLeft size={17} aria-hidden="true" />
-        {place.name}
+        Buscar otro grupo
       </Link>
       <header className="session-heading">
-        <h1>Tu salida compartida.</h1>
+        <h1>Tu grupo de salida.</h1>
         <p>{session.name}</p>
       </header>
       <WaitingRoom
         sessionId={session.id}
-        placeId={session.placeId}
+        group={{
+          pickupLabel: session.pickupLabel,
+          pickup: session.pickup,
+          destinationLabel: session.destinationLabel,
+          destination: session.destination,
+          departsAt: session.departsAt.toISOString(),
+        }}
         vehicleCapacity={session.vehicleCapacity}
-        mapCenter={place.location}
         initialRoom={initialRoom}
         initialSignedOut={identity === null}
         accountName={identity?.displayName ?? ""}
@@ -69,7 +71,7 @@ export default async function SessionPage({
         initiallyOpen={
           session.status === "open" &&
           session.opensAt <= new Date() &&
-          place.status === "active"
+          session.closesAt > new Date()
         }
       />
     </article>

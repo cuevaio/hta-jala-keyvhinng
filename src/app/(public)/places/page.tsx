@@ -7,7 +7,7 @@ import { getServices } from "@/lib/services";
 import { PLACE_KIND_LABELS, PLACE_KINDS } from "@/modules/places/domain/place";
 import { listPlacesQuery } from "@/modules/places/schemas/place.schema";
 
-export const metadata: Metadata = { title: "Lugares" };
+export const metadata: Metadata = { title: "Lugares frecuentes" };
 
 export default async function PlacesPage({
   searchParams,
@@ -27,14 +27,15 @@ export default async function PlacesPage({
     <div className="places-page">
       <header className="page-heading">
         <h1>
-          ¿De dónde
+          Lugares
           <br />
-          sales hoy?
+          frecuentes.
         </h1>
         <p>
-          Universidad, centro comercial, concierto o estación: elige tu lugar y
-          entra a su sala de salida.
-          <br className="desktop-break" /> El camino a casa empieza aquí.
+          Universidades, centros comerciales, conciertos y estaciones con puntos
+          de encuentro ya definidos.
+          <br className="desktop-break" /> ¿Estás en otro sitio?{" "}
+          <Link href="/ride">Pide un grupo desde tu ubicación</Link>.
         </p>
       </header>
       <nav className="kind-filter" aria-label="Tipo de lugar">

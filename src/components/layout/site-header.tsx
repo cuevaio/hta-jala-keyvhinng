@@ -56,11 +56,18 @@ export function SiteHeader() {
         <div id="site-menu" className="site-menu">
           <nav aria-label="Principal">
             <Link
+              href="/ride"
+              className="nav-link"
+              aria-current={pathname.startsWith("/ride") ? "page" : undefined}
+            >
+              Pedir grupo
+            </Link>
+            <Link
               href="/places"
               className="nav-link"
               aria-current={pathname.startsWith("/places") ? "page" : undefined}
             >
-              Lugares
+              Lugares frecuentes
             </Link>
             <Link href="/#como-funciona" className="nav-link">
               Cómo funciona

@@ -30,7 +30,7 @@ Rules:
 | Module         | Status             | Responsibility                                                                    |
 | -------------- | ------------------ | --------------------------------------------------------------------------------- |
 | `places`       | implemented (read) | Places (venue, university, mall, transit) and their meeting points               |
-| `sessions`     | implemented (read) | Temporary matching pools per place                                                |
+| `sessions`     | implemented (read) | Open ride groups (pickup, destination anchor, departure)                                                |
 | `matching`     | implemented            | Bounded road matching, saved route plans and atomic participant assignment                            |
 | `routing`      | contract + OSRM    | `RoutingProvider` contract, `RoutingError`, OSRM adapter (`ROUTING_BASE_URL`)     |
 | `parties`      | implemented        | Group lifecycle (confirm, leave, start, complete); `RideProviderAdapter` boundary |

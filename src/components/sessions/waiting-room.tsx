@@ -2,34 +2,40 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Clock3, Users } from "lucide-react";
+import { ArrowRight, Clock3, Users } from "lucide-react";
 import type { GeoPoint } from "@/modules/places/domain/place";
 import type { PartyCommand } from "@/modules/parties/domain/party-lifecycle";
 import { PartyView } from "./party-view";
 import { PoolView } from "./pool-view";
 import type { Room } from "./room";
-import { SessionJoinForm } from "./session-join-form";
+import { RideForm, type RideValues } from "./ride-form";
 import { sessionApi, SessionRequestError } from "./session-api";
 
 const POLL_MS = 4000;
 
+export interface GroupRoute {
+  pickupLabel: string;
+  pickup: GeoPoint;
+  destinationLabel: string;
+  destination: GeoPoint;
+  departsAt: string;
+}
+
 export function WaitingRoom({
   sessionId,
-  placeId,
+  group,
   closesAt,
   initiallyOpen,
   vehicleCapacity,
-  mapCenter,
   initialRoom,
   initialSignedOut,
   accountName,
 }: {
   sessionId: string;
-  placeId: string;
+  group: GroupRoute;
   closesAt: string;
   initiallyOpen: boolean;
   vehicleCapacity: number;
-  mapCenter: GeoPoint;
   /** Loaded on the server so the first paint is the real state, not a spinner. */
   initialRoom: Room | null;
   initialSignedOut: boolean;
@@ -133,19 +139,20 @@ export function WaitingRoom({
   const fetchRoom = () =>
     sessionApi<Room>(`/api/sessions/${sessionId}/waiting-room`);
 
-  function join(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
+  function join(values: RideValues) {
     return run(async () => {
       await sessionApi(`/api/sessions/${sessionId}/join`, {
-        displayName: data.get("displayName"),
-        destinationLabel: data.get("destinationLabel"),
-        latitude: Number(data.get("latitude")),
-        longitude: Number(data.get("longitude")),
-        delegatePreference: data.get("delegatePreference"),
+        displayName: values.displayName,
+        originLabel: values.origin.label,
+        originLatitude: values.origin.point.latitude,
+        originLongitude: values.origin.point.longitude,
+        destinationLabel: values.destination.label,
+        latitude: values.destination.point.latitude,
+        longitude: values.destination.point.longitude,
+        delegatePreference: values.delegatePreference,
       });
       apply(await fetchRoom());
-    }, "No se pudo guardar tu destino.");
+    }, "No se pudo guardar tu ruta.");
   }
 
   function match() {
@@ -177,8 +184,8 @@ export function WaitingRoom({
   const closed =
     expired || !initiallyOpen || (room !== null && !room.acceptingJoins);
   const placeLink = (
-    <Link className="action action-secondary" href={`/places/${placeId}`}>
-      Volver al lugar
+    <Link className="action action-secondary" href="/ride">
+      Buscar otro grupo
     </Link>
   );
 
@@ -190,7 +197,7 @@ export function WaitingRoom({
         </h2>
         <p>
           El grupo se deshizo para recalcular rutas y reparto con quienes
-          quedan. Puedes volver al lugar y elegir otra salida.
+          quedan. Puedes buscar otro grupo o crear uno nuevo.
         </p>
         {placeLink}
       </div>
@@ -201,7 +208,7 @@ export function WaitingRoom({
         <h2 ref={heading} tabIndex={-1}>
           Inicia sesión para unirte.
         </h2>
-        <p>Necesitas una cuenta para guardar tu destino en la sala.</p>
+        <p>Necesitas una cuenta para guardar tu ruta en el grupo.</p>
         <Link
           className="action action-primary"
           href={`/sign-in?next=${encodeURIComponent(`/sessions/${sessionId}`)}`}
@@ -221,20 +228,28 @@ export function WaitingRoom({
     <div className="session-content">
       <div className="session-meta">
         <span>
+          <ArrowRight size={17} aria-hidden="true" />
+          {group.pickupLabel.split(",")[0]} →{" "}
+          {group.destinationLabel.split(",")[0]}
+        </span>
+        <span>
           <Clock3 size={17} aria-hidden="true" />
-          Hasta{" "}
-          {new Date(closesAt).toLocaleString("es-PE", {
+          Sale{" "}
+          {new Date(group.departsAt).toLocaleTimeString("es-PE", {
             timeZone: "America/Lima",
             hour: "2-digit",
             minute: "2-digit",
-            day: "numeric",
-            month: "short",
           })}{" "}
-          (Lima)
+          (Lima) · se cierra{" "}
+          {new Date(closesAt).toLocaleTimeString("es-PE", {
+            timeZone: "America/Lima",
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
         </span>
         <span>
           <Users size={17} aria-hidden="true" />
-          Hasta {Math.min(vehicleCapacity, 3)} personas por grupo
+          Hasta {Math.min(vehicleCapacity, 3)} personas por taxi
         </span>
       </div>
       {actionError && (
@@ -250,7 +265,7 @@ export function WaitingRoom({
       {closed && !room?.party && (
         <div role="status" className="session-closed">
           <h2>Esta sala ya no admite pasajeros.</h2>
-          <p>Puedes volver al lugar y elegir otra salida.</p>
+          <p>Puedes buscar otro grupo o crear uno nuevo.</p>
           {placeLink}
         </div>
       )}
@@ -279,11 +294,17 @@ export function WaitingRoom({
         />
       ) : (
         !closed && (
-          <SessionJoinForm
-            onJoin={join}
-            busy={busy}
-            mapCenter={mapCenter}
+          <RideForm
+            initial={{ origin: null, destination: null, departInMinutes: 0 }}
             defaultName={accountName}
+            showTime={false}
+            submitLabel="Unirme al grupo"
+            busyLabel="Guardando tu ruta…"
+            busy={busy}
+            originMapCenter={group.pickup}
+            destinationMapCenter={group.destination}
+            autoLocate
+            onSubmit={join}
           />
         )
       )}

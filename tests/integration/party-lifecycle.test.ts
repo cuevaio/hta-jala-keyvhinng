@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { groupAnchors, originFields } from "./group-fixture";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { eq, inArray } from "drizzle-orm";
@@ -42,6 +43,7 @@ describe.skipIf(!url)("party lifecycle", () => {
   const placeId = randomUUID();
   const userIds = Array.from({ length: 4 }, () => randomUUID());
   const input = {
+    ...originFields,
     displayName: "Lifecycle fixture",
     destinationLabel: "Fixture destination",
     latitude: -12.1,
@@ -51,11 +53,16 @@ describe.skipIf(!url)("party lifecycle", () => {
 
   /** A fresh session where the first `count` users are matched into one party. */
   async function matchedSession(count = 3) {
+    // Users are reused across tests, and a person may be in only one live group.
+    await db
+      .delete(schema.sessions)
+      .where(eq(schema.sessions.placeId, placeId));
     const [session] = await db
       .insert(schema.sessions)
       .values({
         placeId,
-        name: "Lifecycle test",
+        ...groupAnchors,
+        departsAt: new Date(),
         vehicleCapacity: 3,
         opensAt: new Date(Date.now() - 1000),
         closesAt: new Date(Date.now() + 60000),
@@ -87,6 +94,9 @@ describe.skipIf(!url)("party lifecycle", () => {
       .values(userIds.map((id) => ({ id, displayName: "Lifecycle fixture" })));
   });
   afterAll(async () => {
+    await db
+      .delete(schema.sessions)
+      .where(eq(schema.sessions.placeId, placeId));
     await db.delete(schema.places).where(eq(schema.places.id, placeId));
     await db.delete(schema.users).where(inArray(schema.users.id, userIds));
     await sql.end();

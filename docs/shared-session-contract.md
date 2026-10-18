@@ -12,8 +12,9 @@ All endpoints use `{ data }` or `{ error: { code, message, details? } }`. IDs ar
 | `POST /api/auth/sign-in` | `{ email, password }` | `{ userId, displayName }`, sets a fresh session cookie; 401 `invalid_credentials` (same for unknown email and wrong password); 429 when throttled |
 | `POST /api/auth/sign-out` | empty JSON | Deletes the server-side session and clears the cookie |
 | `GET /api/auth/me` | session cookie | `{ userId, displayName }` or `null` |
-| `POST /api/sessions` | `{ placeId }`, session cookie | Existing currently open pool or a new two-hour pool, capacity 3 |
-| `POST /api/sessions/:id/join` | `{ displayName, destinationLabel, latitude, longitude, delegatePreference }`, session cookie | Own persisted participant; retries update the same row |
+| `GET /api/groups/search?olat&olng&dlat&dlng&depart` | none | Open groups that fit the ride, best first (ADR 0007) |
+| `POST /api/groups` | join body + `departInMinutes` (0, 15, 30, 60), session cookie | New group (capacity 3) with the caller joined |
+| `POST /api/sessions/:id/join` | `{ displayName, originLabel, originLatitude, originLongitude, destinationLabel, latitude, longitude, delegatePreference }` (409 `group_mismatch` / `group_full` / `already_in_group`), session cookie | Own persisted participant; retries update the same row |
 | `GET /api/sessions/:id/waiting-room` | member session cookie | `{ session, me, participants, party, acceptingJoins }` |
 
 `delegatePreference`: `delegate` or `passenger`. Names: 1–60 characters; destination label: 3–200 characters. Coordinates must be finite and in valid global ranges. A label and coordinates are user supplied and are not geocoded or independently verified. The form resolves an address or selects exact coordinates on a map.

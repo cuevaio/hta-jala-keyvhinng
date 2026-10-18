@@ -8,6 +8,13 @@
       "when": 1792303140128,
       "tag": "0000_premium_chronomancer",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792305227267,
+      "tag": "0001_ride_groups",
+      "breakpoints": true
     }
   ]
 }

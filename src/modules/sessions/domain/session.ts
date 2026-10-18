@@ -20,11 +20,17 @@ export const PARTICIPANT_STATUSES = [
 ] as const;
 export type ParticipantStatus = (typeof PARTICIPANT_STATUSES)[number];
 
-/** A temporary pool of passengers participating in matching for a place. */
+/** An open ride group: nearby people heading the same way around the same time. */
 export interface Session {
   id: string;
-  placeId: string;
+  /** Set when the pickup was snapped to a known place. */
+  placeId: string | null;
   name: string;
+  pickupLabel: string;
+  pickup: GeoPoint;
+  destinationLabel: string;
+  destination: GeoPoint;
+  departsAt: Date;
   status: SessionStatus;
   opensAt: Date;
   closesAt: Date;
@@ -36,6 +42,8 @@ export interface SessionParticipant {
   id: string;
   sessionId: string;
   userId: string;
+  originLabel: string;
+  origin: GeoPoint;
   destinationLabel: string;
   destination: GeoPoint;
   delegatePreference: DelegatePreference;

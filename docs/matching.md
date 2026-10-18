@@ -11,8 +11,8 @@ lasts for the session and the existing participant uniqueness constraint is reta
 - Groups contain two or three people, never more than the session vehicle capacity.
 - Exactly one member who explicitly volunteered is assigned delegate. Additional
   volunteers can be passengers. No volunteer or no compatible partner means waiting.
-- Pickup is the place's earliest predefined meeting point (creation time, then ID),
-  or the place itself if none exists. The chosen coordinates and label are saved.
+- Pickup is the group's saved pickup (`sessions.pickup_*`): the earliest meeting point of the
+  anchoring place, the place itself, or the creator's own start. Coordinates and label are saved.
 - Maximum detour is 300 seconds per person compared with a direct road trip from
   pickup to their exact destination. Arrival times include all preceding stops.
 - Directed road times come from one OSRM table request. Enumerate feasible ordered

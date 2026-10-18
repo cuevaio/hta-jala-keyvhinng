@@ -11,9 +11,10 @@ Ride 1 ──< FeeLedgerEntry >── 1 User
 ```
 
 - **Place** – somewhere people leave together: a venue, university, mall or station. Has a location and predefined **MeetingPoints**.
-- **Session** – a temporary pool of passengers for one departure window at a place. One place can
-  have many sessions. Holds the vehicle capacity used for matching.
-- **SessionParticipant** – a user in a session with an exact destination (latitude/longitude) and
+- **Session** (a _ride group_) – an open pool of people starting near the same pickup, heading
+  to the same area and leaving around `departs_at`. Holds pickup and destination anchors and the
+  vehicle capacity used for matching. `place_id` is set only when the pickup snapped to a place.
+- **SessionParticipant** – a user in a session with their own start (origin), an exact destination (latitude/longitude) and
   a **delegate preference** (`delegate` | `passenger`). Unique per (session, user).
 - **RideParty** – participants matched to share one vehicle. A session can produce many parties.
 - **RidePartyMember** – a participant's place in a party. `role` is the _assigned_ role, kept

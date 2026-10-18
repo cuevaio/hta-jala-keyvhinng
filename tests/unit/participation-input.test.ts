@@ -4,6 +4,9 @@ import { assertSameOrigin, readJson } from "@/lib/http";
 
 const input = {
   displayName: " Ana ",
+  originLabel: "Mi ubicación",
+  originLatitude: -12.1,
+  originLongitude: -77.04,
   destinationLabel: "Mi destino",
   latitude: -12.12,
   longitude: -77.03,
@@ -23,6 +26,9 @@ describe("join input and request boundary", () => {
     { latitude: "" },
     { delegatePreference: "auto" },
     { destinationLabel: "" },
+    { originLabel: "" },
+    { originLatitude: 91 },
+    { originLongitude: "" },
   ])("rejects invalid input: %j", (override) => {
     expect(joinSessionInput.safeParse({ ...input, ...override }).success).toBe(
       false,

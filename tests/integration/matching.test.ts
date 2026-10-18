@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { groupAnchors, originFields } from "./group-fixture";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { eq, inArray } from "drizzle-orm";
@@ -44,6 +45,7 @@ describe.skipIf(!url)("durable matching", () => {
     "fixture",
   );
   const input = {
+    ...originFields,
     displayName: "Matching fixture",
     destinationLabel: "Exact fixture destination",
     latitude: -12.1,
@@ -51,11 +53,16 @@ describe.skipIf(!url)("durable matching", () => {
     delegatePreference: "passenger" as "delegate" | "passenger",
   };
   async function fixture(delegates = true, count = 3) {
+    // Users are reused across tests, and a person may be in only one live group.
+    await db
+      .delete(schema.sessions)
+      .where(eq(schema.sessions.placeId, placeId));
     const [session] = await db
       .insert(schema.sessions)
       .values({
         placeId,
-        name: "Matching test",
+        ...groupAnchors,
+        departsAt: new Date(),
         vehicleCapacity: 3,
         opensAt: new Date(Date.now() - 1000),
         closesAt: new Date(Date.now() + 60000),
@@ -83,6 +90,9 @@ describe.skipIf(!url)("durable matching", () => {
       .values(userIds.map((id) => ({ id, displayName: "Matching fixture" })));
   });
   afterAll(async () => {
+    await db
+      .delete(schema.sessions)
+      .where(eq(schema.sessions.placeId, placeId));
     await db.delete(schema.places).where(eq(schema.places.id, placeId));
     await db.delete(schema.users).where(inArray(schema.users.id, userIds));
     await sql.end();

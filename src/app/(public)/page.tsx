@@ -1,22 +1,22 @@
 import Link from "next/link";
-import { MapPin, Route, Users } from "lucide-react";
+import { Clock3, LocateFixed, Users } from "lucide-react";
 import { DeparturePass } from "@/components/shared/departure-pass";
 
 const steps = [
   {
-    icon: MapPin,
-    title: "Elige dónde estás",
-    text: "Universidad, centro comercial, concierto o estación. Abre la sala de salida y comparte el enlace con quienes también se van.",
+    icon: LocateFixed,
+    title: "Detectamos dónde estás",
+    text: "Usamos tu ubicación como punto de salida. Si estás en un lugar frecuente, te llevamos a su punto de encuentro.",
   },
   {
-    icon: Route,
-    title: "Dinos a dónde vas",
-    text: "Guarda tu destino exacto e indica si puedes reservar el taxi para el grupo.",
+    icon: Clock3,
+    title: "Dinos a dónde y cuándo",
+    text: "Elige tu destino exacto y si sales ahora o dentro de 15, 30 o 60 minutos.",
   },
   {
     icon: Users,
-    title: "Comparte la sala",
-    text: "Te juntamos con 1 o 2 personas que van por tu ruta. Todas confirman el reparto antes de salir.",
+    title: "Únete o crea un grupo",
+    text: "Te mostramos grupos cercanos que van hacia tu zona. Si no hay, creas uno y otros se suman. Todos confirman el reparto antes de salir.",
   },
 ];
 export default function LandingPage() {
@@ -25,18 +25,21 @@ export default function LandingPage() {
       <section className="home-hero">
         <div className="hero-copy">
           <h1>
-            De la salida
+            Tu taxi,
             <br />
-            a tu
+            con quienes
             <br />
-            puerta.
+            van hacia allá.
           </h1>
           <p>
-            La salida también es parte del plan. Reúnete con personas que salen
-            del mismo lugar para organizar un taxi compartido.
+            Dinos dónde estás y a dónde vas. Te juntamos con personas que salen
+            cerca de ti hacia la misma zona para compartir un taxi.
           </p>
-          <Link href="/places" className="action action-primary">
-            Elegir mi lugar
+          <Link href="/ride" className="action action-primary">
+            Pedir un grupo
+          </Link>
+          <Link href="/places" className="action action-secondary">
+            Ver lugares frecuentes
           </Link>
           <p className="hero-footnote">
             Tú conservas tu destino. Quien reserva el taxi lo pide afuera.
@@ -47,7 +50,7 @@ export default function LandingPage() {
       <section className="how-section" aria-labelledby="como-funciona">
         <div className="section-intro">
           <h2 id="como-funciona">¿Cómo jalamos?</h2>
-          <p>Empieza por encontrar tu sala.</p>
+          <p>Tres pasos, sin salir de la web.</p>
         </div>
         <ol className="journey-steps">
           {steps.map(({ icon: Icon, title, text }, i) => (
