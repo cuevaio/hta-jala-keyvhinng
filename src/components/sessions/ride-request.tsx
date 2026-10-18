@@ -30,7 +30,9 @@ const distance = (meters: number) =>
 const shortLabel = (label: string) => label.split(",")[0];
 
 /** The draft as a URL, so signing in mid-request brings the person back to it. */
-export function draftQuery(values: RideValues) {
+export function draftQuery(
+  values: Pick<RideValues, "origin" | "destination" | "departInMinutes">,
+) {
   return new URLSearchParams({
     olat: String(values.origin.point.latitude),
     olng: String(values.origin.point.longitude),
@@ -43,10 +45,12 @@ export function draftQuery(values: RideValues) {
 }
 
 export function RideRequest({
+  authenticated,
   initial,
   defaultName,
   active,
 }: {
+  authenticated: boolean;
   initial: RideDraft;
   defaultName: string;
   /** A group the person is already in, so they can resume instead of starting over. */
@@ -271,11 +275,23 @@ export function RideRequest({
         </p>
       )}
       <RideForm
+        onRouteContinue={
+          authenticated
+            ? undefined
+            : (route) => {
+                const next = `/ride?${draftQuery(route)}`;
+                router.push(`/sign-up?next=${encodeURIComponent(next)}`);
+              }
+        }
         initial={draft}
         defaultName={values?.displayName ?? defaultName}
         initialSelfie={values?.selfieDataUrl}
         showTime
-        submitLabel="Buscar salas de espera"
+        submitLabel={
+          authenticated
+            ? "Buscar salas de espera"
+            : "Registrarme para continuar"
+        }
         busyLabel="Buscando salas…"
         busy={busy}
         mapCenter={

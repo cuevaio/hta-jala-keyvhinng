@@ -59,6 +59,7 @@ export function RideForm({
   busy,
   mapCenter,
   onSubmit,
+  onRouteContinue,
 }: {
   initial: RideDraft;
   defaultName: string;
@@ -69,6 +70,9 @@ export function RideForm({
   busy: boolean;
   mapCenter: GeoPoint;
   onSubmit: (values: RideValues) => void;
+  onRouteContinue?: (
+    route: Pick<RideValues, "origin" | "destination" | "departInMinutes">,
+  ) => void;
 }) {
   const [selfieDataUrl, setSelfieDataUrl] = useState(initialSelfie);
   const [origin, setOrigin] = useState(initial.origin);
@@ -84,7 +88,7 @@ export function RideForm({
     origin.label.trim().length >= 3 &&
     destination?.point &&
     destination.label.trim().length >= 3 &&
-    selfieDataUrl,
+    (onRouteContinue || selfieDataUrl),
   );
 
   function changeOrigin(next: PickedLocation | null) {
@@ -101,7 +105,18 @@ export function RideForm({
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!origin?.point || !destination?.point || !selfieDataUrl) return;
+    if (!ready || !origin?.point || !destination?.point) return;
+    if (onRouteContinue) {
+      onRouteContinue({
+        origin: { point: origin.point, label: origin.label.trim() },
+        destination: {
+          point: destination.point,
+          label: destination.label.trim(),
+        },
+        departInMinutes: when,
+      });
+      return;
+    }
     const data = new FormData(event.currentTarget);
     onSubmit({
       selfieDataUrl,
@@ -196,51 +211,59 @@ export function RideForm({
             </div>
           </fieldset>
         )}
-        <div className="form-section">
-          <label htmlFor="display-name">Tu nombre</label>
-          <input
-            id="display-name"
-            className="form-input"
-            name="displayName"
-            key={defaultName}
-            defaultValue={defaultName}
-            required
-            maxLength={60}
-            autoComplete="nickname"
-            placeholder="Cómo te verán los demás"
-          />
-        </div>
-        <SelfieUpload
-          value={selfieDataUrl}
-          onChange={setSelfieDataUrl}
-          disabled={busy}
-        />
-        <fieldset className="delegate-section">
-          <legend>¿Puedes reservar el taxi?</legend>
-          <div className="delegate-choices">
-            <label className="delegate-choice">
+        {!onRouteContinue && (
+          <>
+            <div className="form-section">
+              <label htmlFor="display-name">Tu nombre</label>
               <input
-                type="radio"
-                name="delegatePreference"
-                value="passenger"
-                defaultChecked
+                id="display-name"
+                className="form-input"
+                name="displayName"
+                key={defaultName}
+                defaultValue={defaultName}
+                required
+                maxLength={60}
+                autoComplete="nickname"
+                placeholder="Cómo te verán los demás"
               />
-              <span>
-                <UserRound size={19} aria-hidden="true" />
-                <strong>Voy de pasajero</strong>
-                <span>Prefiero que otra persona reserve.</span>
-              </span>
-            </label>
-            <label className="delegate-choice">
-              <input type="radio" name="delegatePreference" value="delegate" />
-              <span>
-                <CarFront size={19} aria-hidden="true" />
-                <strong>Puedo reservar</strong>
-                <span>Lo reservo en mi app y pago mi parte.</span>
-              </span>
-            </label>
-          </div>
-        </fieldset>
+            </div>
+            <SelfieUpload
+              value={selfieDataUrl}
+              onChange={setSelfieDataUrl}
+              disabled={busy}
+            />
+            <fieldset className="delegate-section">
+              <legend>¿Puedes reservar el taxi?</legend>
+              <div className="delegate-choices">
+                <label className="delegate-choice">
+                  <input
+                    type="radio"
+                    name="delegatePreference"
+                    value="passenger"
+                    defaultChecked
+                  />
+                  <span>
+                    <UserRound size={19} aria-hidden="true" />
+                    <strong>Voy de pasajero</strong>
+                    <span>Prefiero que otra persona reserve.</span>
+                  </span>
+                </label>
+                <label className="delegate-choice">
+                  <input
+                    type="radio"
+                    name="delegatePreference"
+                    value="delegate"
+                  />
+                  <span>
+                    <CarFront size={19} aria-hidden="true" />
+                    <strong>Puedo reservar</strong>
+                    <span>Lo reservo en mi app y pago mi parte.</span>
+                  </span>
+                </label>
+              </div>
+            </fieldset>
+          </>
+        )}
         <button
           disabled={busy || !ready}
           aria-describedby="ride-hint"
@@ -250,7 +273,9 @@ export function RideForm({
           {!busy && <ArrowRight size={18} aria-hidden="true" />}
         </button>
         <p id="ride-hint" className="fine" role="status">
-          {!ready && !busy ? (
+          {onRouteContinue ? (
+            "Elige tu partida y destino. Para continuar necesitas crear una cuenta o iniciar sesión."
+          ) : !ready && !busy ? (
             "Marca tu partida y destino, y sube una selfie para continuar."
           ) : (
             <>
