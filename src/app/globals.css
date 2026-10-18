@@ -1991,6 +1991,14 @@ ol.roster {
   outline: 3px solid var(--orange);
   outline-offset: 2px;
 }
+.chat-reconnecting {
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--warn-tint);
+  color: var(--warn-text);
+  font-size: 13px;
+}
 .chat-empty {
   margin: auto;
   max-width: 280px;

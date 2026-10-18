@@ -49,6 +49,8 @@ export function PartyChat({
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
+  // Consecutive failed reads; drives the retry backoff and the reconnecting notice.
+  const [failures, setFailures] = useState(0);
   const lastSeq = useRef(0);
   const list = useRef<HTMLOListElement>(null);
   const stickToBottom = useRef(true);
@@ -64,6 +66,8 @@ export function PartyChat({
   // chat fetches only when something changed instead of running its own timer.
   useEffect(() => {
     const controller = new AbortController();
+    // Unmounting and a slow read both abort; only the first should stay quiet.
+    let unmounted = false;
     const timeout = setTimeout(() => controller.abort(), 10_000);
     let retry: ReturnType<typeof setTimeout> | undefined;
     sessionApi<{ canPost: boolean; messages: ChatMessage[] }>(
@@ -75,20 +79,29 @@ export function PartyChat({
         setMessages((current) => merge(current, result.messages));
         setCanPost(result.canPost);
         setLoaded(true);
+        setFailures(0);
       })
       .catch((e) => {
-        if (controller.signal.aborted) return;
-        // A 404 means the party is gone; the room poll reports that. Anything else
-        // retries soon, since an unchanged room would not trigger another fetch.
-        if (!(e instanceof SessionRequestError && e.status === 404))
-          retry = setTimeout(() => setAttempt((n) => n + 1), 5000);
+        if (unmounted) return;
+        // A 404 means the party is gone; the room poll reports that. Timeouts and
+        // other failures retry with backoff, since an unchanged room would not
+        // trigger another fetch.
+        if (e instanceof SessionRequestError && e.status === 404) return;
+        setFailures((n) => n + 1);
+        retry = setTimeout(
+          () => setAttempt((n) => n + 1),
+          Math.min(30_000, 5000 * 2 ** failures),
+        );
       })
       .finally(() => clearTimeout(timeout));
     return () => {
+      unmounted = true;
       clearTimeout(timeout);
       clearTimeout(retry);
       controller.abort();
     };
+    // `failures` only sets the next delay; it must not start a fetch by itself.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [path, revision, attempt]);
 
   async function send(body: string) {
@@ -121,6 +134,11 @@ export function PartyChat({
         <MessageCircle size={18} aria-hidden="true" />
         Chat del grupo
       </h3>
+      {failures > 0 && (
+        <p className="chat-reconnecting" role="status">
+          Reconectando el chat… Los mensajes nuevos aparecerán solos.
+        </p>
+      )}
       <ol
         ref={list}
         className="chat-log"
@@ -138,7 +156,9 @@ export function PartyChat({
           <li className="chat-empty">
             {loaded
               ? "Aún no hay mensajes. Coordinen aquí dónde se encuentran."
-              : "Cargando mensajes…"}
+              : failures > 0
+                ? "No pudimos cargar los mensajes. Reintentando…"
+                : "Cargando mensajes…"}
           </li>
         )}
         {messages.map((m) => {
