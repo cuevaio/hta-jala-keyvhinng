@@ -1,5 +1,6 @@
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import type { Database } from "@/db";
+import { recordActivity } from "@/modules/notifications/infrastructure/activity.repository";
 import {
   places,
   meetingPoints,
@@ -229,7 +230,15 @@ export function createMatchingRepository(db: Database) {
               "La sala cambió. Busca compañeros de viaje otra vez.",
             );
         }
-        if (plans.length) await bumpRoomRevision(tx, sessionId);
+        if (plans.length) {
+          await recordActivity(
+            tx,
+            plans.flatMap((plan) => plan.stops.map((s) => s.userId)),
+            sessionId,
+            "formed",
+          );
+          await bumpRoomRevision(tx, sessionId);
+        }
         // The pool stays open so unmatched people can join later matching rounds.
         return {
           createdPartyCount: plans.length,

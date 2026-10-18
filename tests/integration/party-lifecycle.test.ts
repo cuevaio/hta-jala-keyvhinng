@@ -11,6 +11,7 @@ import { createMatchingRepository } from "@/modules/matching/infrastructure/matc
 import { createMatchingApplication } from "@/modules/matching/application/matching.service";
 import { createRoadMatchingService } from "@/modules/matching/domain/road-matching";
 import { createPartyRepository } from "@/modules/parties/infrastructure/party.repository";
+import { createActivityRepository } from "@/modules/notifications/infrastructure/activity.repository";
 import type { RoutingProvider } from "@/modules/routing/domain/routing-provider";
 
 const url = process.env.TEST_DATABASE_URL;
@@ -19,6 +20,7 @@ describe.skipIf(!url)("party lifecycle", () => {
   const db = drizzle(sql, { schema });
   const participation = createParticipationRepository(db);
   const parties = createPartyRepository(db);
+  const activity = createActivityRepository(db);
   const routing: RoutingProvider = {
     estimateMatrix: async (points) => ({
       durationsSeconds: points.map(() => points.map(() => 100)),
@@ -124,6 +126,12 @@ describe.skipIf(!url)("party lifecycle", () => {
   it("runs confirm → start → complete and books the ride record", async () => {
     const s = await matchedSession();
     const [a, b, c] = userIds;
+    // Matching saves the event for everyone, including the person pressing match.
+    expect((await activity.list(a)).items.map((n) => n.kind)).toEqual([
+      "formed",
+    ]);
+    await matching.match(s.id, a);
+    expect((await activity.list(a)).items).toHaveLength(1);
     expect(await parties.apply(s.id, a, "confirm")).toEqual({
       partyStatus: "forming",
       event: null,
@@ -216,6 +224,17 @@ describe.skipIf(!url)("party lifecycle", () => {
       .from(schema.users)
       .where(eq(schema.users.id, a));
     expect(user.completedRides).toBeGreaterThanOrEqual(1);
+    for (const member of [a, b, c]) {
+      const feed = await activity.list(member);
+      expect(feed.items.map((n) => n.kind)).toEqual([
+        "completed",
+        "started",
+        "confirmed",
+        "formed",
+      ]);
+      expect(feed.unreadCount).toBe(4);
+    }
+    expect((await activity.list(userIds[3])).items).toEqual([]);
   });
 
   it("dissolves on leave: leaver withdrawn, others rematchable with a fresh plan", async () => {
@@ -224,6 +243,11 @@ describe.skipIf(!url)("party lifecycle", () => {
     await parties.apply(s.id, a, "confirm");
     const before = (await room(s.id, 1)).party!;
     await parties.apply(s.id, c, "leave");
+    for (const member of [a, b, c])
+      expect((await activity.list(member)).items.map((n) => n.kind)).toEqual([
+        "dissolved",
+        "formed",
+      ]);
 
     // Everyone's party is gone, the leaver is out, the others wait again.
     expect((await room(s.id, 1)).party).toBeNull();
@@ -333,6 +357,11 @@ describe.skipIf(!url)("party lifecycle", () => {
       expect((await room(s.id, 0)).party).toBeNull();
       // Already swept: nothing more to do.
       expect(await parties.sweep(s.id)).toEqual([]);
+      for (const member of [a, b, c])
+        expect((await activity.list(member)).items.map((n) => n.kind)).toEqual([
+          "expired",
+          "formed",
+        ]);
     });
 
     it("returns everyone to the pool when a confirmed group never starts", async () => {

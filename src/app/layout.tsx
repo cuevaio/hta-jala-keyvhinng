@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import "@/components/journey/journey.css";
 import { InteractionLog } from "@/components/telemetry/interaction-log";
+import "@/components/notifications/notifications.css";
 
 // Self-hosted (SIL OFL, see fonts/OFL.txt) so builds and dev never depend on
 // reaching Google Fonts. One variable file covers weights 400–800 for Spanish text.

@@ -11,6 +11,7 @@ import {
 } from "@/db/schema";
 import { NotFoundError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
+import { recordActivity } from "@/modules/notifications/infrastructure/activity.repository";
 import { calculatePlatformFee } from "@/modules/payments/domain/fees";
 import { bumpRoomRevision } from "@/modules/sessions/infrastructure/room-revision";
 import { missedDeadline } from "./party-deadlines";
@@ -135,6 +136,7 @@ export function createPartyRepository(db: Database) {
           const outcome = expiryOf(party, now);
           if (outcome === "none") continue;
           const result = await releaseExpired(tx, party, outcome, now);
+          await recordActivity(tx, result.memberUserIds, sessionId, "expired");
           logger.info("party.expired", {
             sessionId,
             partyId: party.id,
@@ -266,6 +268,12 @@ export function createPartyRepository(db: Database) {
                 .insert(rides)
                 .values({ partyId: party.id })
                 .onConflictDoNothing();
+              await recordActivity(
+                tx,
+                members.map((m) => m.userId),
+                sessionId,
+                "confirmed",
+              );
             }
             return {
               partyStatus: decision.partyStatus,
@@ -321,6 +329,12 @@ export function createPartyRepository(db: Database) {
                 .update(sessionParticipants)
                 .set({ status: "waiting", updatedAt: now })
                 .where(inArray(sessionParticipants.id, others));
+            await recordActivity(
+              tx,
+              members.map((m) => m.userId),
+              sessionId,
+              "dissolved",
+            );
             return { partyStatus: "cancelled", event: event("dissolved") };
           }
           case "start": {
@@ -329,6 +343,12 @@ export function createPartyRepository(db: Database) {
               .update(rides)
               .set({ status: "in_progress", startedAt: now, updatedAt: now })
               .where(eq(rides.partyId, party.id));
+            await recordActivity(
+              tx,
+              members.map((m) => m.userId),
+              sessionId,
+              "started",
+            );
             return { partyStatus: "in_progress", event: event("started") };
           }
           case "complete": {
@@ -378,6 +398,12 @@ export function createPartyRepository(db: Database) {
                   })
                   .where(eq(users.id, member.userId));
             }
+            await recordActivity(
+              tx,
+              members.map((m) => m.userId),
+              sessionId,
+              "completed",
+            );
             return { partyStatus: "completed", event: event("completed") };
           }
         }

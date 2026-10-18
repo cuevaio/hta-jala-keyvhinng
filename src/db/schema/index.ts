@@ -9,3 +9,4 @@ export * from "./relations";
 export * from "./browser-sessions";
 export * from "./auth-security";
 export * from "./push-subscriptions";
+export * from "./notification-activity";

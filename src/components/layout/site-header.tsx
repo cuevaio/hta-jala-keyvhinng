@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { AuthNav } from "@/components/auth/auth-nav";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { Wordmark } from "./wordmark";
 
 export function SiteHeader() {
@@ -27,6 +28,7 @@ export function SiteHeader() {
     <header className={`site-header${open ? " menu-open" : ""}`}>
       <div className="site-header-inner wrap">
         <Wordmark eager />
+        <NotificationBell key={pathname} />
         <button
           type="button"
           className="menu-toggle"

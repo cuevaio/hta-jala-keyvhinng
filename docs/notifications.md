@@ -1,4 +1,37 @@
-# Room notifications (Web Push)
+# Ride activity and room notifications
+
+## Activity bell
+
+Signed-in passengers can open **Notificaciones** from the home header or the live
+ride site's header. The panel shows the latest 30 updates, timestamps in Lima time,
+unread highlighting, and links to the corresponding room. Opening an update marks
+it read; **Marcar todas como leídas** clears the account's entire unread count,
+including older updates outside the visible list. Opening the panel alone does not
+mark anything read or ask for browser notification permission.
+
+`notification_activity` (migration `0012`) saves group-found, everyone-confirmed,
+dissolved, expired, started, and completed events for every member, including the
+person making the change. Inserts share the matching/lifecycle transaction: rolled
+back writes and no-op retries produce no activity. Existing trips are not backfilled.
+Deleting the account or room also deletes its activity.
+
+`GET /api/notifications` returns `{ data: { items, unreadCount } }` for the signed-in
+account, newest first. Each item contains `id`, `kind`, `sessionId`, `createdAt`, and
+`readAt`; generic Spanish text comes from the shared activity catalog. No addresses,
+photos, names, or chat content are stored in activity. `POST /api/notifications`
+accepts `{ ids: [...] }` (1–30 UUIDs) or `{ all: true }`; only the authenticated
+account's rows can change. Responses are private/no-store; mutations require same
+origin. Read timestamps are idempotent.
+
+The bell refreshes every 15 seconds while visible, on focus/resume, on opening, and
+when a service-worker message arrives. Network failures show a retry action; the room
+continues to show its own current state. Chat remains in the group. These in-app
+updates work without VAPID keys, installed-app support, or browser permissions.
+
+The panel uses a native modal dialog for keyboard focus, Escape dismissal, and focus
+return, with backdrop dismissal and a layout bounded to the mobile viewport.
+
+## Web Push
 
 People leave the room screen: the phone goes into a pocket while they wait at the exit.
 Polling only works while the page is open, so the room changes that need someone to act

@@ -85,6 +85,13 @@
       "when": 1792327988762,
       "tag": "0011_room_creator",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792328880384,
+      "tag": "0012_notification_activity",
+      "breakpoints": true
     }
   ]
 }

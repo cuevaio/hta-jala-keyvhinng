@@ -25,6 +25,7 @@ import {
   type DepartureChoice,
 } from "@/modules/sessions/domain/affinity";
 import { GoogleMark } from "@/components/auth/google-mark";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { disablePush } from "@/components/sessions/push-client";
 import {
   LocationPicker,
@@ -218,6 +219,7 @@ export function PassengerJourney({
                 {tabLinks}
               </nav>
               <div className="j-appbar-actions">
+                <NotificationBell />
                 <button
                   className="j-avatar"
                   onClick={() => nav("account")}

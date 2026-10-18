@@ -2,6 +2,7 @@ import { createLogMailer, createResendMailer } from "@/lib/mailer";
 import { getEnv } from "@/lib/env";
 import { createMatchingApplication } from "@/modules/matching/application/matching.service";
 import { createRoomEvents } from "@/modules/notifications/application/room-events";
+import { createActivityRepository } from "@/modules/notifications/infrastructure/activity.repository";
 import { createNotificationService } from "@/modules/notifications/application/notification.service";
 import {
   createLogPushSender,
@@ -46,6 +47,7 @@ export function getServices() {
   );
   return {
     matching,
+    activity: createActivityRepository(db),
     pushSubscriptions,
     roomEvents: createRoomEvents({ matching, notifications }),
     auth: createAuthService(
