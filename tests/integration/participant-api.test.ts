@@ -1,3 +1,4 @@
+import { selfieDataUrl } from "../fixtures/selfie";
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { drizzle } from "drizzle-orm/postgres-js";
@@ -20,7 +21,11 @@ describe.skipIf(!base || !url)(
     async function post(path: string, body: unknown, cookie = "") {
       return fetch(`${base}${path}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", cookie },
+        headers: {
+          "Content-Type": "application/json",
+          cookie,
+          "x-forwarded-for": `test-${placeId}`,
+        },
         body: JSON.stringify(body),
       });
     }
@@ -123,6 +128,7 @@ describe.skipIf(!base || !url)(
     });
     it("enforces authentication/membership and shares a persisted roster", async () => {
       const input = {
+        selfieDataUrl,
         displayName: "API Ana",
         originLabel: "Fictional start",
         originLatitude: -12,
@@ -133,6 +139,17 @@ describe.skipIf(!base || !url)(
         delegatePreference: "delegate",
       };
       expect((await post("/api/groups", input, "")).status).toBe(401);
+      const { selfieDataUrl: _photo, ...withoutSelfie } = input;
+      void _photo;
+      expect(
+        (
+          await post(
+            "/api/groups",
+            { ...withoutSelfie, departInMinutes: 15 },
+            cookieA,
+          )
+        ).status,
+      ).toBe(400);
       const opened = await post(
         "/api/groups",
         { ...input, departInMinutes: 15 },
@@ -156,6 +173,10 @@ describe.skipIf(!base || !url)(
         (await fetch(`${base}${path}`, { headers: { cookie: cookieB } }))
           .status,
       ).toBe(403);
+      expect(
+        (await post(`/api/sessions/${sessionId}/join`, withoutSelfie, cookieB))
+          .status,
+      ).toBe(400);
       expect(
         (
           await post(

@@ -9,7 +9,11 @@ export interface Room {
     id: string;
     status: PartyStatus;
     plan: MatchingRoutePlan | null;
-    members: { participantId: string; status: string }[];
+    members: {
+      participantId: string;
+      status: string;
+      selfieDataUrl: string | null;
+    }[];
   } | null;
   me: {
     id: string;

@@ -107,6 +107,7 @@ export function RideRequest({
 
   const payload = (v: RideValues) => ({
     displayName: v.displayName,
+    selfieDataUrl: v.selfieDataUrl,
     originLabel: v.origin.label,
     originLatitude: v.origin.point.latitude,
     originLongitude: v.origin.point.longitude,
@@ -272,6 +273,7 @@ export function RideRequest({
       <RideForm
         initial={draft}
         defaultName={values?.displayName ?? defaultName}
+        initialSelfie={values?.selfieDataUrl}
         showTime
         submitLabel="Buscar salas de espera"
         busyLabel="Buscando salas…"

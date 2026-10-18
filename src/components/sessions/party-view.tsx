@@ -57,6 +57,9 @@ export const PartyView = forwardRef<
     wasConfirming.current = confirmingLeave;
   }, [confirmingLeave]);
 
+  const selfies = new Map(
+    party.members.map((member) => [member.participantId, member.selfieDataUrl]),
+  );
   const mine = party.members.find((m) => m.participantId === meId);
   const me = plan.stops.find((s) => s.participantId === meId);
   const isDelegate = me?.role === "delegate";
@@ -141,7 +144,17 @@ export const PartyView = forwardRef<
             {plan.stops.map((stop, i) => (
               <li key={stop.participantId}>
                 <span className="person-avatar" aria-hidden="true">
-                  {stop.dropOffOrder}
+                  {selfies.get(stop.participantId) ? (
+                    // Private inline photo; bypass the public image optimizer.
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={selfies.get(stop.participantId)!}
+                      alt=""
+                      className="member-selfie"
+                    />
+                  ) : (
+                    stop.displayName.slice(0, 1).toUpperCase()
+                  )}
                 </span>
                 <div className="person-name">
                   <strong>
@@ -155,7 +168,9 @@ export const PartyView = forwardRef<
                       />
                     )}
                   </strong>
-                  <span>{stop.destinationLabel}</span>
+                  <span>
+                    Parada {stop.dropOffOrder} · {stop.destinationLabel}
+                  </span>
                   <span>
                     {stop.role === "delegate" ? "Reserva el taxi" : "Pasajero"}{" "}
                     · {Math.ceil(stop.arrivalSeconds / 60)} min desde el

@@ -77,3 +77,7 @@ Public verification requires an authenticated Vercel account, selected team/proj
 M1 is **publicly verified** at https://jala-chi.vercel.app (Vercel project `keyvhinngs-projects/jala`, Neon resource `jala-db`, Free plan, iad1). Both independent browsers joined and saw the same roster; polling and refresh persistence passed. See `docs/evidence/shared-session-checks.md`.
 
 GitHub auto-linking failed during project creation, so this release was deployed through the CLI from the working tree. Push-based deployments are not yet connected. Production runtime error scan returned no error records during verification. User research and organizer rubric confirmation still require real people; no traction evidence is fabricated.
+
+## Selfies
+
+Creating or joining a room requires `selfieDataUrl`, a base64 JPEG capped at 150 KB. The browser resizes uploads to at most 400 pixels and removes metadata by rendering to canvas. Photos are stored per participation and included only in the assigned party’s member list in the authenticated, private/no-store waiting-room response. Waiting participants receive no other participant photos. Existing participations may have no photo and render an initial. Apply the generated database migration before deploying the code. This is a visual identification aid, with no face or identity verification.

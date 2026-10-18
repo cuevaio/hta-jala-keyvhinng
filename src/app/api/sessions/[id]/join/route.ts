@@ -11,7 +11,7 @@ export const POST = handle(
     assertSameOrigin(request);
     const { userId } = await requireIdentity();
     const { id } = sessionIdParams.parse(await ctx.params);
-    const input = joinSessionInput.parse(await readJson(request));
+    const input = joinSessionInput.parse(await readJson(request, 210_000));
     return ok(await getServices().participation.join(id, userId, input));
   },
 );

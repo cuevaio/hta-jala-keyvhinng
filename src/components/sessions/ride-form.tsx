@@ -13,11 +13,13 @@ import {
   DEPARTURE_CHOICES,
   type DepartureChoice,
 } from "@/modules/sessions/domain/affinity";
+import { SelfieUpload } from "./selfie-upload";
 import { LocationPicker, type PickedLocation } from "./location-picker";
 import { RideMap, type RideEnd } from "./ride-map";
 
 export interface RideValues {
   displayName: string;
+  selfieDataUrl: string;
   origin: { point: GeoPoint; label: string };
   destination: { point: GeoPoint; label: string };
   departInMinutes: DepartureChoice;
@@ -50,6 +52,7 @@ export const DEFAULT_MAP_CENTER: GeoPoint = {
 export function RideForm({
   initial,
   defaultName,
+  initialSelfie = "",
   showTime,
   submitLabel,
   busyLabel,
@@ -59,6 +62,7 @@ export function RideForm({
 }: {
   initial: RideDraft;
   defaultName: string;
+  initialSelfie?: string;
   showTime: boolean;
   submitLabel: string;
   busyLabel: string;
@@ -66,6 +70,7 @@ export function RideForm({
   mapCenter: GeoPoint;
   onSubmit: (values: RideValues) => void;
 }) {
+  const [selfieDataUrl, setSelfieDataUrl] = useState(initialSelfie);
   const [origin, setOrigin] = useState(initial.origin);
   const [destination, setDestination] = useState(initial.destination);
   const [when, setWhen] = useState<DepartureChoice>(initial.departInMinutes);
@@ -78,7 +83,8 @@ export function RideForm({
     origin?.point &&
     origin.label.trim().length >= 3 &&
     destination?.point &&
-    destination.label.trim().length >= 3,
+    destination.label.trim().length >= 3 &&
+    selfieDataUrl,
   );
 
   function changeOrigin(next: PickedLocation | null) {
@@ -95,9 +101,10 @@ export function RideForm({
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!origin?.point || !destination?.point) return;
+    if (!origin?.point || !destination?.point || !selfieDataUrl) return;
     const data = new FormData(event.currentTarget);
     onSubmit({
+      selfieDataUrl,
       displayName: String(data.get("displayName") ?? ""),
       origin: { point: origin.point, label: origin.label.trim() },
       destination: {
@@ -203,6 +210,11 @@ export function RideForm({
             placeholder="Cómo te verán los demás"
           />
         </div>
+        <SelfieUpload
+          value={selfieDataUrl}
+          onChange={setSelfieDataUrl}
+          disabled={busy}
+        />
         <fieldset className="delegate-section">
           <legend>¿Puedes reservar el taxi?</legend>
           <div className="delegate-choices">
@@ -239,7 +251,7 @@ export function RideForm({
         </button>
         <p id="ride-hint" className="fine" role="status">
           {!ready && !busy ? (
-            "Marca tu punto de partida y tu destino para continuar."
+            "Marca tu partida y destino, y sube una selfie para continuar."
           ) : (
             <>
               <ShieldCheck size={16} aria-hidden="true" />

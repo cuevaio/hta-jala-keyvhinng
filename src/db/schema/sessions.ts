@@ -63,6 +63,8 @@ export const sessionParticipants = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    /** Private to the participant and their assigned travel group. */
+    selfieDataUrl: text("selfie_data_url"),
     /** Where this person is starting from (their GPS or chosen spot). */
     originLabel: text("origin_label").notNull(),
     originLatitude: doublePrecision("origin_latitude").notNull(),

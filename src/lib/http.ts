@@ -102,12 +102,12 @@ export function assertSameOrigin(request: Request) {
   }
 }
 
-export async function readJson(request: Request) {
+export async function readJson(request: Request, maxLength = 8192) {
   if (!request.headers.get("content-type")?.includes("application/json")) {
     throw new ApiError(415, "json_required", "Envía los datos como JSON.");
   }
   const body = await request.text();
-  if (body.length > 8192)
+  if (body.length > maxLength)
     throw new ApiError(413, "body_too_large", "Solicitud demasiado grande.");
   try {
     return JSON.parse(body) as unknown;

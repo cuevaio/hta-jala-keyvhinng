@@ -2366,3 +2366,17 @@ ol.roster {
     transition: none !important;
   }
 }
+
+.member-selfie {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+.selfie-preview {
+  margin: 0;
+}
+.selfie-preview img {
+  object-fit: cover;
+  border-radius: 12px;
+}

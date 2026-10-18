@@ -150,6 +150,7 @@ export function WaitingRoom({
     return run(async () => {
       await sessionApi(`/api/sessions/${sessionId}/join`, {
         displayName: values.displayName,
+        selfieDataUrl: values.selfieDataUrl,
         originLabel: values.origin.label,
         originLatitude: values.origin.point.latitude,
         originLongitude: values.origin.point.longitude,

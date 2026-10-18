@@ -1,3 +1,4 @@
+import { selfieDataUrl } from "../fixtures/selfie";
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { drizzle } from "drizzle-orm/postgres-js";
@@ -21,6 +22,7 @@ describe.skipIf(!url)("ride groups and shared sessions", () => {
   // Own corner of the map: other suites place fixtures near (-12, -77).
   const here = { latitude: -11.5, longitude: -76.5 };
   const input = {
+    selfieDataUrl,
     originLabel: "Mi punto de salida",
     originLatitude: here.latitude,
     originLongitude: here.longitude,
@@ -78,6 +80,13 @@ describe.skipIf(!url)("ride groups and shared sessions", () => {
       30 * 60_000,
     );
     const room = await repo.waitingRoom(session.id, userIds[0]);
+    const [saved] = await db
+      .select()
+      .from(schema.sessionParticipants)
+      .where(eq(schema.sessionParticipants.id, room.me.id));
+    expect(saved.selfieDataUrl).toBe(selfieDataUrl);
+    expect(room.me).not.toHaveProperty("selfieDataUrl");
+    expect(room.participants[0]).not.toHaveProperty("selfieDataUrl");
     expect(room.me.originLabel).toBe(input.originLabel);
     expect(room.participants).toHaveLength(1);
   });

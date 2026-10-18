@@ -7,6 +7,6 @@ import { createGroupInput } from "@/modules/sessions/schemas/session.schema";
 export const POST = handle(async (request: Request) => {
   assertSameOrigin(request);
   const { userId } = await requireIdentity();
-  const input = createGroupInput.parse(await readJson(request));
+  const input = createGroupInput.parse(await readJson(request, 210_000));
   return ok(await getServices().participation.createGroup(userId, input));
 });
