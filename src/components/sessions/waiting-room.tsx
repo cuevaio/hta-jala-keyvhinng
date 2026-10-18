@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Clock3, MapPin, Users } from "lucide-react";
+import { ArrowRight, Clock3, MapPin } from "lucide-react";
 import type { GeoPoint } from "@/modules/places/domain/place";
 import type { PartyCommand } from "@/modules/parties/domain/party-lifecycle";
 import { roomDeadline } from "./room-clock";
@@ -51,10 +51,8 @@ export function WaitingRoom({
   group,
   closesAt,
   initiallyOpen,
-  vehicleCapacity,
   initialRoom,
   initialSignedOut,
-  accountName,
   pushPublicKey,
 }: {
   sessionId: string;
@@ -62,11 +60,9 @@ export function WaitingRoom({
   group: GroupRoute;
   closesAt: string;
   initiallyOpen: boolean;
-  vehicleCapacity: number;
   /** Loaded on the server so the first paint is the real state, not a spinner. */
   initialRoom: Room | null;
   initialSignedOut: boolean;
-  accountName: string;
   /** VAPID public key; null when the server cannot send notifications. */
   pushPublicKey: string | null;
 }) {
@@ -272,7 +268,6 @@ export function WaitingRoom({
   function join(values: RideValues) {
     return run(async () => {
       await sessionApi(`/api/sessions/${sessionId}/join`, {
-        displayName: values.displayName,
         selfieDataUrl: values.selfieDataUrl,
         originLabel: values.origin.label,
         originLatitude: values.origin.point.latitude,
@@ -331,8 +326,6 @@ export function WaitingRoom({
     }, "No pudimos completar la acción.");
   }
 
-  // Matching forms parties of two or three, whatever the vehicle holds.
-  const taxiSize = vehicleCapacity > 2 ? "2 o 3" : "2";
   const placeLink = (
     <Link className="action action-secondary" href="/ride">
       Buscar otra sala
@@ -364,38 +357,25 @@ export function WaitingRoom({
             <Clock3 size={14} aria-hidden="true" />
             Sale {limaTime(group.departsAt)}
           </span>
-          <span className="tag">
-            <Users size={14} aria-hidden="true" />
-            {taxiSize} personas por taxi
-          </span>
-          <span className="tag">
-            {closed
-              ? "Sala cerrada"
-              : `Cierra a las ${limaTime(closesAt)} (Lima)`}
-          </span>
-          {!closed && (
+          {closed ? (
+            <span className="tag">Sala cerrada</span>
+          ) : (
             <span
               className="tag room-countdown"
               role="timer"
               aria-live="off"
-              aria-label="Tiempo restante para unirse y formar un grupo"
+              aria-label={`Tiempo restante para unirse y formar un grupo; cierra a las ${limaTime(closesAt)}`}
             >
               Cierra en {deadline.label}
             </span>
           )}
         </div>
       </div>
-      <p
-        role="status"
-        className={`room-deadline ${!closed && deadline.phase === "closing" ? "room-deadline-warning" : ""}`}
-      >
-        {closed
-          ? room?.party
-            ? "La sala está cerrada para nuevas personas. Tu grupo ya está formado y sigue disponible."
-            : "La sala cerró. Ya no puedes unirte ni formar un grupo de viaje."
-          : deadline.phase === "closing"
-            ? "La sala cierra en 5 minutos o menos. Únete o busca compañeros antes de que termine la espera."
-            : "La sala cierra 30 minutos después de la hora de salida. Después no podrás unirte ni formar un grupo. Los grupos ya formados pueden continuar su viaje."}
+      {/* Only the last minutes need words; the countdown says the rest. */}
+      <p role="status" className="room-deadline room-deadline-warning">
+        {!closed && deadline.phase === "closing"
+          ? "La sala cierra en 5 minutos o menos. Únete o busca compañeros antes de que termine la espera."
+          : ""}
       </p>
       {actionError && (
         <p role="alert" className="form-error">
@@ -472,7 +452,6 @@ export function WaitingRoom({
         !closed && (
           <RideForm
             initial={{ origin: null, destination: null, departInMinutes: 0 }}
-            defaultName={accountName}
             showTime={false}
             submitLabel="Entrar a la sala"
             busyLabel="Guardando tu ruta…"

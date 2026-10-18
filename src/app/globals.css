@@ -1665,7 +1665,6 @@ fieldset legend {
 .room-side .own-destination,
 .room-side .share-block,
 .room-side .fine,
-.room-main > .my-share:first-child,
 .room-main > .match-action {
   margin: 0;
 }
@@ -1876,27 +1875,6 @@ ol.roster {
   border-radius: 16px;
   overflow: hidden;
   z-index: 0;
-}
-.my-share {
-  display: grid;
-  gap: 2px;
-  margin-top: 18px;
-  padding: 20px 22px;
-  border-radius: 16px;
-  background: var(--ink);
-  color: #fff;
-}
-.my-share span,
-.my-share small {
-  font-size: 13px;
-  color: #b9cdcb;
-}
-.my-share strong {
-  font-size: 40px;
-  font-weight: 800;
-  letter-spacing: -0.04em;
-  line-height: 1.1;
-  font-variant-numeric: tabular-nums;
 }
 .fare-calculator {
   margin: 18px 0 4px;
@@ -2600,6 +2578,10 @@ ol.roster {
   background: #fff6db;
   border-color: #b88b24;
   color: #58400b;
+}
+/* The live region stays mounted so the warning is announced when it appears. */
+.room-deadline:empty {
+  display: none;
 }
 
 /* Room notification opt-in */

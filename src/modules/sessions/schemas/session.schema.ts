@@ -33,7 +33,8 @@ export const joinSessionInput = z.object({
     .string()
     .max(MAX_SELFIE_DATA_URL_LENGTH)
     .refine(isSelfieDataUrl, "Sube una selfie en formato JPEG."),
-  displayName: z.string().trim().min(1).max(60),
+  /** Rooms show the account's name; older clients still send one. */
+  displayName: z.string().trim().min(1).max(60).optional(),
   originLabel: z.string().trim().min(3).max(200),
   originLatitude: latitude,
   originLongitude: longitude,

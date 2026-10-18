@@ -12,18 +12,13 @@ import {
   Clock3,
   Home,
   LocateFixed,
-  LogOut,
   Mail,
   MapPin,
   Shield,
   UserRound,
   Wallet,
 } from "lucide-react";
-import {
-  formatSoles,
-  PLATFORM_FEE_MINOR,
-  WELCOME_CREDIT_MINOR,
-} from "@/modules/payments/domain/fees";
+import { formatSoles } from "@/modules/payments/domain/fees";
 import type { GeoPoint } from "@/modules/places/domain/place";
 import {
   DEPARTURE_CHOICES,
@@ -36,7 +31,7 @@ import {
   type PickedLocation,
 } from "@/components/sessions/location-picker";
 import { saveRideDraft } from "@/components/sessions/ride-draft";
-import { DEFAULT_MAP_CENTER } from "@/components/sessions/ride-form";
+import { DEFAULT_MAP_CENTER, ROLE_COPY } from "@/components/sessions/ride-form";
 import { RideMap, type RideEnd } from "@/components/sessions/ride-map";
 import { sessionApi } from "@/components/sessions/session-api";
 
@@ -229,13 +224,6 @@ export function PassengerJourney({
                     <UserRound size={18} aria-hidden="true" />
                   )}
                 </button>
-                <button
-                  className="j-circle"
-                  onClick={signOut}
-                  aria-label="Cerrar sesión"
-                >
-                  <LogOut size={20} />
-                </button>
               </div>
             </>
           )}
@@ -366,13 +354,6 @@ export function PassengerJourney({
                 </p>
               </section>
               <section className="j-col-side">
-                <div className="j-promo">
-                  <p>Tu ruta, nuestro viaje.</p>
-                  <h2>{formatSoles(WELCOME_CREDIT_MINOR)} de bienvenida</h2>
-                  <span>
-                    Cada viaje como pasajero: {formatSoles(PLATFORM_FEE_MINOR)}
-                  </span>
-                </div>
                 <div className="j-section-heading">
                   <div>
                     <p className="j-eyebrow">AHORA MISMO</p>
@@ -470,16 +451,16 @@ export function PassengerJourney({
                       aria-pressed={!delegate}
                       onClick={() => setDelegate(false)}
                     >
-                      <strong>Voy de pasajero</strong>
-                      <small>Prefiero que otra persona reserve</small>
+                      <strong>{ROLE_COPY.passenger.title}</strong>
+                      <small>{ROLE_COPY.passenger.detail}</small>
                     </button>
                     <button
                       type="button"
                       aria-pressed={delegate}
                       onClick={() => setDelegate(true)}
                     >
-                      <strong>Puedo reservar</strong>
-                      <small>Pido el taxi y no pago comisión</small>
+                      <strong>{ROLE_COPY.delegate.title}</strong>
+                      <small>{ROLE_COPY.delegate.detail}</small>
                     </button>
                   </div>
                 </fieldset>

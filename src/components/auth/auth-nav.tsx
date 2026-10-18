@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { Wallet } from "lucide-react";
-import { disablePush } from "@/components/sessions/push-client";
 import { sessionApi } from "@/components/sessions/session-api";
 import { formatSoles } from "@/modules/payments/domain/fees";
 
@@ -14,10 +13,12 @@ interface Me {
   creditBalanceMinor: number;
 }
 
-/** Header account control. Re-checks on every route change so it follows sign-in/out. */
+/**
+ * Header account status. Re-checks on every route change so it follows sign-in/out;
+ * signing out lives in Inicio → Cuenta.
+ */
 export function AuthNav() {
   const pathname = usePathname();
-  const router = useRouter();
   const [me, setMe] = useState<Me | null | undefined>(undefined);
 
   useEffect(() => {
@@ -29,15 +30,6 @@ export function AuthNav() {
       stale = true;
     };
   }, [pathname]);
-
-  async function signOut() {
-    // This browser must stop receiving the account's notifications; needs the session.
-    await disablePush().catch(() => {});
-    await sessionApi("/api/auth/sign-out", {}).catch(() => {});
-    setMe(null);
-    router.push("/");
-    router.refresh();
-  }
 
   if (me === undefined)
     return <span className="auth-nav auth-nav-loading" aria-hidden="true" />;
@@ -57,9 +49,6 @@ export function AuthNav() {
         <span className="sr-only">Saldo:</span>
         {formatSoles(me.creditBalanceMinor)}
       </span>
-      <button type="button" onClick={signOut} className="nav-link auth-signout">
-        Salir
-      </button>
     </span>
   );
 }

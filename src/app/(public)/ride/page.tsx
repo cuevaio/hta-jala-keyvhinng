@@ -6,10 +6,6 @@ import type { RideDraft } from "@/components/sessions/ride-form";
 import { getServices } from "@/lib/services";
 import { DEPARTURE_CHOICES } from "@/modules/sessions/domain/affinity";
 import { readIdentity } from "@/modules/participants/infrastructure/browser-identity";
-import {
-  formatSoles,
-  PLATFORM_FEE_MINOR,
-} from "@/modules/payments/domain/fees";
 
 export const metadata: Metadata = { title: "Compartir un taxi" };
 
@@ -94,19 +90,10 @@ export default async function RidePage({ searchParams }: PageProps<"/ride">) {
           Dinos desde dónde sales y a dónde vas. Te mostramos salas de espera
           con personas hacia tu zona, o creas una para que otros se sumen.
         </p>
-        {identity && (
-          <p>
-            Tu saldo:{" "}
-            <strong>{formatSoles(identity.creditBalanceMinor)}</strong>. Cada
-            viaje como pasajero cuesta {formatSoles(PLATFORM_FEE_MINOR)}; quien
-            reserva el taxi viaja gratis.
-          </p>
-        )}
       </header>
       <RideRequest
         authenticated={Boolean(identity)}
         initial={draft}
-        defaultName={identity?.displayName ?? ""}
         active={
           active
             ? {

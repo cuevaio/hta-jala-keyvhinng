@@ -10,6 +10,10 @@ import {
 } from "lucide-react";
 import type { GeoPoint } from "@/modules/places/domain/place";
 import {
+  formatSoles,
+  PLATFORM_FEE_MINOR,
+} from "@/modules/payments/domain/fees";
+import {
   DEPARTURE_CHOICES,
   type DepartureChoice,
 } from "@/modules/sessions/domain/affinity";
@@ -18,7 +22,6 @@ import { LocationPicker, type PickedLocation } from "./location-picker";
 import { RideMap, type RideEnd } from "./ride-map";
 
 export interface RideValues {
-  displayName: string;
   selfieDataUrl: string;
   origin: { point: GeoPoint; label: string };
   destination: { point: GeoPoint; label: string; area?: string };
@@ -41,6 +44,18 @@ const WHEN_LABELS: Record<DepartureChoice, string> = {
   60: "En 1 hora",
 };
 
+/** How each role is described wherever someone picks one; the fee lives here only. */
+export const ROLE_COPY = {
+  passenger: {
+    title: "Voy de pasajero",
+    detail: `Otra persona reserva. Comisión: ${formatSoles(PLATFORM_FEE_MINOR)}.`,
+  },
+  delegate: {
+    title: "Puedo reservar",
+    detail: "Pido el taxi en mi app y no pago comisión.",
+  },
+} as const;
+
 /** Lima, used only to center a map before anything is known. */
 export const DEFAULT_MAP_CENTER: GeoPoint = {
   latitude: -12.0464,
@@ -53,7 +68,6 @@ export const DEFAULT_MAP_CENTER: GeoPoint = {
  */
 export function RideForm({
   initial,
-  defaultName,
   initialSelfie = "",
   showTime,
   submitLabel,
@@ -64,7 +78,6 @@ export function RideForm({
   onRouteContinue,
 }: {
   initial: RideDraft;
-  defaultName: string;
   initialSelfie?: string;
   showTime: boolean;
   submitLabel: string;
@@ -123,7 +136,6 @@ export function RideForm({
     const data = new FormData(event.currentTarget);
     onSubmit({
       selfieDataUrl,
-      displayName: String(data.get("displayName") ?? ""),
       origin: { point: origin.point, label: origin.label.trim() },
       destination: {
         point: destination.point,
@@ -215,20 +227,6 @@ export function RideForm({
         {!onRouteContinue && (
           <>
             <div className="form-section">
-              <label htmlFor="display-name">Tu nombre</label>
-              <input
-                id="display-name"
-                className="form-input"
-                name="displayName"
-                key={defaultName}
-                defaultValue={defaultName}
-                required
-                maxLength={60}
-                autoComplete="nickname"
-                placeholder="Cómo te verán los demás"
-              />
-            </div>
-            <div className="form-section">
               <span className="form-label" id="selfie-label">
                 Tu selfie (obligatoria)
               </span>
@@ -257,8 +255,8 @@ export function RideForm({
                   />
                   <span>
                     <UserRound size={19} aria-hidden="true" />
-                    <strong>Voy de pasajero</strong>
-                    <span>Prefiero que otra persona reserve.</span>
+                    <strong>{ROLE_COPY.passenger.title}</strong>
+                    <span>{ROLE_COPY.passenger.detail}</span>
                   </span>
                 </label>
                 <label className="delegate-choice">
@@ -270,8 +268,8 @@ export function RideForm({
                   />
                   <span>
                     <CarFront size={19} aria-hidden="true" />
-                    <strong>Puedo reservar</strong>
-                    <span>Lo reservo en mi app y pago mi parte.</span>
+                    <strong>{ROLE_COPY.delegate.title}</strong>
+                    <span>{ROLE_COPY.delegate.detail}</span>
                   </span>
                 </label>
               </div>

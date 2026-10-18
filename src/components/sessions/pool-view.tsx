@@ -8,7 +8,6 @@ import {
   Copy,
   MapPin,
   MessageCircle,
-  ShieldCheck,
 } from "lucide-react";
 import type { Room } from "./room";
 
@@ -248,11 +247,6 @@ export const PoolView = forwardRef<
               </span>
             </div>
           )}
-          <p className="fine">
-            <ShieldCheck size={16} aria-hidden="true" />
-            La sala ve tu nombre y si puedes reservar. Tu destino solo se
-            comparte con tu grupo de viaje.
-          </p>
         </aside>
       </div>
     </section>

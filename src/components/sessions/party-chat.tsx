@@ -223,10 +223,7 @@ export function PartyChat({
       ) : (
         <p className="wait-note">El viaje terminó; el chat es solo lectura.</p>
       )}
-      <p className="fine">
-        Solo las personas de tu grupo de viaje ven estos mensajes. No compartas
-        datos de pago.
-      </p>
+      <p className="fine">No compartas datos de pago en el chat.</p>
     </section>
   );
 }

@@ -21,6 +21,11 @@ describe("join input and request boundary", () => {
       displayName: "Ana",
     });
   });
+  it("accepts a join without a name: rooms use the account's", () => {
+    expect(
+      joinSessionInput.parse({ ...input, displayName: undefined }).displayName,
+    ).toBeUndefined();
+  });
   it.each([
     { selfieDataUrl: undefined },
     { selfieDataUrl: "" },

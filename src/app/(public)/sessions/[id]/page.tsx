@@ -52,8 +52,7 @@ export default async function SessionPage({
         Buscar otra sala
       </Link>
       <header className="session-heading">
-        <h1>Tu sala de espera.</h1>
-        <p>{session.name}</p>
+        <h1>{session.name}</h1>
       </header>
       <WaitingRoom
         key={session.id}
@@ -66,10 +65,8 @@ export default async function SessionPage({
           destination: session.destination,
           departsAt: session.departsAt.toISOString(),
         }}
-        vehicleCapacity={session.vehicleCapacity}
         initialRoom={initialRoom}
         initialSignedOut={identity === null}
-        accountName={identity?.displayName ?? ""}
         pushPublicKey={getEnv().VAPID_PUBLIC_KEY ?? null}
         closesAt={session.closesAt.toISOString()}
         initiallyOpen={

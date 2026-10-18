@@ -249,10 +249,11 @@ async function joinLocked(
       `Tu saldo no alcanza para un viaje. Cada viaje como pasajero cuesta ${formatSoles(PLATFORM_FEE_MINOR)}.`,
     );
   await claimExclusivity(tx, session.id, userId);
-  await tx
-    .update(users)
-    .set({ displayName: input.displayName })
-    .where(eq(users.id, userId));
+  if (input.displayName)
+    await tx
+      .update(users)
+      .set({ displayName: input.displayName })
+      .where(eq(users.id, userId));
   const values = {
     selfieDataUrl: input.selfieDataUrl,
     originLabel: input.originLabel,

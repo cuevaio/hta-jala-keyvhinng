@@ -120,20 +120,6 @@ export const PartyView = forwardRef<
 
       <div className="room-grid">
         <div className="room-main">
-          {me && (
-            <div className="my-share" aria-live="polite">
-              <span>Tu parte</span>
-              <strong>
-                {split ? formatSoles(split[myIndex]) : percent(me.fareShareBps)}
-              </strong>
-              <small>
-                {split
-                  ? `${percent(me.fareShareBps)} de ${formatSoles(party.fareMinor!)}`
-                  : "del taxi, cuando quien reserva publique la tarifa."}
-              </small>
-            </div>
-          )}
-
           {isDelegate && live ? (
             <form
               className="fare-calculator"
@@ -358,8 +344,7 @@ export const PartyView = forwardRef<
           )}
 
           <p className="fine">
-            Jala no reserva ni cobra. El reparto se calcula por distancia, suma
-            100% y solo tu grupo de viaje ve estas direcciones. Las selfies se
+            El reparto se calcula por distancia y suma 100%. Las selfies se
             borran al terminar el viaje.
           </p>
         </div>

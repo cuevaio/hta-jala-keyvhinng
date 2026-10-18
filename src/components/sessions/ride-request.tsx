@@ -33,12 +33,10 @@ const shortLabel = (label: string) => label.split(",")[0];
 export function RideRequest({
   authenticated,
   initial,
-  defaultName,
   active,
 }: {
   authenticated: boolean;
   initial: RideDraft;
-  defaultName: string;
   /** A group the person is already in, so they can resume instead of starting over. */
   active: { sessionId: string; name: string; departsAt: string } | null;
 }) {
@@ -100,7 +98,6 @@ export function RideRequest({
   }
 
   const payload = (v: RideValues) => ({
-    displayName: v.displayName,
     selfieDataUrl: v.selfieDataUrl,
     originLabel: v.origin.label,
     originLatitude: v.origin.point.latitude,
@@ -276,7 +273,6 @@ export function RideRequest({
               }
         }
         initial={draft}
-        defaultName={values?.displayName ?? defaultName}
         initialSelfie={values?.selfieDataUrl}
         showTime
         submitLabel={
