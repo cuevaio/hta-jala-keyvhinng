@@ -31,7 +31,12 @@ import {
   type PickedLocation,
 } from "@/components/sessions/location-picker";
 import { saveRideDraft } from "@/components/sessions/ride-draft";
-import { DEFAULT_MAP_CENTER, ROLE_COPY } from "@/components/sessions/ride-form";
+import {
+  ASAP_HINT,
+  DEFAULT_MAP_CENTER,
+  ROLE_COPY,
+  WHEN_LABELS,
+} from "@/components/sessions/ride-form";
 import { RideMap, type RideEnd } from "@/components/sessions/ride-map";
 import { sessionApi } from "@/components/sessions/session-api";
 
@@ -438,10 +443,13 @@ export function PassengerJourney({
                         aria-pressed={departure === n}
                         onClick={() => setDeparture(n)}
                       >
-                        {n === 0 ? "Ahora" : n === 60 ? "1 hora" : `${n} min`}
+                        {WHEN_LABELS[n]}
                       </button>
                     ))}
                   </div>
+                  {departure === 0 && (
+                    <p className="j-options-hint">{ASAP_HINT}</p>
+                  )}
                 </fieldset>
                 <fieldset className="j-options j-role-options">
                   <legend>¿Puedes reservar el taxi?</legend>

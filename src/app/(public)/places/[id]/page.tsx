@@ -109,7 +109,7 @@ export default async function PlaceDetailPage({
           )}
           <p className="join-pass-footer">
             <Clock3 size={16} aria-hidden="true" />
-            Sales ahora o dentro de 15, 30 o 60 minutos.
+            Sales lo antes posible o dentro de 15, 30 o 60 minutos.
           </p>
         </aside>
       </div>

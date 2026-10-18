@@ -1451,6 +1451,12 @@ fieldset legend {
   grid-template-columns: repeat(4, 1fr);
   gap: 6px;
 }
+/* Four chips do not fit a phone's width; two rows keep every label on one line. */
+@media (max-width: 480px) {
+  .when-choices {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
 .when-choice {
   position: relative;
   display: inline-flex;

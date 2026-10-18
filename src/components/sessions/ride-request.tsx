@@ -130,7 +130,7 @@ export function RideRequest({
             {shortLabel(values.destination.label)}
             <span className="tag">
               {values.departInMinutes === 0
-                ? "Sales ahora"
+                ? "Lo antes posible"
                 : `Sales en ${values.departInMinutes} min`}
             </span>
           </p>

@@ -15,6 +15,7 @@ import {
 } from "@/modules/payments/domain/fees";
 import {
   DEPARTURE_CHOICES,
+  JOIN_GRACE_MINUTES,
   type DepartureChoice,
 } from "@/modules/sessions/domain/affinity";
 import { SelfieCapture } from "./selfie-capture";
@@ -37,8 +38,9 @@ export interface RideDraft {
   delegatePreference?: "delegate" | "passenger";
 }
 
-const WHEN_LABELS: Record<DepartureChoice, string> = {
-  0: "Ahora",
+export const WHEN_LABELS: Record<DepartureChoice, string> = {
+  // Finding a group takes a few minutes, so "now" would promise too much.
+  0: "Lo antes posible",
   15: "En 15 min",
   30: "En 30 min",
   60: "En 1 hora",
@@ -55,6 +57,9 @@ export const ROLE_COPY = {
     detail: "Pido el taxi en mi app y no pago comisión.",
   },
 } as const;
+
+/** Leaving as soon as possible means waiting at most this long for a group. */
+export const ASAP_HINT = `La sala te espera hasta ${JOIN_GRACE_MINUTES} min mientras se forma tu grupo.`;
 
 /** Lima, used only to center a map before anything is known. */
 export const DEFAULT_MAP_CENTER: GeoPoint = {
@@ -222,6 +227,7 @@ export function RideForm({
                 </label>
               ))}
             </div>
+            {when === 0 && <p className="fine">{ASAP_HINT}</p>}
           </fieldset>
         )}
         {!onRouteContinue && (
