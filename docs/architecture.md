@@ -29,12 +29,12 @@ Rules:
 
 | Module         | Status             | Responsibility                                                                    |
 | -------------- | ------------------ | --------------------------------------------------------------------------------- |
-| `places`       | implemented (read) | Places (venue, university, mall, transit) and their meeting points                                        |
+| `places`       | implemented (read) | Places (venue, university, mall, transit) and their meeting points               |
 | `sessions`     | implemented (read) | Temporary matching pools per place                                                |
 | `matching`     | implemented            | Bounded road matching, saved route plans and atomic participant assignment                            |
 | `routing`      | contract + OSRM    | `RoutingProvider` contract, `RoutingError`, OSRM adapter (`ROUTING_BASE_URL`)     |
-| `parties`      | domain only        | Ride party / member / ride types; `RideProviderAdapter` boundary for Uber etc.    |
-| `payments`     | domain only        | Platform fee rule, segment-based fare allocation, basis-point helper           |
+| `parties`      | implemented        | Group lifecycle (confirm, leave, start, complete); `RideProviderAdapter` boundary |
+| `payments`     | partial            | Fare allocation and soles split are used; the fee rule is not wired to completion |
 | `verification` | not created        | QR verification; add when there is code to put in it                              |
 
 `routing` and `matching` never reference a mapping vendor. `RideProviderAdapter` keeps external

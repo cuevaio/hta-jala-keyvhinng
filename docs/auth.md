@@ -27,10 +27,11 @@ A reset or password change signs the account out everywhere. Only the newest res
 
 ## Not done yet
 
-- **Mail delivery.** `lib/mailer.ts` is a port with a log-only adapter. In production
-  nothing is sent (a warning is logged), so reset links reach nobody until a provider
-  adapter is added in `lib/services.ts`.
+- **Mail delivery needs configuration.** With `RESEND_API_KEY` (and optionally
+  `MAIL_FROM`) set, reset links go out through Resend. Without it the log-only adapter is
+  used, and in production it only logs a warning, so reset links reach nobody. The
+  sender domain must be verified in Resend, and delivery has not been tested to a real inbox.
 - Email verification, account deletion, a signed-in change-password page (API exists),
   and a "sign out everywhere" button.
 
-Apply migration `0004` before deploying (additive: two tables, three indexes).
+Apply migrations before deploying (`bun run db:migrate`).
