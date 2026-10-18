@@ -25,7 +25,11 @@ import {
   apportionMinor,
   allocateBySegmentDistance,
 } from "@/modules/payments/domain/fare-allocation";
-import { formatSoles } from "@/modules/payments/domain/fees";
+import {
+  formatSoles,
+  PLATFORM_FEE_MINOR,
+  WELCOME_CREDIT_MINOR,
+} from "@/modules/payments/domain/fees";
 import { parseFareMinor } from "@/modules/payments/domain/fare-input";
 import type { GeoPoint } from "@/modules/places/domain/place";
 import type { SimGroup } from "@/modules/simulation/domain/simulation";
@@ -624,8 +628,10 @@ export function PassengerJourney({
               <section className="j-col-side">
                 <div className="j-promo">
                   <p>Tu ruta, nuestro viaje.</p>
-                  <h2>4 viajes sin comisión</h2>
-                  <span>Tus primeros 5 son gratis</span>
+                  <h2>{formatSoles(WELCOME_CREDIT_MINOR)} de bienvenida</h2>
+                  <span>
+                    Cada viaje como pasajero: {formatSoles(PLATFORM_FEE_MINOR)}
+                  </span>
                 </div>
                 <div className="j-shortcuts">
                   {["Casa", "Trabajo", "Otros"].map((t) => (
@@ -1183,7 +1189,11 @@ export function PassengerJourney({
               )}
               <div className="j-commission">
                 <small>Comisión Jala para ti</small>
-                <strong>S/ 0.00 · viaje gratis 2 de 5</strong>
+                <strong>
+                  {delegate
+                    ? `${formatSoles(0)} · quien reserva no paga`
+                    : `${formatSoles(PLATFORM_FEE_MINOR)} · se descuenta de tu saldo`}
+                </strong>
               </div>
               <p className="j-fare-copy">
                 Al iniciar el viaje, el chat temporal se cierra y las selfies se
