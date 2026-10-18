@@ -147,6 +147,24 @@ describe.skipIf(!url)("party chat", () => {
     });
   });
 
+  it("keeps two groups in the same room apart", async () => {
+    const s = await matchedSession(2);
+    // A second pair matched later in the same room forms its own group.
+    for (const i of [2, 3])
+      await participation.join(s.id, userIds[i], {
+        ...input,
+        displayName: `Chat fixture ${i}`,
+        delegatePreference: i === 2 ? "delegate" : "passenger",
+      });
+    await matching.match(s.id, userIds[2]);
+    await chat.post(s.id, userIds[0], "Mensaje del grupo A");
+    await chat.post(s.id, userIds[2], "Mensaje del grupo B");
+    const bodies = async (user: string) =>
+      (await chat.list(s.id, user, 0)).messages.map((m) => m.body);
+    expect(await bodies(userIds[1])).toEqual(["Mensaje del grupo A"]);
+    expect(await bodies(userIds[3])).toEqual(["Mensaje del grupo B"]);
+  });
+
   it("ends access when the party dissolves and goes read-only after the ride", async () => {
     const s = await matchedSession();
     const [a, b, c] = userIds;
