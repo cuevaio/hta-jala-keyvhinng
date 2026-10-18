@@ -151,6 +151,20 @@ export function createAuthRepository(db: Database) {
       }
     },
     /** Replaces any earlier outstanding token, so only the newest link works. */
+    /** The email behind a usable reset token, so the form can name the account. */
+    async emailForResetToken(tokenHash: string): Promise<string | null> {
+      const [row] = await db
+        .select({ email: users.email })
+        .from(passwordResetTokens)
+        .innerJoin(users, eq(users.id, passwordResetTokens.userId))
+        .where(
+          and(
+            eq(passwordResetTokens.tokenHash, tokenHash),
+            gt(passwordResetTokens.expiresAt, new Date()),
+          ),
+        );
+      return row?.email ?? null;
+    },
     async saveResetToken(userId: string, tokenHash: string, expiresAt: Date) {
       await db.transaction(async (tx) => {
         await tx

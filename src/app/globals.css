@@ -2003,6 +2003,9 @@ ol.roster {
 .deadline-note svg {
   margin-top: 3px;
 }
+.reset-account {
+  margin: 0 0 12px;
+}
 .chat-reconnecting {
   margin-bottom: 8px;
   padding: 8px 12px;

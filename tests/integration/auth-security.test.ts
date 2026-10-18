@@ -65,6 +65,20 @@ describe.skipIf(!url)("auth security", () => {
     await db.delete(schema.rateLimits).where(eq(schema.rateLimits.key, key));
   });
 
+  it("names the account behind a usable reset link only", async () => {
+    await auth.requestPasswordReset(email);
+    const token = tokenFromMail();
+    expect(await auth.resetAccountEmail(token)).toBe(email);
+    expect(await auth.resetAccountEmail("0".repeat(64))).toBeNull();
+    expect(await auth.resetAccountEmail("")).toBeNull();
+    await db
+      .update(schema.passwordResetTokens)
+      .set({ expiresAt: new Date(Date.now() - 1000) })
+      .where(eq(schema.passwordResetTokens.userId, userId));
+    expect(await auth.resetAccountEmail(token)).toBeNull();
+    sent.length = 0;
+  });
+
   it("emails a reset link only for real accounts, storing just the token hash", async () => {
     await auth.requestPasswordReset(`ghost-${randomUUID()}@test.co`);
     expect(sent).toHaveLength(0);

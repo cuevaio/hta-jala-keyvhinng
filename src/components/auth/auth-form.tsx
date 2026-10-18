@@ -82,7 +82,13 @@ export function AuthForm({
       : `${copy.switchHref}?next=${encodeURIComponent(next)}`;
 
   return (
-    <form onSubmit={submit} className="join-form auth-form">
+    // method="post" keeps credentials out of the URL even if scripts fail to load.
+    <form
+      id={`${mode}-form`}
+      method="post"
+      onSubmit={submit}
+      className="join-form auth-form"
+    >
       <header className="form-heading">
         <h1>{copy.title}</h1>
         <p>{copy.intro}</p>

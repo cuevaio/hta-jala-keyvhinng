@@ -8,9 +8,12 @@ import { sessionApi } from "@/components/sessions/session-api";
 export function PasswordResetForm({
   mode,
   token = "",
+  accountEmail = null,
 }: {
   mode: "request" | "confirm";
   token?: string;
+  /** The account behind the reset link, so password managers update that login. */
+  accountEmail?: string | null;
 }) {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
@@ -58,7 +61,12 @@ export function PasswordResetForm({
     );
 
   return (
-    <form onSubmit={submit} className="join-form auth-form">
+    <form
+      id={`password-reset-${mode}-form`}
+      method="post"
+      onSubmit={submit}
+      className="join-form auth-form"
+    >
       <header className="form-heading">
         <h1>
           {mode === "request"
@@ -90,6 +98,19 @@ export function PasswordResetForm({
           </>
         ) : (
           <>
+            {accountEmail && (
+              <>
+                <p className="fine reset-account">Cuenta: {accountEmail}</p>
+                <input
+                  type="email"
+                  name="username"
+                  autoComplete="username"
+                  value={accountEmail}
+                  readOnly
+                  hidden
+                />
+              </>
+            )}
             <label htmlFor="reset-password">Contraseña nueva</label>
             <div className="input-with-icon">
               <KeyRound size={19} aria-hidden="true" />

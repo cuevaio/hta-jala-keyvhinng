@@ -105,6 +105,14 @@ export function createAuthService(
       });
     },
 
+    /**
+     * Only whoever holds the emailed link learns the address it was sent to. Lets
+     * password managers update the right saved login.
+     */
+    async resetAccountEmail(token: string): Promise<string | null> {
+      return token ? repository.emailForResetToken(sha256(token)) : null;
+    },
+
     async resetPassword(token: string, password: string): Promise<void> {
       const userId = await repository.resetPassword(
         sha256(token),
