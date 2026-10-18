@@ -4,6 +4,9 @@ import {
   PARTY_TRANSITIONS,
   PartyError,
   type PartyState,
+  confirmDeadline,
+  expiryOf,
+  startDeadline,
 } from "@/modules/parties/domain/party-lifecycle";
 import { apportionMinor } from "@/modules/payments/domain/fare-allocation";
 
@@ -109,5 +112,71 @@ describe("apportionMinor", () => {
   it("rejects invalid input", () => {
     expect(() => apportionMinor(1.5, [10000])).toThrow(RangeError);
     expect(() => apportionMinor(100, [5000])).toThrow(RangeError);
+  });
+});
+
+describe("deadlines", () => {
+  const t0 = new Date("2026-10-18T12:00:00Z");
+  const at = (minutes: number) => new Date(t0.getTime() + minutes * 60_000);
+
+  it("releases a forming group nobody finished confirming", () => {
+    const party = {
+      status: "forming" as const,
+      confirmBy: confirmDeadline(t0),
+      startBy: null,
+    };
+    expect(expiryOf(party, at(4))).toBe("none");
+    expect(expiryOf(party, at(6))).toBe("release_forming");
+  });
+
+  it("releases a confirmed group nobody started", () => {
+    const party = {
+      status: "confirmed" as const,
+      confirmBy: null,
+      startBy: startDeadline(t0),
+    };
+    expect(expiryOf(party, at(29))).toBe("none");
+    expect(expiryOf(party, at(31))).toBe("release_confirmed");
+  });
+
+  it("never expires a ride in progress or a group without deadlines", () => {
+    expect(
+      expiryOf(
+        { status: "in_progress", confirmBy: at(-60), startBy: at(-60) },
+        at(600),
+      ),
+    ).toBe("none");
+    expect(
+      expiryOf({ status: "forming", confirmBy: null, startBy: null }, at(600)),
+    ).toBe("none");
+  });
+
+  it("lets a passenger close a started ride only after the fallback window", () => {
+    const party = {
+      status: "in_progress" as const,
+      startedAt: t0,
+      members: [
+        {
+          userId: "booker",
+          role: "delegate" as const,
+          status: "confirmed" as const,
+        },
+        {
+          userId: "rider",
+          role: "passenger" as const,
+          status: "confirmed" as const,
+        },
+      ],
+    };
+    expect(() => decide(party, "rider", "complete", at(10))).toThrow(
+      expect.objectContaining({ code: "delegate_required" }),
+    );
+    expect(decide(party, "rider", "complete", at(31))).toEqual({
+      kind: "complete",
+    });
+    // Starting stays with the booker: they are the one who ordered the taxi.
+    expect(() =>
+      decide({ ...party, status: "confirmed" }, "rider", "start", at(31)),
+    ).toThrow(expect.objectContaining({ code: "delegate_required" }));
   });
 });

@@ -1,8 +1,11 @@
 "use client";
 
 import { forwardRef, useEffect, useRef, useState } from "react";
-import { Check, CarFront, ExternalLink, MapPin } from "lucide-react";
-import type { PartyCommand } from "@/modules/parties/domain/party-lifecycle";
+import { Check, CarFront, Clock3, ExternalLink, MapPin } from "lucide-react";
+import {
+  completeFallbackAt,
+  type PartyCommand,
+} from "@/modules/parties/domain/party-lifecycle";
 import { apportionMinor } from "@/modules/payments/domain/fare-allocation";
 import { parseFareMinor } from "@/modules/payments/domain/fare-input";
 import { formatSoles } from "@/modules/payments/domain/fees";
@@ -25,6 +28,13 @@ const HINTS: Record<PartyStatus, string> = {
   cancelled: "Este grupo de viaje ya no está activo.",
 };
 
+const limaTime = (iso: string) =>
+  new Date(iso).toLocaleTimeString("es-PE", {
+    timeZone: "America/Lima",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
 const percent = (bps: number) =>
   `${(bps / 100).toLocaleString("es-PE", { maximumFractionDigits: 0 })}%`;
 
@@ -36,11 +46,13 @@ export const PartyView = forwardRef<
     meId: string;
     /** Room revision; the chat fetches new messages when it changes. */
     revision: number;
+    /** Server-synced clock (ms), for deadlines. */
+    now: number;
     busy: boolean;
     onAction: (action: PartyCommand) => void;
   }
 >(function PartyView(
-  { sessionId, party, meId, revision, busy, onAction },
+  { sessionId, party, meId, revision, now, busy, onAction },
   headingRef,
 ) {
   const plan = party.plan!;
@@ -81,6 +93,11 @@ export const PartyView = forwardRef<
         );
   const myIndex = plan.stops.findIndex((s) => s.participantId === meId);
   const live = party.status === "forming" || party.status === "confirmed";
+  // A booker who vanished mid-ride must not strand everyone: see the domain rule.
+  const fallbackAt = party.startedAt
+    ? completeFallbackAt(new Date(party.startedAt))
+    : null;
+  const fallbackOpen = fallbackAt !== null && now >= fallbackAt.getTime();
 
   return (
     <section
@@ -205,6 +222,19 @@ export const PartyView = forwardRef<
               {pending === 1 ? "persona" : "personas"} más.
             </p>
           )}
+          {party.status === "forming" && party.confirmBy && (
+            <p className="deadline-note">
+              <Clock3 size={16} aria-hidden="true" />
+              Confirmen antes de las {limaTime(party.confirmBy)} o el grupo se
+              deshace y vuelven a la sala.
+            </p>
+          )}
+          {party.status === "confirmed" && party.startBy && (
+            <p className="deadline-note">
+              <Clock3 size={16} aria-hidden="true" />
+              Inicien el viaje antes de las {limaTime(party.startBy)}.
+            </p>
+          )}
           {isDelegate && party.status === "confirmed" && (
             <button
               type="button"
@@ -215,16 +245,25 @@ export const PartyView = forwardRef<
               Iniciar viaje
             </button>
           )}
-          {isDelegate && party.status === "in_progress" && (
-            <button
-              type="button"
-              className="action action-primary"
-              disabled={busy}
-              onClick={() => onAction("complete")}
-            >
-              Finalizar viaje
-            </button>
-          )}
+          {party.status === "in_progress" &&
+            (isDelegate || fallbackOpen ? (
+              <button
+                type="button"
+                className="action action-primary"
+                disabled={busy}
+                onClick={() => onAction("complete")}
+              >
+                Finalizar viaje
+              </button>
+            ) : (
+              fallbackAt && (
+                <p className="deadline-note">
+                  <Clock3 size={16} aria-hidden="true" />
+                  Quien reservó el taxi termina el viaje. Si no responde, podrás
+                  hacerlo desde las {limaTime(fallbackAt.toISOString())}.
+                </p>
+              )
+            ))}
           {live &&
             (confirmingLeave ? (
               <div

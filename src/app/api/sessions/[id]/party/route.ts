@@ -24,6 +24,8 @@ export const POST = handle(
       );
     try {
       const services = getServices();
+      for (const expired of await services.parties.sweep(id))
+        after(() => services.roomEvents.partyChanged(id, expired));
       const { partyStatus, event } = await services.parties.apply(
         id,
         userId,

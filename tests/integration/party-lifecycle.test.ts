@@ -255,6 +255,119 @@ describe.skipIf(!url)("party lifecycle", () => {
     );
   });
 
+  describe("deadlines", () => {
+    const minutesAgo = (n: number) => new Date(Date.now() - n * 60_000);
+    const partyOf = async (sessionId: string) =>
+      (
+        await db
+          .select()
+          .from(schema.rideParties)
+          .where(eq(schema.rideParties.sessionId, sessionId))
+      )[0];
+    const seatsOf = async (sessionId: string) =>
+      new Map(
+        (
+          await db
+            .select({
+              userId: schema.sessionParticipants.userId,
+              status: schema.sessionParticipants.status,
+              selfie: schema.sessionParticipants.selfieDataUrl,
+            })
+            .from(schema.sessionParticipants)
+            .where(eq(schema.sessionParticipants.sessionId, sessionId))
+        ).map((seat) => [seat.userId, seat]),
+      );
+
+    it("gives a new group a confirmation deadline", async () => {
+      const s = await matchedSession();
+      const party = await partyOf(s.id);
+      expect(party.confirmBy!.getTime()).toBeGreaterThan(Date.now());
+      expect(party.startBy).toBeNull();
+    });
+
+    it("releases a group nobody finished confirming", async () => {
+      const s = await matchedSession();
+      const [a, b, c] = userIds;
+      await parties.apply(s.id, a, "confirm");
+      const party = await partyOf(s.id);
+      expect(await parties.sweep(s.id)).toEqual([]);
+      await db
+        .update(schema.rideParties)
+        .set({ confirmBy: minutesAgo(1) })
+        .where(eq(schema.rideParties.id, party.id));
+
+      const events = await parties.sweep(s.id);
+      expect(events).toHaveLength(1);
+      expect(events[0].memberUserIds[0]).toBe(a);
+      expect((await partyOf(s.id)).status).toBe("cancelled");
+      const seats = await seatsOf(s.id);
+      // The one who confirmed waits again; the others are released, photo deleted.
+      expect(seats.get(a)?.status).toBe("waiting");
+      expect(seats.get(b)).toMatchObject({ status: "withdrawn", selfie: null });
+      expect(seats.get(c)).toMatchObject({ status: "withdrawn", selfie: null });
+      expect((await room(s.id, 0)).party).toBeNull();
+      // Already swept: nothing more to do.
+      expect(await parties.sweep(s.id)).toEqual([]);
+    });
+
+    it("returns everyone to the pool when a confirmed group never starts", async () => {
+      const s = await matchedSession();
+      for (const user of userIds.slice(0, 3))
+        await parties.apply(s.id, user, "confirm");
+      const party = await partyOf(s.id);
+      expect(party.startBy!.getTime()).toBeGreaterThan(Date.now());
+      await db
+        .update(schema.rideParties)
+        .set({ startBy: minutesAgo(1) })
+        .where(eq(schema.rideParties.id, party.id));
+      await parties.sweep(s.id);
+      const seats = await seatsOf(s.id);
+      expect(userIds.slice(0, 3).map((u) => seats.get(u)?.status)).toEqual([
+        "waiting",
+        "waiting",
+        "waiting",
+      ]);
+    });
+
+    it("stops holding members once expired, even before a sweep", async () => {
+      const s = await matchedSession();
+      const party = await partyOf(s.id);
+      await db
+        .update(schema.rideParties)
+        .set({ confirmBy: minutesAgo(1) })
+        .where(eq(schema.rideParties.id, party.id));
+      // The expired group no longer blocks joining another room...
+      const other = await participation.createGroup(userIds[1], {
+        ...input,
+        departInMinutes: 0,
+      });
+      // ...and the later sweep leaves that new seat alone instead of requeueing here.
+      await parties.sweep(s.id);
+      expect((await seatsOf(s.id)).get(userIds[1])?.status).toBe("withdrawn");
+      expect((await seatsOf(other.id)).get(userIds[1])?.status).toBe("waiting");
+      await db.delete(schema.sessions).where(eq(schema.sessions.id, other.id));
+    });
+
+    it("lets a passenger close a ride the booker never finished", async () => {
+      const s = await matchedSession();
+      const [a, b] = userIds;
+      for (const user of userIds.slice(0, 3))
+        await parties.apply(s.id, user, "confirm");
+      await parties.apply(s.id, a, "start");
+      await expect(parties.apply(s.id, b, "complete")).rejects.toMatchObject({
+        code: "delegate_required",
+      });
+      const party = await partyOf(s.id);
+      await db
+        .update(schema.rides)
+        .set({ startedAt: minutesAgo(31) })
+        .where(eq(schema.rides.partyId, party.id));
+      expect(await parties.apply(s.id, b, "complete")).toMatchObject({
+        partyStatus: "completed",
+      });
+    });
+  });
+
   it("serializes concurrent commands without corrupting state", async () => {
     const s = await matchedSession();
     const results = await Promise.allSettled(

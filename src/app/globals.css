@@ -1991,6 +1991,18 @@ ol.roster {
   outline: 3px solid var(--orange);
   outline-offset: 2px;
 }
+.deadline-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--muted-text);
+}
+.deadline-note svg {
+  margin-top: 3px;
+}
 .chat-reconnecting {
   margin-bottom: 8px;
   padding: 8px 12px;

@@ -19,6 +19,7 @@ import {
   places,
   rideParties,
   ridePartyMembers,
+  rides,
   sessionParticipants,
   sessions,
   users,
@@ -44,6 +45,7 @@ import {
   type Affinity,
   type RideIntent,
 } from "../domain/affinity";
+import { withinDeadline } from "@/modules/parties/infrastructure/party-deadlines";
 import { publicAnchor, publicDestination } from "../domain/public-room";
 import { selfiePath } from "../domain/selfie";
 import { bumpOtherRoomRevisions, bumpRoomRevision } from "./room-revision";
@@ -150,6 +152,7 @@ async function claimExclusivity(tx: Tx, sessionId: string, userId: string) {
         eq(ridePartyMembers.userId, userId),
         ne(rideParties.sessionId, sessionId),
         inArray(rideParties.status, [...LIVE_PARTY_STATUSES]),
+        withinDeadline(new Date()),
       ),
     )
     .limit(1);
@@ -535,6 +538,7 @@ export function createParticipationRepository(db: Database) {
               eq(ridePartyMembers.userId, userId),
               eq(rideParties.sessionId, c.sessionId),
               inArray(rideParties.status, [...LIVE_PARTY_STATUSES]),
+              withinDeadline(now),
             ),
           );
         if (live) return c;
@@ -591,12 +595,16 @@ export function createParticipationRepository(db: Database) {
               id: rideParties.id,
               status: rideParties.status,
               plan: rideParties.routePlan,
+              confirmBy: rideParties.confirmBy,
+              startBy: rideParties.startBy,
+              startedAt: rides.startedAt,
             })
             .from(ridePartyMembers)
             .innerJoin(
               rideParties,
               eq(rideParties.id, ridePartyMembers.partyId),
             )
+            .leftJoin(rides, eq(rides.partyId, rideParties.id))
             .where(
               and(
                 eq(ridePartyMembers.participantId, me.id),

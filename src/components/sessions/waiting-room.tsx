@@ -15,6 +15,21 @@ import type { Room, RoomUnchanged } from "./room";
 import { RideForm, type RideValues } from "./ride-form";
 import { sessionApi, SessionRequestError } from "./session-api";
 
+const LEFT_COPY = {
+  party: {
+    title: "Saliste del grupo de viaje.",
+    body: "El grupo se deshizo para recalcular rutas y reparto con quienes quedan. Puedes buscar otra sala o crear una.",
+  },
+  room: {
+    title: "Saliste de la sala de espera.",
+    body: "Ya no te agruparemos con nadie de esta sala. Puedes buscar otra sala o crear una.",
+  },
+  released: {
+    title: "El grupo venció sin tu confirmación.",
+    body: "No todos confirmaron a tiempo, así que el grupo se deshizo y liberamos tu lugar. Si aún sales, busca otra sala o crea una.",
+  },
+} as const;
+
 const limaTime = (iso: string) =>
   new Date(iso).toLocaleTimeString("es-PE", {
     timeZone: "America/Lima",
@@ -63,7 +78,7 @@ export function WaitingRoom({
   const [pollError, setPollError] = useState("");
   const [notice, setNotice] = useState("");
   // What this person left, so the screen can say what happens next.
-  const [left, setLeft] = useState<"party" | "room" | null>(null);
+  const [left, setLeft] = useState<"party" | "room" | "released" | null>(null);
   const { now, synchronize } = useRoomClock(initialServerNow);
   const deadline = roomDeadline(closesAt, now);
   const hadParty = useRef(initialRoom?.party != null);
@@ -83,7 +98,7 @@ export function WaitingRoom({
       lastRoomSample.current = sampledAt;
       if (hadParty.current && !result.party)
         setNotice(
-          "Tu grupo de viaje se deshizo porque alguien salió. Sigues en la sala de espera y te buscamos un grupo nuevo automáticamente.",
+          "Tu grupo de viaje se deshizo: alguien salió o no todos confirmaron a tiempo. Sigues en la sala de espera y te buscamos un grupo nuevo automáticamente.",
         );
       hadParty.current = result.party !== null;
       revision.current = result.revision;
@@ -143,6 +158,13 @@ export function WaitingRoom({
             setSignedOut(true);
             setRoom(null);
             revision.current = null;
+          }
+          if (error.status === 403 && hadParty.current) {
+            // A group that expired before this person confirmed releases their seat.
+            hadParty.current = false;
+            revision.current = null;
+            setRoom(null);
+            setLeft("released");
           }
           if (error.status === 401 || error.status === 403) {
             // Visitors and people who have not joined still get fresh server time.
@@ -318,15 +340,9 @@ export function WaitingRoom({
     return (
       <div className="session-closed" role="status">
         <h2 ref={heading} tabIndex={-1}>
-          {left === "party"
-            ? "Saliste del grupo de viaje."
-            : "Saliste de la sala de espera."}
+          {LEFT_COPY[left].title}
         </h2>
-        <p>
-          {left === "party"
-            ? "El grupo se deshizo para recalcular rutas y reparto con quienes quedan. Puedes buscar otra sala o crear una."
-            : "Ya no te agruparemos con nadie de esta sala. Puedes buscar otra sala o crear una."}
-        </p>
+        <p>{LEFT_COPY[left].body}</p>
         {placeLink}
       </div>
     );
@@ -428,6 +444,7 @@ export function WaitingRoom({
           party={room.party}
           meId={room.me.id}
           revision={room.revision}
+          now={now}
           busy={busy}
           onAction={partyAction}
         />

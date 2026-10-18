@@ -31,8 +31,52 @@ export const PARTY_COMMANDS = [
 ] as const;
 export type PartyCommand = (typeof PARTY_COMMANDS)[number];
 
+/** A matched group has this long for everyone to confirm. */
+export const CONFIRM_WINDOW_MINUTES = 5;
+/** A confirmed group has this long to start the ride. */
+export const START_WINDOW_MINUTES = 30;
+/**
+ * A started ride is never expired (people may really be in the taxi), but after this
+ * long any member may close it, so a booker who vanished cannot strand the group.
+ */
+export const COMPLETE_FALLBACK_MINUTES = 30;
+
+const minutesAfter = (from: Date, minutes: number) =>
+  new Date(from.getTime() + minutes * 60_000);
+export const confirmDeadline = (matchedAt: Date) =>
+  minutesAfter(matchedAt, CONFIRM_WINDOW_MINUTES);
+export const startDeadline = (confirmedAt: Date) =>
+  minutesAfter(confirmedAt, START_WINDOW_MINUTES);
+export const completeFallbackAt = (startedAt: Date) =>
+  minutesAfter(startedAt, COMPLETE_FALLBACK_MINUTES);
+
+export type PartyExpiry =
+  /** Still within its deadlines (or created before deadlines existed). */
+  | "none"
+  /** Not everyone confirmed in time: confirmers wait again, the rest are released. */
+  | "release_forming"
+  /** Confirmed but nobody started: everyone waits again. */
+  | "release_confirmed";
+
+export function expiryOf(
+  party: {
+    status: RidePartyStatus;
+    confirmBy: Date | null;
+    startBy: Date | null;
+  },
+  now: Date,
+): PartyExpiry {
+  if (party.status === "forming" && party.confirmBy && now > party.confirmBy)
+    return "release_forming";
+  if (party.status === "confirmed" && party.startBy && now > party.startBy)
+    return "release_confirmed";
+  return "none";
+}
+
 export interface PartyState {
   status: RidePartyStatus;
+  /** When the ride started; lets any member close it after the fallback window. */
+  startedAt?: Date | null;
   members: readonly {
     userId: string;
     role: PartyRole;
@@ -86,6 +130,7 @@ export function decide(
   party: PartyState,
   userId: string,
   command: PartyCommand,
+  now: Date = new Date(),
 ): PartyDecision {
   const me = memberOf(party, userId);
   switch (command) {
@@ -114,11 +159,18 @@ export function decide(
     }
     case "start":
     case "complete": {
-      if (me.role !== "delegate")
+      const fallback =
+        command === "complete" &&
+        party.status === "in_progress" &&
+        party.startedAt != null &&
+        now >= completeFallbackAt(party.startedAt);
+      if (me.role !== "delegate" && !fallback)
         throw new PartyError(
           403,
           "delegate_required",
-          "Solo quien reserva el taxi puede hacer esto.",
+          command === "complete"
+            ? `Solo quien reserva el taxi puede terminar el viaje. Si no responde, podrás hacerlo ${COMPLETE_FALLBACK_MINUTES} minutos después del inicio.`
+            : "Solo quien reserva el taxi puede hacer esto.",
         );
       assertTransition(
         party.status,

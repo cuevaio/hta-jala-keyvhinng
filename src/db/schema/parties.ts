@@ -41,6 +41,10 @@ export const rideParties = pgTable(
     ),
     routePlan: jsonb("route_plan").$type<MatchingRoutePlan>(),
     status: ridePartyStatus("status").notNull().default("forming"),
+    /** Everyone must confirm by then; null (older rows) never expires. */
+    confirmBy: timestamp("confirm_by", { withTimezone: true }),
+    /** Set on confirmation: the ride must start by then. */
+    startBy: timestamp("start_by", { withTimezone: true }),
     ...timestamps,
   },
   (t) => [

@@ -11,6 +11,7 @@ import {
 } from "@/db/schema";
 import { NotFoundError } from "@/lib/errors";
 import { MATCHING_BATCH_SIZE } from "../domain/road-matching";
+import { confirmDeadline } from "@/modules/parties/domain/party-lifecycle";
 import type { MatchingRoutePlan } from "../domain/route-plan";
 import { bumpRoomRevision } from "@/modules/sessions/infrastructure/room-revision";
 
@@ -193,6 +194,7 @@ export function createMatchingRepository(db: Database) {
               sessionId,
               meetingPointId: snapshot.meetingPointId,
               routePlan: plan,
+              confirmBy: confirmDeadline(new Date()),
             })
             .returning({ id: rideParties.id });
           await tx.insert(ridePartyMembers).values(

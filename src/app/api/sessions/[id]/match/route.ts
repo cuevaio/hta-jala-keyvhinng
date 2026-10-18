@@ -23,6 +23,9 @@ export const POST = handle(
     }
     try {
       const services = getServices();
+      // Seats held by expired groups go back to the pool before this round.
+      for (const expired of await services.parties.sweep(id))
+        after(() => services.roomEvents.partyChanged(id, expired));
       const outcome = await services.matching.match(id, userId);
       if (outcome.createdPartyCount)
         after(() => services.roomEvents.matched(id, userId, outcome));

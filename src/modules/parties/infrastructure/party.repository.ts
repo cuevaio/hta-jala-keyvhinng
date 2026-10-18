@@ -10,19 +10,147 @@ import {
   users,
 } from "@/db/schema";
 import { NotFoundError } from "@/lib/errors";
+import { logger } from "@/lib/logger";
 import { calculatePlatformFee } from "@/modules/payments/domain/fees";
 import { bumpRoomRevision } from "@/modules/sessions/infrastructure/room-revision";
+import { missedDeadline } from "./party-deadlines";
 import {
   decide,
+  expiryOf,
   PartyError,
+  startDeadline,
   type PartyCommand,
   type PartyEvent,
+  type PartyExpiry,
 } from "../domain/party-lifecycle";
 
 type RidePartyStatus = (typeof rideParties.$inferSelect)["status"];
+type Tx = Parameters<Parameters<Database["transaction"]>[0]>[0];
+
+/**
+ * Cancels a group that missed a deadline. Caller holds the session lock. People who
+ * did their part wait again (unless they already moved to another room, which wins);
+ * those who never confirmed are released and their photo deleted.
+ */
+async function releaseExpired(
+  tx: Tx,
+  party: { id: string },
+  outcome: Exclude<PartyExpiry, "none">,
+  now: Date,
+) {
+  const members = await tx
+    .select({
+      participantId: ridePartyMembers.participantId,
+      userId: ridePartyMembers.userId,
+      status: ridePartyMembers.status,
+    })
+    .from(ridePartyMembers)
+    .where(eq(ridePartyMembers.partyId, party.id));
+  const rejoining = members.filter(
+    (m) => outcome === "release_confirmed" || m.status === "confirmed",
+  );
+  await tx
+    .update(rideParties)
+    .set({ status: "cancelled", updatedAt: now })
+    .where(eq(rideParties.id, party.id));
+  await tx
+    .update(rides)
+    .set({ status: "cancelled", updatedAt: now })
+    .where(eq(rides.partyId, party.id));
+  await tx
+    .delete(ridePartyMembers)
+    .where(eq(ridePartyMembers.partyId, party.id));
+  const requeued = rejoining.length
+    ? await tx
+        .update(sessionParticipants)
+        .set({ status: "waiting", updatedAt: now })
+        .where(
+          and(
+            inArray(
+              sessionParticipants.id,
+              rejoining.map((m) => m.participantId),
+            ),
+            sql`not exists (select 1 from ${sessionParticipants} other where other.user_id = ${sessionParticipants.userId} and other.status = 'waiting')`,
+          ),
+        )
+        .returning({ id: sessionParticipants.id })
+    : [];
+  const requeuedIds = new Set(requeued.map((r) => r.id));
+  const released = members.filter((m) => !requeuedIds.has(m.participantId));
+  if (released.length)
+    await tx
+      .update(sessionParticipants)
+      .set({ status: "withdrawn", selfieDataUrl: null, updatedAt: now })
+      .where(
+        inArray(
+          sessionParticipants.id,
+          released.map((m) => m.participantId),
+        ),
+      );
+  return {
+    // Requeued people first: the dissolve handler rematches on behalf of the first.
+    memberUserIds: [
+      ...members.filter((m) => requeuedIds.has(m.participantId)),
+      ...released,
+    ].map((m) => m.userId),
+    requeuedCount: requeued.length,
+    releasedCount: released.length,
+  };
+}
 
 export function createPartyRepository(db: Database) {
   return {
+    /**
+     * Cancels this room's groups that missed a deadline. One indexed read when nothing
+     * is due, so room polls can call it; the writes happen under the session lock.
+     * Returns the events to announce, one per expired group.
+     */
+    async sweep(sessionId: string, now = new Date()): Promise<PartyEvent[]> {
+      const [due] = await db
+        .select({ id: rideParties.id })
+        .from(rideParties)
+        .where(and(eq(rideParties.sessionId, sessionId), missedDeadline(now)))
+        .limit(1);
+      if (!due) return [];
+      return db.transaction(async (tx) => {
+        await tx
+          .select({ id: sessions.id })
+          .from(sessions)
+          .where(eq(sessions.id, sessionId))
+          .for("update");
+        const expired = await tx
+          .select({
+            id: rideParties.id,
+            status: rideParties.status,
+            confirmBy: rideParties.confirmBy,
+            startBy: rideParties.startBy,
+          })
+          .from(rideParties)
+          .where(
+            and(eq(rideParties.sessionId, sessionId), missedDeadline(now)),
+          );
+        const events: PartyEvent[] = [];
+        for (const party of expired) {
+          const outcome = expiryOf(party, now);
+          if (outcome === "none") continue;
+          const result = await releaseExpired(tx, party, outcome, now);
+          logger.info("party.expired", {
+            sessionId,
+            partyId: party.id,
+            outcome,
+            requeuedCount: result.requeuedCount,
+            releasedCount: result.releasedCount,
+          });
+          events.push({
+            kind: "dissolved",
+            actorUserId: "",
+            memberUserIds: result.memberUserIds,
+          });
+        }
+        if (events.length) await bumpRoomRevision(tx, sessionId);
+        return events;
+      });
+    },
     /**
      * Applies one lifecycle command. Takes the same session row lock as joins and
      * matching, so a leave cannot interleave with a match that reuses those people.
@@ -58,9 +186,24 @@ export function createPartyRepository(db: Database) {
           );
 
         const [party] = await tx
-          .select({ id: rideParties.id, status: rideParties.status })
+          .select({
+            id: rideParties.id,
+            status: rideParties.status,
+            confirmBy: rideParties.confirmBy,
+            startBy: rideParties.startBy,
+            startedAt: rides.startedAt,
+          })
           .from(rideParties)
+          .leftJoin(rides, eq(rides.partyId, rideParties.id))
           .where(eq(rideParties.id, mine.partyId));
+        const now = new Date();
+        // Callers sweep first; this only catches a deadline passing in between.
+        if (expiryOf(party, now) !== "none")
+          throw new PartyError(
+            409,
+            "group_expired",
+            "Este grupo venció porque no se completó a tiempo. Vuelve a la sala de espera.",
+          );
         const members = await tx
           .select({
             participantId: ridePartyMembers.participantId,
@@ -72,13 +215,13 @@ export function createPartyRepository(db: Database) {
           .where(eq(ridePartyMembers.partyId, party.id));
 
         const decision = decide(
-          { status: party.status, members },
+          { status: party.status, startedAt: party.startedAt, members },
           userId,
           command,
+          now,
         );
         // Every command but a no-op changes what members see.
         if (decision.kind !== "noop") await bumpRoomRevision(tx, sessionId);
-        const now = new Date();
         const event = (kind: PartyEvent["kind"]): PartyEvent => ({
           kind,
           actorUserId: userId,
@@ -105,6 +248,10 @@ export function createPartyRepository(db: Database) {
               );
             if (decision.partyStatus === "confirmed") {
               await setParty("confirmed");
+              await tx
+                .update(rideParties)
+                .set({ startBy: startDeadline(now) })
+                .where(eq(rideParties.id, party.id));
               await tx
                 .insert(rides)
                 .values({ partyId: party.id })

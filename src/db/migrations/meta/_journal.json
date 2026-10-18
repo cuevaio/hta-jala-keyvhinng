@@ -64,6 +64,13 @@
       "when": 1792324675889,
       "tag": "0008_one_waiting_seat",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792324692724,
+      "tag": "0009_party_deadlines",
+      "breakpoints": true
     }
   ]
 }

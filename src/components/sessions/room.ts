@@ -12,6 +12,10 @@ export interface Room {
     id: string;
     status: PartyStatus;
     plan: MatchingRoutePlan | null;
+    /** Deadlines (ISO): confirm while forming, start once confirmed. */
+    confirmBy: string | null;
+    startBy: string | null;
+    startedAt: string | null;
     members: {
       participantId: string;
       status: string;

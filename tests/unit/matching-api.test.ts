@@ -21,6 +21,8 @@ vi.mock("@/modules/participants/infrastructure/browser-identity", () => ({
 vi.mock("@/lib/services", () => ({
   getServices: () => ({
     matching: { match: mocks.match },
+    // No group has expired in these cases.
+    parties: { sweep: async () => [] },
     roomEvents: { matched: mocks.matched },
   }),
 }));

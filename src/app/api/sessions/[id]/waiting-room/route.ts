@@ -1,4 +1,4 @@
-import type { NextRequest } from "next/server";
+import { after, type NextRequest } from "next/server";
 import { handle, ok } from "@/lib/http";
 import { getServices } from "@/lib/services";
 import { requireIdentity } from "@/modules/participants/infrastructure/browser-identity";
@@ -17,7 +17,11 @@ export const GET = handle(
     const { rev } = roomRevisionQuery.parse({
       rev: request.nextUrl.searchParams.get("rev") ?? undefined,
     });
-    const { participation } = getServices();
+    const { participation, parties, roomEvents } = getServices();
+    // Deadlines pass without anyone writing, so polls are where expiry is noticed.
+    const expired = await parties.sweep(id);
+    for (const event of expired)
+      after(() => roomEvents.partyChanged(id, event));
     // A poll that already has the current revision gets the clock and nothing else.
     const current =
       rev === undefined ? null : await participation.roomRevision(id, userId);
