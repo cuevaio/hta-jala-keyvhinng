@@ -23,6 +23,11 @@ import {
 import { NotFoundError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import {
+  canAffordRide,
+  formatSoles,
+  PLATFORM_FEE_MINOR,
+} from "@/modules/payments/domain/fees";
+import {
   affinityOf,
   affinityScore,
   boundingBox,
@@ -197,6 +202,17 @@ async function joinLocked(
       409,
       "group_full",
       "Esta sala ya está llena. Busca otra o crea una.",
+    );
+  const [account] = await tx
+    .select({ creditBalanceMinor: users.creditBalanceMinor })
+    .from(users)
+    .where(eq(users.id, userId));
+  // Matching may assign anyone the passenger role, so everyone needs one fee of credit.
+  if (!account || !canAffordRide(account.creditBalanceMinor))
+    throw new ApiError(
+      402,
+      "insufficient_credit",
+      `Tu saldo no alcanza para un viaje. Cada viaje como pasajero cuesta ${formatSoles(PLATFORM_FEE_MINOR)}.`,
     );
   await claimExclusivity(tx, session.id, userId);
   await tx
