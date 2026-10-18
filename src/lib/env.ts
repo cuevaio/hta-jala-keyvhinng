@@ -4,6 +4,8 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3000"),
   ROUTING_BASE_URL: z.string().url().default("https://router.project-osrm.org"),
+  RESEND_API_KEY: z.string().min(1).optional(),
+  MAIL_FROM: z.string().min(1).default("Jala <jala@jala.oak4.xyz>"),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
 });
 

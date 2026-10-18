@@ -29,3 +29,31 @@ export function createLogMailer(): Mailer {
     },
   };
 }
+
+/** Resend adapter: delivers through the Resend HTTP API. */
+export function createResendMailer(
+  apiKey: string,
+  from: string,
+  fetchImpl: typeof fetch = fetch,
+): Mailer {
+  return {
+    async send(email) {
+      const response = await fetchImpl("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from,
+          to: [email.to],
+          subject: email.subject,
+          text: email.text,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(`Resend rejected the email (${response.status})`);
+      }
+    },
+  };
+}

@@ -1,4 +1,4 @@
-import { createLogMailer } from "@/lib/mailer";
+import { createLogMailer, createResendMailer } from "@/lib/mailer";
 import { getEnv } from "@/lib/env";
 import { createMatchingApplication } from "@/modules/matching/application/matching.service";
 import { createMatchingRepository } from "@/modules/matching/infrastructure/matching.repository";
@@ -27,7 +27,9 @@ export function getServices() {
     ),
     auth: createAuthService(
       createAuthRepository(db),
-      createLogMailer(),
+      getEnv().RESEND_API_KEY
+        ? createResendMailer(getEnv().RESEND_API_KEY!, getEnv().MAIL_FROM)
+        : createLogMailer(),
       getEnv().NEXT_PUBLIC_APP_URL,
     ),
     participation: createParticipationRepository(db),
