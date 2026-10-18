@@ -94,6 +94,9 @@ const anchorsOf = (session: SessionRow) => ({
   departsAt: session.departsAt,
 });
 
+export const SEAT_ACTIONS = ["withdraw", "offer_to_book"] as const;
+export type SeatAction = (typeof SEAT_ACTIONS)[number];
+
 export interface GroupMatch {
   id: string;
   name: string;
@@ -434,6 +437,66 @@ export function createParticipationRepository(db: Database) {
           .for("update");
         if (!session) throw new NotFoundError("Session");
         return joinLocked(tx, session, userId, input);
+      });
+    },
+    /**
+     * Changes a waiting seat: `withdraw` leaves the room, `offer_to_book` volunteers to
+     * book the taxi (every group needs one booker). A seat already in a group is changed
+     * through the group instead. Withdrawing twice is a no-op.
+     */
+    async updateSeat(
+      sessionId: string,
+      userId: string,
+      action: SeatAction,
+    ): Promise<{ changed: boolean }> {
+      return db.transaction(async (tx) => {
+        await lockAccount(tx, userId);
+        const [session] = await tx
+          .select({ id: sessions.id })
+          .from(sessions)
+          .where(eq(sessions.id, sessionId))
+          .for("update");
+        if (!session) throw new NotFoundError("Session");
+        const [seat] = await tx
+          .update(sessionParticipants)
+          .set(
+            action === "withdraw"
+              ? { status: "withdrawn" }
+              : { delegatePreference: "delegate" },
+          )
+          .where(
+            and(
+              eq(sessionParticipants.sessionId, sessionId),
+              eq(sessionParticipants.userId, userId),
+              eq(sessionParticipants.status, "waiting"),
+            ),
+          )
+          .returning({ id: sessionParticipants.id });
+        if (seat) {
+          await bumpRoomRevision(tx, sessionId);
+          return { changed: true };
+        }
+        const [current] = await tx
+          .select({ status: sessionParticipants.status })
+          .from(sessionParticipants)
+          .where(
+            and(
+              eq(sessionParticipants.sessionId, sessionId),
+              eq(sessionParticipants.userId, userId),
+            ),
+          );
+        if (current?.status === "matched")
+          throw new ApiError(
+            409,
+            "already_matched",
+            "Ya estás en un grupo de viaje. Usa las opciones del grupo.",
+          );
+        if (action === "withdraw") return { changed: false };
+        throw new ApiError(
+          409,
+          "not_waiting",
+          "Ya no estás en esta sala. Vuelve a unirte para continuar.",
+        );
       });
     },
     /** The group this person is still part of, so the request screen can resume it. */

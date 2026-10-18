@@ -1826,15 +1826,22 @@ ol.roster {
   color: var(--muted-text);
 }
 .delegate-missing {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  display: grid;
+  gap: 12px;
   margin-top: 14px;
   padding: 14px 16px;
   border-radius: 12px;
   background: var(--warn-tint);
   color: var(--warn-text);
   font-size: 14px;
+}
+.delegate-missing p {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.delegate-missing .action {
+  justify-self: start;
 }
 .match-action {
   margin-top: 24px;

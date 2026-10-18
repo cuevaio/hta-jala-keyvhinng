@@ -22,12 +22,27 @@ export const PoolView = forwardRef<
     notice: string;
     onMatch: () => void;
     onCopyFailed: () => void;
+    /** Leave this room while still waiting. */
+    onWithdraw: () => void;
+    /** Volunteer to book, so a group missing a booker can form. */
+    onOfferToBook: () => void;
   }
 >(function PoolView(
-  { room, closed, busy, signedOut, notice, onMatch, onCopyFailed },
+  {
+    room,
+    closed,
+    busy,
+    signedOut,
+    notice,
+    onMatch,
+    onCopyFailed,
+    onWithdraw,
+    onOfferToBook,
+  },
   headingRef,
 ) {
   const [copied, setCopied] = useState(false);
+  const [confirmingExit, setConfirmingExit] = useState(false);
 
   // The "copied" confirmation is brief so the button is usable again.
   useEffect(() => {
@@ -110,10 +125,24 @@ export const PoolView = forwardRef<
           {!room.participants.some(
             (person) => person.delegatePreference === "delegate",
           ) && (
-            <p className="delegate-missing">
-              <CarFront size={20} aria-hidden="true" />
-              Aún falta alguien que pueda reservar el taxi.
-            </p>
+            <div className="delegate-missing">
+              <p>
+                <CarFront size={20} aria-hidden="true" />
+                Aún falta alguien que pueda reservar el taxi. Sin esa persona no
+                podemos formar un grupo.
+              </p>
+              {!closed && room.me.delegatePreference !== "delegate" && (
+                <button
+                  type="button"
+                  className="action action-secondary"
+                  onClick={onOfferToBook}
+                  disabled={busy || signedOut}
+                >
+                  <CarFront size={18} aria-hidden="true" />
+                  Puedo reservar yo
+                </button>
+              )}
+            </div>
           )}
           {!closed && (
             <div className="match-action">
@@ -135,6 +164,46 @@ export const PoolView = forwardRef<
           <p role="status" className="wait-note">
             {notice}
           </p>
+          {!closed &&
+            (confirmingExit ? (
+              <div
+                className="leave-panel"
+                role="group"
+                aria-label="Salir de la sala"
+              >
+                <strong>¿Salir de la sala de espera?</strong>
+                <p>
+                  Dejarás de aparecer para los demás y no te agruparemos con
+                  nadie.
+                </p>
+                <div className="leave-actions">
+                  <button
+                    type="button"
+                    className="action action-secondary"
+                    onClick={() => setConfirmingExit(false)}
+                  >
+                    Quedarme
+                  </button>
+                  <button
+                    type="button"
+                    className="action action-danger"
+                    disabled={busy}
+                    onClick={onWithdraw}
+                  >
+                    Sí, salir
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="action action-secondary"
+                onClick={() => setConfirmingExit(true)}
+                disabled={signedOut}
+              >
+                Salir de la sala
+              </button>
+            ))}
         </div>
         <aside className="room-side">
           <div className="own-destination">

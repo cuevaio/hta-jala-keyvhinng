@@ -62,7 +62,8 @@ export function WaitingRoom({
   const [actionError, setActionError] = useState("");
   const [pollError, setPollError] = useState("");
   const [notice, setNotice] = useState("");
-  const [left, setLeft] = useState(false);
+  // What this person left, so the screen can say what happens next.
+  const [left, setLeft] = useState<"party" | "room" | null>(null);
   const { now, synchronize } = useRoomClock(initialServerNow);
   const deadline = roomDeadline(closesAt, now);
   const hadParty = useRef(initialRoom?.party != null);
@@ -276,12 +277,28 @@ export function WaitingRoom({
     }, "No pudimos buscar compañeros de viaje.");
   }
 
+  function seatAction(action: "withdraw" | "offer_to_book") {
+    setNotice("");
+    return run(async () => {
+      await sessionApi(`/api/sessions/${sessionId}/seat`, { action });
+      if (action === "withdraw") {
+        setLeft("room");
+        setRoom(null);
+        return;
+      }
+      setNotice(
+        "Gracias. Ahora puedes reservar el taxi; buscamos un grupo contigo.",
+      );
+      apply(await fetchRoom());
+    }, "No pudimos completar la acción.");
+  }
+
   function partyAction(action: PartyCommand) {
     return run(async () => {
       await sessionApi(`/api/sessions/${sessionId}/party`, { action });
       if (action === "leave") {
         hadParty.current = false;
-        setLeft(true);
+        setLeft("party");
         setRoom(null);
         return;
       }
@@ -301,11 +318,14 @@ export function WaitingRoom({
     return (
       <div className="session-closed" role="status">
         <h2 ref={heading} tabIndex={-1}>
-          Saliste del grupo de viaje.
+          {left === "party"
+            ? "Saliste del grupo de viaje."
+            : "Saliste de la sala de espera."}
         </h2>
         <p>
-          El grupo se deshizo para recalcular rutas y reparto con quienes
-          quedan. Puedes buscar otra sala o crear una.
+          {left === "party"
+            ? "El grupo se deshizo para recalcular rutas y reparto con quienes quedan. Puedes buscar otra sala o crear una."
+            : "Ya no te agruparemos con nadie de esta sala. Puedes buscar otra sala o crear una."}
         </p>
         {placeLink}
       </div>
@@ -420,6 +440,8 @@ export function WaitingRoom({
           signedOut={signedOut}
           notice={notice}
           onMatch={match}
+          onWithdraw={() => seatAction("withdraw")}
+          onOfferToBook={() => seatAction("offer_to_book")}
           onCopyFailed={() =>
             setActionError(
               "Copia la dirección de esta página desde tu navegador para compartirla.",
