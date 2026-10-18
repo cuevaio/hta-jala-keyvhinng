@@ -3,8 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Clock3, MapPin, Navigation, Users } from "lucide-react";
-import type { GroupMatch } from "@/modules/sessions/infrastructure/participation.repository";
 import {
   DEFAULT_MAP_CENTER,
   RideForm,
@@ -14,22 +12,16 @@ import {
 import { clearRideDraft, saveRideDraft, useSavedRideDraft } from "./ride-draft";
 import { sessionApi, SessionRequestError } from "./session-api";
 
-/** Group as the search endpoint returns it (dates are ISO strings). */
-type FoundGroup = Omit<GroupMatch, "departsAt"> & { departsAt: string };
-
 const timeFormat = new Intl.DateTimeFormat("es-PE", {
   timeZone: "America/Lima",
   hour: "2-digit",
   minute: "2-digit",
 });
 
-const distance = (meters: number) =>
-  meters < 950
-    ? `${Math.round(meters / 50) * 50} m`
-    : `${(meters / 1000).toFixed(1)} km`;
-
-const shortLabel = (label: string) => label.split(",")[0];
-
+/**
+ * Plans the ride and hands it to the server, which puts the rider in the best open room
+ * for it or opens one (ADR 0010). There is no list of rooms to choose from.
+ */
 export function RideRequest({
   authenticated,
   initial,
@@ -37,205 +29,51 @@ export function RideRequest({
 }: {
   authenticated: boolean;
   initial: RideDraft;
-  /** A group the person is already in, so they can resume instead of starting over. */
-  active: { sessionId: string; name: string; departsAt: string } | null;
+  /** A room the person is already in, so they can resume instead of starting over. */
+  active: {
+    sessionId: string;
+    name: string;
+    departsAt: string;
+    mine: boolean;
+  } | null;
 }) {
   const router = useRouter();
-  const [values, setValues] = useState<RideValues | null>(null);
-  const [groups, setGroups] = useState<FoundGroup[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   // A route chosen before signing in comes back from this tab's storage, not the URL.
   const saved = useSavedRideDraft();
   const restored = initial.origin || initial.destination ? null : saved;
-  // Going back to edit keeps what was typed, not the URL the page loaded with.
-  const draft: RideDraft = values
-    ? {
-        origin: values.origin,
-        destination: values.destination,
+  const draft = restored ?? initial;
+
+  async function assign(values: RideValues) {
+    setBusy(true);
+    setError("");
+    try {
+      const room = await sessionApi<{ id: string }>("/api/groups/assign", {
+        selfieDataUrl: values.selfieDataUrl,
+        originLabel: values.origin.label,
+        originLatitude: values.origin.point.latitude,
+        originLongitude: values.origin.point.longitude,
+        destinationLabel: values.destination.label,
+        latitude: values.destination.point.latitude,
+        longitude: values.destination.point.longitude,
+        destinationArea: values.destination.area,
+        delegatePreference: values.delegatePreference,
         departInMinutes: values.departInMinutes,
-      }
-    : (restored ?? initial);
-
-  async function search(next: RideValues) {
-    setBusy(true);
-    setError("");
-    try {
-      const query = new URLSearchParams({
-        olat: String(next.origin.point.latitude),
-        olng: String(next.origin.point.longitude),
-        dlat: String(next.destination.point.latitude),
-        dlng: String(next.destination.point.longitude),
-        depart: String(next.departInMinutes),
       });
-      setGroups(await sessionApi<FoundGroup[]>(`/api/groups/search?${query}`));
-      setValues(next);
-    } catch (e) {
-      setError(
-        e instanceof Error ? e.message : "No pudimos buscar salas ahora.",
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function commit(path: string, body: unknown, current: RideValues) {
-    setBusy(true);
-    setError("");
-    try {
-      const session = await sessionApi<{ id: string }>(path, body);
       clearRideDraft();
-      router.push(`/sessions/${session.id}`);
+      router.push(`/sessions/${room.id}`);
     } catch (e) {
       if (e instanceof SessionRequestError && e.status === 401) {
-        saveRideDraft(current);
+        saveRideDraft(values);
         router.push(`/sign-in?next=${encodeURIComponent("/ride")}`);
         return;
       }
-      setError(e instanceof Error ? e.message : "No pudimos entrar a la sala.");
+      setError(
+        e instanceof Error ? e.message : "No pudimos buscarte una sala.",
+      );
       setBusy(false);
     }
-  }
-
-  const payload = (v: RideValues) => ({
-    selfieDataUrl: v.selfieDataUrl,
-    originLabel: v.origin.label,
-    originLatitude: v.origin.point.latitude,
-    originLongitude: v.origin.point.longitude,
-    destinationLabel: v.destination.label,
-    latitude: v.destination.point.latitude,
-    longitude: v.destination.point.longitude,
-    destinationArea: v.destination.area,
-    delegatePreference: v.delegatePreference,
-  });
-
-  if (values && groups) {
-    return (
-      <section
-        className="panel ride-results"
-        aria-labelledby="ride-results-title"
-      >
-        <header className="form-heading">
-          <h2 id="ride-results-title" tabIndex={-1}>
-            {groups.length === 0
-              ? "Aún no hay salas de espera para tu ruta."
-              : groups.length === 1
-                ? "Encontramos 1 sala de espera para tu ruta."
-                : `Encontramos ${groups.length} salas de espera para tu ruta.`}
-          </h2>
-          <p className="ride-route-summary">
-            <MapPin size={17} aria-hidden="true" />
-            {shortLabel(values.origin.label)}
-            <ArrowRight size={15} aria-hidden="true" />
-            {shortLabel(values.destination.label)}
-            <span className="tag">
-              {values.departInMinutes === 0
-                ? "Lo antes posible"
-                : `Sales en ${values.departInMinutes} min`}
-            </span>
-          </p>
-        </header>
-        {error && (
-          <p role="alert" className="form-error">
-            {error}
-          </p>
-        )}
-        {groups.length > 0 && (
-          <ul className="group-list">
-            {groups.map((group) => (
-              <li key={group.id} className="group-card">
-                <div className="group-card-head">
-                  <h3>{group.name}</h3>
-                  <span className="tag">
-                    <Users size={16} aria-hidden="true" />
-                    {group.waitingCount}{" "}
-                    {group.waitingCount === 1 ? "persona" : "personas"}
-                  </span>
-                </div>
-                <dl className="group-facts">
-                  <div>
-                    <dt>
-                      <Navigation size={15} aria-hidden="true" /> Sale de
-                    </dt>
-                    <dd>
-                      {group.pickupLabel}
-                      <small>
-                        a {distance(group.affinity.pickupMeters)} de ti
-                      </small>
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>
-                      <MapPin size={15} aria-hidden="true" /> Va hacia
-                    </dt>
-                    <dd>
-                      {shortLabel(group.destinationLabel)}
-                      <small>
-                        a {distance(group.affinity.destinationMeters)} de tu
-                        destino
-                      </small>
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>
-                      <Clock3 size={15} aria-hidden="true" /> Sale
-                    </dt>
-                    <dd>
-                      {timeFormat.format(new Date(group.departsAt))}
-                      <small>hora de Lima</small>
-                    </dd>
-                  </div>
-                </dl>
-                <button
-                  className="action action-primary"
-                  disabled={busy}
-                  onClick={() =>
-                    commit(
-                      `/api/sessions/${group.id}/join`,
-                      payload(values),
-                      values,
-                    )
-                  }
-                >
-                  {busy ? "Entrando…" : "Unirme a esta sala"}
-                  {!busy && <ArrowRight size={17} aria-hidden="true" />}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        <div className="ride-create">
-          <p>
-            {groups.length === 0
-              ? "Crea una: entrarás automáticamente y otras personas con tu ruta podrán unirse."
-              : "¿Ninguna te sirve? Crea una con tu ruta y entrarás automáticamente."}
-          </p>
-          <button
-            className={`action ${groups.length === 0 ? "action-primary" : "action-secondary"}`}
-            disabled={busy}
-            onClick={() =>
-              commit(
-                "/api/groups",
-                { ...payload(values), departInMinutes: values.departInMinutes },
-                values,
-              )
-            }
-          >
-            {busy ? "Creando…" : "Crear una sala"}
-          </button>
-          <button
-            className="action action-link"
-            disabled={busy}
-            onClick={() => {
-              setGroups(null);
-              setError("");
-            }}
-          >
-            Cambiar mi ruta
-          </button>
-        </div>
-      </section>
-    );
   }
 
   return (
@@ -243,10 +81,13 @@ export function RideRequest({
       {active && (
         <aside className="notice active-group" role="status">
           <div>
-            <strong>Ya estás en una sala: {active.name}</strong>
+            <strong>
+              Ya estás en una sala: {active.name}
+              {active.mine && <span className="tag room-mine">Mía</span>}
+            </strong>
             <span>
               Sale a las {timeFormat.format(new Date(active.departsAt))} (Lima).
-              Si entras a otra sala, dejarás esta.
+              Si buscas otra vez, te dejamos en ella mientras siga sirviendo.
             </span>
           </div>
           <Link
@@ -273,19 +114,16 @@ export function RideRequest({
               }
         }
         initial={draft}
-        initialSelfie={values?.selfieDataUrl}
         showTime
         submitLabel={
-          authenticated
-            ? "Buscar salas de espera"
-            : "Registrarme para continuar"
+          authenticated ? "Buscar mi grupo" : "Registrarme para continuar"
         }
-        busyLabel="Buscando salas…"
+        busyLabel="Buscando tu sala…"
         busy={busy}
         mapCenter={
           draft.origin?.point ?? draft.destination?.point ?? DEFAULT_MAP_CENTER
         }
-        onSubmit={search}
+        onSubmit={assign}
       />
     </div>
   );

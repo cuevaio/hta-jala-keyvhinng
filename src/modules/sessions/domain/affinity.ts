@@ -11,6 +11,11 @@ export const DEPARTURE_WINDOW_MINUTES = 30;
  * purpose: someone leaving a venue will not wait long, and demos stay brisk.
  */
 export const JOIN_GRACE_MINUTES = 5;
+/**
+ * Assigning a rider to a room accepts that room's departure, so it allows less slack
+ * than search did: someone leaving as soon as possible is not parked for half an hour.
+ */
+export const ASSIGN_DEPARTURE_WINDOW_MINUTES = 15;
 /** A group stops accepting joins here; matching works through it in rounds of 12. */
 export const MAX_GROUP_SIZE = 20;
 /** "Leave now" or in N minutes. */

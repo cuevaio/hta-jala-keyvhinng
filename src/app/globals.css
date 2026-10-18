@@ -1633,6 +1633,11 @@ fieldset legend {
 .session-heading h1 {
   font-size: clamp(32px, 4vw, 44px);
 }
+/* Marks a room this account opened. */
+.room-mine {
+  margin-left: 10px;
+  vertical-align: middle;
+}
 .session-heading p {
   margin-top: 6px;
   color: var(--muted-text);

@@ -6,6 +6,8 @@ import {
 import {
   publicAnchor,
   publicDestination,
+  ROOM_NAMES,
+  roomName,
 } from "@/modules/sessions/domain/public-room";
 
 describe("publicAnchor", () => {
@@ -27,17 +29,20 @@ describe("publicAnchor", () => {
 });
 
 describe("publicDestination", () => {
-  it("names the room after the district only", () => {
-    expect(publicDestination(" Barranco ")).toEqual({
-      name: "Hacia Barranco",
-      label: "Barranco",
-    });
+  it("labels the room with the district only", () => {
+    expect(publicDestination(" Barranco ")).toEqual({ label: "Barranco" });
   });
 
-  it("falls back to a generic name instead of the typed address", () => {
-    expect(publicDestination(undefined)).toEqual({
-      name: "Hacia un destino cercano",
-      label: "Destino cercano",
-    });
+  it("falls back to a generic label instead of the typed address", () => {
+    expect(publicDestination(undefined)).toEqual({ label: "Destino cercano" });
+  });
+});
+
+describe("roomName", () => {
+  it("hands out every name before repeating one", () => {
+    const names = ROOM_NAMES.map((_, i) => roomName(i));
+    expect(new Set(names).size).toBe(ROOM_NAMES.length);
+    expect(roomName(ROOM_NAMES.length)).toBe(roomName(0));
+    expect(roomName(0)).toBe("Sala Ceviche");
   });
 });

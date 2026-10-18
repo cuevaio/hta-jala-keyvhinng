@@ -87,8 +87,8 @@ export default async function RidePage({ searchParams }: PageProps<"/ride">) {
       <header className="page-heading">
         <h1>Comparte un taxi.</h1>
         <p>
-          Dinos desde dónde sales y a dónde vas. Te mostramos salas de espera
-          con personas hacia tu zona, o creas una para que otros se sumen.
+          Dinos desde dónde sales y a dónde vas. Te ponemos en la sala de espera
+          que mejor te queda, o abrimos una para que otros se sumen.
         </p>
       </header>
       <RideRequest
@@ -100,6 +100,7 @@ export default async function RidePage({ searchParams }: PageProps<"/ride">) {
                 sessionId: active.sessionId,
                 name: active.name,
                 departsAt: active.departsAt.toISOString(),
+                mine: active.mine,
               }
             : null
         }

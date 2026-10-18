@@ -20,8 +20,36 @@ export function publicAnchor(point: GeoPoint): GeoPoint {
 
 /** What a room says about where it is going, from the creator's district only. */
 export function publicDestination(area: string | undefined) {
-  const name = area?.trim();
-  return name
-    ? { name: `Hacia ${name}`, label: name }
-    : { name: "Hacia un destino cercano", label: "Destino cercano" };
+  return { label: area?.trim() || "Destino cercano" };
 }
+
+/**
+ * Rooms are told apart by a friendly name, handed out in turn so rooms opened around
+ * the same time never share one. Names say nothing about the people in the room.
+ */
+export const ROOM_NAMES = [
+  "Ceviche",
+  "Lúcuma",
+  "Picarones",
+  "Chicha Morada",
+  "Anticucho",
+  "Causa",
+  "Suspiro",
+  "Alfajor",
+  "Cancha",
+  "Rocoto",
+  "Huacatay",
+  "Chirimoya",
+  "Maracuyá",
+  "Camu Camu",
+  "Tumbo",
+  "Tamal",
+  "Mazamorra",
+  "Turrón",
+  "Choclo",
+  "Aguaymanto",
+] as const;
+
+/** The name for the `sequence`-th room ever opened. */
+export const roomName = (sequence: number) =>
+  `Sala ${ROOM_NAMES[sequence % ROOM_NAMES.length]}`;

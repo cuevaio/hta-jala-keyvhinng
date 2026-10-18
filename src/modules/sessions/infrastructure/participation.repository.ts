@@ -34,6 +34,7 @@ import {
 import {
   affinityOf,
   affinityScore,
+  ASSIGN_DEPARTURE_WINDOW_MINUTES,
   boundingBox,
   closesAtFor,
   departureFor,
@@ -46,7 +47,11 @@ import {
   type RideIntent,
 } from "../domain/affinity";
 import { withinDeadline } from "@/modules/parties/infrastructure/party-deadlines";
-import { publicAnchor, publicDestination } from "../domain/public-room";
+import {
+  publicAnchor,
+  publicDestination,
+  roomName,
+} from "../domain/public-room";
 import { selfiePath } from "../domain/selfie";
 import { bumpOtherRoomRevisions, bumpRoomRevision } from "./room-revision";
 import type {
@@ -107,6 +112,64 @@ export interface GroupMatch {
   departsAt: Date;
   waitingCount: number;
   affinity: Affinity;
+}
+
+/** Errors that rule out one room but leave the rider free to try the next. */
+const ROOM_UNSUITABLE = new Set([
+  "session_unavailable",
+  "place_unavailable",
+  "group_mismatch",
+  "group_full",
+]);
+
+/** Open groups that fit this ride, best fit first. */
+async function fittingSessions(
+  reader: Pick<Database, "select">,
+  intent: RideIntent,
+  window = DEPARTURE_WINDOW_MINUTES,
+) {
+  const now = new Date();
+  const pickupBox = boundingBox(intent.origin, PICKUP_RADIUS_METERS);
+  const destinationBox = boundingBox(
+    intent.destination,
+    DESTINATION_RADIUS_METERS,
+  );
+  const windowMs = window * 60_000;
+  const rows = await reader
+    .select()
+    .from(sessions)
+    .where(
+      and(
+        eq(sessions.status, "open"),
+        lte(sessions.opensAt, now),
+        gt(sessions.closesAt, now),
+        between(
+          sessions.departsAt,
+          new Date(intent.departsAt.getTime() - windowMs),
+          new Date(intent.departsAt.getTime() + windowMs),
+        ),
+        between(sessions.pickupLatitude, pickupBox.minLat, pickupBox.maxLat),
+        between(sessions.pickupLongitude, pickupBox.minLon, pickupBox.maxLon),
+        between(
+          sessions.destinationLatitude,
+          destinationBox.minLat,
+          destinationBox.maxLat,
+        ),
+        between(
+          sessions.destinationLongitude,
+          destinationBox.minLon,
+          destinationBox.maxLon,
+        ),
+      ),
+    )
+    .limit(50);
+  const fitting = rows.flatMap((row) => {
+    const affinity = affinityOf(anchorsOf(row), intent, window);
+    return affinity ? [{ row, affinity }] : [];
+  });
+  return fitting.sort(
+    (a, b) => affinityScore(a.affinity) - affinityScore(b.affinity),
+  );
 }
 
 async function waitingCount(
@@ -277,65 +340,96 @@ async function joinLocked(
   return participant;
 }
 
+/**
+ * Starts a group around this ride, anchored on a nearby place when there is one, and
+ * joins the rider to it. Caller holds the account lock.
+ */
+async function createLocked(tx: Tx, userId: string, input: CreateGroupInput) {
+  const origin = originOf(input);
+  const box = boundingBox(origin, PLACE_SNAP_METERS);
+  const nearby = await tx
+    .select()
+    .from(places)
+    .where(
+      and(
+        eq(places.status, "active"),
+        between(places.latitude, box.minLat, box.maxLat),
+        between(places.longitude, box.minLon, box.maxLon),
+      ),
+    );
+  const place =
+    nearby
+      .map((p) => ({
+        p,
+        d: haversineMeters(origin, {
+          latitude: p.latitude,
+          longitude: p.longitude,
+        }),
+      }))
+      .filter(({ d }) => d <= PLACE_SNAP_METERS)
+      .sort((a, b) => a.d - b.d)[0]?.p ?? null;
+  const [meetingPoint] = place
+    ? await tx
+        .select()
+        .from(meetingPoints)
+        .where(eq(meetingPoints.placeId, place.id))
+        .orderBy(asc(meetingPoints.createdAt), asc(meetingPoints.id))
+        .limit(1)
+    : [];
+  const pickup = meetingPoint
+    ? {
+        label: meetingPoint.name,
+        latitude: meetingPoint.latitude,
+        longitude: meetingPoint.longitude,
+      }
+    : place
+      ? {
+          label: place.name,
+          latitude: place.latitude,
+          longitude: place.longitude,
+        }
+      : {
+          label: input.originLabel,
+          latitude: input.originLatitude,
+          longitude: input.originLongitude,
+        };
+  const departsAt = departureFor(input.departInMinutes);
+  // The room is public: it gets the district and a coarse anchor, never the
+  // creator's address. Their exact destination stays on their participant row.
+  const heading = publicDestination(input.destinationArea);
+  const anchor = publicAnchor(destinationOf(input));
+  const [{ opened }] = await tx.select({ opened: count() }).from(sessions);
+  const [session] = await tx
+    .insert(sessions)
+    .values({
+      placeId: place?.id ?? null,
+      name: roomName(opened),
+      createdByUserId: userId,
+      pickupLabel: pickup.label,
+      pickupLatitude: pickup.latitude,
+      pickupLongitude: pickup.longitude,
+      destinationLabel: heading.label,
+      destinationLatitude: anchor.latitude,
+      destinationLongitude: anchor.longitude,
+      departsAt,
+      opensAt: new Date(),
+      closesAt: closesAtFor(departsAt),
+      vehicleCapacity: 3,
+    })
+    .returning();
+  await joinLocked(tx, session, userId, input);
+  return session;
+}
+
 export function createParticipationRepository(db: Database) {
   return {
     /** Open groups that fit this ride, best fit first. Public: no account needed. */
     async search(query: SearchGroupsQuery): Promise<GroupMatch[]> {
-      const now = new Date();
-      const intent: RideIntent = {
+      const fitting = await fittingSessions(db, {
         origin: { latitude: query.olat, longitude: query.olng },
         destination: { latitude: query.dlat, longitude: query.dlng },
-        departsAt: departureFor(query.depart, now),
-      };
-      const pickupBox = boundingBox(intent.origin, PICKUP_RADIUS_METERS);
-      const destinationBox = boundingBox(
-        intent.destination,
-        DESTINATION_RADIUS_METERS,
-      );
-      const windowMs = DEPARTURE_WINDOW_MINUTES * 60_000;
-      const rows = await db
-        .select()
-        .from(sessions)
-        .where(
-          and(
-            eq(sessions.status, "open"),
-            lte(sessions.opensAt, now),
-            gt(sessions.closesAt, now),
-            between(
-              sessions.departsAt,
-              new Date(intent.departsAt.getTime() - windowMs),
-              new Date(intent.departsAt.getTime() + windowMs),
-            ),
-            between(
-              sessions.pickupLatitude,
-              pickupBox.minLat,
-              pickupBox.maxLat,
-            ),
-            between(
-              sessions.pickupLongitude,
-              pickupBox.minLon,
-              pickupBox.maxLon,
-            ),
-            between(
-              sessions.destinationLatitude,
-              destinationBox.minLat,
-              destinationBox.maxLat,
-            ),
-            between(
-              sessions.destinationLongitude,
-              destinationBox.minLon,
-              destinationBox.maxLon,
-            ),
-          ),
-        )
-        .limit(50);
-      const fitting = rows.flatMap((row) => {
-        const affinity = affinityOf(anchorsOf(row), intent);
-        return affinity ? [{ row, affinity }] : [];
+        departsAt: departureFor(query.depart, new Date()),
       });
-      fitting.sort(
-        (a, b) => affinityScore(a.affinity) - affinityScore(b.affinity),
-      );
       const matches: GroupMatch[] = [];
       for (const { row, affinity } of fitting.slice(0, 10)) {
         const waiting = await waitingCount(db, row.id);
@@ -352,82 +446,71 @@ export function createParticipationRepository(db: Database) {
       }
       return matches;
     },
-    /** Starts a group around this ride, anchored on a nearby place when there is one. */
+    /** Starts a group around this ride and joins its creator. */
     async createGroup(userId: string, input: CreateGroupInput) {
       return db.transaction(async (tx) => {
         await lockAccount(tx, userId);
-        const origin = originOf(input);
-        const box = boundingBox(origin, PLACE_SNAP_METERS);
-        const nearby = await tx
-          .select()
-          .from(places)
+        return createLocked(tx, userId, input);
+      });
+    },
+    /**
+     * Puts the rider in the best open group for their ride, or starts one when none
+     * fits. Riders are assigned one at a time, so two people asking for the same route
+     * at once share a room instead of each starting one and waiting alone.
+     */
+    async assign(userId: string, input: CreateGroupInput) {
+      return db.transaction(async (tx) => {
+        // Taken before the account lock, and by nothing else, so it cannot deadlock.
+        await tx.execute(
+          sql`select pg_advisory_xact_lock(hashtext('jala:room-assign'))`,
+        );
+        await lockAccount(tx, userId);
+        const fitting = await fittingSessions(
+          tx,
+          {
+            origin: originOf(input),
+            destination: destinationOf(input),
+            departsAt: departureFor(input.departInMinutes),
+          },
+          ASSIGN_DEPARTURE_WINDOW_MINUTES,
+        );
+        // Asking again keeps the room they are already waiting in, if it still fits.
+        const [current] = await tx
+          .select({ sessionId: sessionParticipants.sessionId })
+          .from(sessionParticipants)
           .where(
             and(
-              eq(places.status, "active"),
-              between(places.latitude, box.minLat, box.maxLat),
-              between(places.longitude, box.minLon, box.maxLon),
+              eq(sessionParticipants.userId, userId),
+              eq(sessionParticipants.status, "waiting"),
             ),
-          );
-        const place =
-          nearby
-            .map((p) => ({
-              p,
-              d: haversineMeters(origin, {
-                latitude: p.latitude,
-                longitude: p.longitude,
-              }),
-            }))
-            .filter(({ d }) => d <= PLACE_SNAP_METERS)
-            .sort((a, b) => a.d - b.d)[0]?.p ?? null;
-        const [meetingPoint] = place
-          ? await tx
-              .select()
-              .from(meetingPoints)
-              .where(eq(meetingPoints.placeId, place.id))
-              .orderBy(asc(meetingPoints.createdAt), asc(meetingPoints.id))
-              .limit(1)
-          : [];
-        const pickup = meetingPoint
-          ? {
-              label: meetingPoint.name,
-              latitude: meetingPoint.latitude,
-              longitude: meetingPoint.longitude,
-            }
-          : place
-            ? {
-                label: place.name,
-                latitude: place.latitude,
-                longitude: place.longitude,
-              }
-            : {
-                label: input.originLabel,
-                latitude: input.originLatitude,
-                longitude: input.originLongitude,
-              };
-        const departsAt = departureFor(input.departInMinutes);
-        // The room is public: it gets the district and a coarse anchor, never the
-        // creator's address. Their exact destination stays on their participant row.
-        const heading = publicDestination(input.destinationArea);
-        const anchor = publicAnchor(destinationOf(input));
-        const [session] = await tx
-          .insert(sessions)
-          .values({
-            placeId: place?.id ?? null,
-            name: heading.name,
-            pickupLabel: pickup.label,
-            pickupLatitude: pickup.latitude,
-            pickupLongitude: pickup.longitude,
-            destinationLabel: heading.label,
-            destinationLatitude: anchor.latitude,
-            destinationLongitude: anchor.longitude,
-            departsAt,
-            opensAt: new Date(),
-            closesAt: closesAtFor(departsAt),
-            vehicleCapacity: 3,
-          })
-          .returning();
-        await joinLocked(tx, session, userId, input);
-        return session;
+          )
+          .limit(1);
+        const ordered = [
+          ...fitting.filter((f) => f.row.id === current?.sessionId),
+          ...fitting.filter((f) => f.row.id !== current?.sessionId),
+        ];
+        for (const { row } of ordered) {
+          // Same lock as join and matching; every check below re-reads under it.
+          const [session] = await tx
+            .select()
+            .from(sessions)
+            .where(eq(sessions.id, row.id))
+            .for("update");
+          try {
+            await joinLocked(tx, session, userId, input);
+            return { session, created: false, candidates: fitting.length };
+          } catch (error) {
+            // joinLocked raises these before it writes anything.
+            if (error instanceof ApiError && ROOM_UNSUITABLE.has(error.code))
+              continue;
+            throw error;
+          }
+        }
+        return {
+          session: await createLocked(tx, userId, input),
+          created: true,
+          candidates: fitting.length,
+        };
       });
     },
     async join(sessionId: string, userId: string, input: JoinSessionInput) {
@@ -504,6 +587,16 @@ export function createParticipationRepository(db: Database) {
       });
     },
     /** The group this person is still part of, so the request screen can resume it. */
+    /** Whether this account opened the room. Kept off the public room summary. */
+    async opened(sessionId: string, userId: string) {
+      const [row] = await db
+        .select({ id: sessions.id })
+        .from(sessions)
+        .where(
+          and(eq(sessions.id, sessionId), eq(sessions.createdByUserId, userId)),
+        );
+      return Boolean(row);
+    },
     async activeFor(userId: string) {
       const now = new Date();
       const candidates = await db
@@ -514,6 +607,7 @@ export function createParticipationRepository(db: Database) {
           status: sessionParticipants.status,
           sessionStatus: sessions.status,
           closesAt: sessions.closesAt,
+          createdByUserId: sessions.createdByUserId,
         })
         .from(sessionParticipants)
         .innerJoin(sessions, eq(sessions.id, sessionParticipants.sessionId))
@@ -525,9 +619,16 @@ export function createParticipationRepository(db: Database) {
         )
         .orderBy(desc(sessionParticipants.updatedAt))
         .limit(5);
+      const found = ({
+        createdByUserId,
+        ...c
+      }: (typeof candidates)[number]) => ({
+        ...c,
+        mine: createdByUserId === userId,
+      });
       for (const c of candidates) {
         if (c.status === "waiting") {
-          if (c.sessionStatus === "open" && c.closesAt > now) return c;
+          if (c.sessionStatus === "open" && c.closesAt > now) return found(c);
           continue;
         }
         const [live] = await db
@@ -542,7 +643,7 @@ export function createParticipationRepository(db: Database) {
               withinDeadline(now),
             ),
           );
-        if (live) return c;
+        if (live) return found(c);
       }
       return null;
     },

@@ -75,7 +75,8 @@ describe.skipIf(!url)("ride groups and shared sessions", () => {
     expect(session.placeId).toBe(placeId);
     expect(session.vehicleCapacity).toBe(3);
     // Rooms are public: no area was given, so neither the address nor its name leaks.
-    expect(session.name).toBe("Hacia un destino cercano");
+    expect(session.name).toMatch(/^Sala /);
+    expect(session.createdByUserId).toBe(userIds[0]);
     expect(session.destinationLabel).toBe("Destino cercano");
     expect(session.destinationLatitude).toBe(input.latitude);
     expect(session.closesAt.getTime() - session.departsAt.getTime()).toBe(

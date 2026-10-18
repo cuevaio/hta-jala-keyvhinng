@@ -69,7 +69,7 @@ describe.skipIf(!url)("public room data", () => {
       expect(published).not.toContain(String(home.longitude));
       expect(view?.destinationLabel).toBe("Barranco");
     }
-    expect(found.find((g) => g.id === room.id)?.name).toBe("Hacia Barranco");
+    expect(found.find((g) => g.id === room.id)?.name).toMatch(/^Sala /);
 
     // The exact destination is still there for matching, on the private row.
     const [mine] = await db

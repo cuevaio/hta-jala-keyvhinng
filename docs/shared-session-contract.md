@@ -13,6 +13,7 @@ All endpoints use `{ data }` or `{ error: { code, message, details? } }`. IDs ar
 | `POST /api/auth/sign-out` | empty JSON | Deletes the server-side session and clears the cookie |
 | `GET /api/auth/me` | session cookie | `{ userId, displayName }` or `null` |
 | `GET /api/groups/search?olat&olng&dlat&dlng&depart` | none | Open groups that fit the ride, best first (ADR 0007) |
+| `POST /api/groups/assign` | join body + `departInMinutes`, session cookie | Best open group for the ride, joined, or a new one; returns `{ id, created }` (ADR 0010) |
 | `POST /api/groups` | join body + `departInMinutes` (0, 15, 30, 60), session cookie | New group (capacity 3) with the caller joined |
 | `POST /api/sessions/:id/join` | `{ displayName, selfieDataUrl, originLabel, originLatitude, originLongitude, destinationLabel, latitude, longitude, delegatePreference }` (409 `group_mismatch` / `group_full` / `already_in_group`), session cookie | Own persisted participant; retries update the same row |
 | `GET /api/sessions/:id/waiting-room?rev=<n>` | member session cookie; `rev` optional | `{ session, revision, serverNow, me, participants, party, acceptingJoins }`, or `{ unchanged: true, revision, serverNow }` when `rev` is current |

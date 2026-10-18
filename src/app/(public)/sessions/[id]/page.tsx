@@ -45,6 +45,9 @@ export default async function SessionPage({
   const session = await loadSession(parsed.data.id);
   const identity = await readIdentity();
   const initialRoom = await loadRoom(session.id, identity?.userId ?? null);
+  const mine = identity
+    ? await getServices().participation.opened(session.id, identity.userId)
+    : false;
   return (
     <article className="session-page">
       <Link href="/ride" className="back-link">
@@ -52,7 +55,10 @@ export default async function SessionPage({
         Buscar otra sala
       </Link>
       <header className="session-heading">
-        <h1>{session.name}</h1>
+        <h1>
+          {session.name}
+          {mine && <span className="tag room-mine">Mía</span>}
+        </h1>
       </header>
       <WaitingRoom
         key={session.id}

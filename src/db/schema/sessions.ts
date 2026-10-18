@@ -28,6 +28,10 @@ export const sessions = pgTable(
       onDelete: "set null",
     }),
     name: text("name").notNull(),
+    /** Who opened the room, so they can tell it apart; rooms outlive their creator. */
+    createdByUserId: uuid("created_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
     pickupLabel: text("pickup_label").notNull(),
     pickupLatitude: doublePrecision("pickup_latitude").notNull(),
     pickupLongitude: doublePrecision("pickup_longitude").notNull(),
