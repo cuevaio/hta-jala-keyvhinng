@@ -44,6 +44,7 @@ import {
   type Affinity,
   type RideIntent,
 } from "../domain/affinity";
+import { publicAnchor, publicDestination } from "../domain/public-room";
 import { selfiePath } from "../domain/selfie";
 import { bumpOtherRoomRevisions, bumpRoomRevision } from "./room-revision";
 import type {
@@ -92,7 +93,6 @@ const anchorsOf = (session: SessionRow) => ({
   },
   departsAt: session.departsAt,
 });
-const shortName = (label: string) => label.split(",")[0].trim().slice(0, 60);
 
 export interface GroupMatch {
   id: string;
@@ -379,17 +379,21 @@ export function createParticipationRepository(db: Database) {
                 longitude: input.originLongitude,
               };
         const departsAt = departureFor(input.departInMinutes);
+        // The room is public: it gets the district and a coarse anchor, never the
+        // creator's address. Their exact destination stays on their participant row.
+        const heading = publicDestination(input.destinationArea);
+        const anchor = publicAnchor(destinationOf(input));
         const [session] = await tx
           .insert(sessions)
           .values({
             placeId: place?.id ?? null,
-            name: `Hacia ${shortName(input.destinationLabel)}`,
+            name: heading.name,
             pickupLabel: pickup.label,
             pickupLatitude: pickup.latitude,
             pickupLongitude: pickup.longitude,
-            destinationLabel: input.destinationLabel,
-            destinationLatitude: input.latitude,
-            destinationLongitude: input.longitude,
+            destinationLabel: heading.label,
+            destinationLatitude: anchor.latitude,
+            destinationLongitude: anchor.longitude,
             departsAt,
             opensAt: new Date(),
             closesAt: closesAtFor(departsAt),

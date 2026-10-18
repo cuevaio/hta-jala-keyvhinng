@@ -47,6 +47,8 @@ export type JoinSessionInput = z.infer<typeof joinSessionInput>;
 /** Creating a group also joins it, so the creator is its first member. */
 export const createGroupInput = joinSessionInput.extend({
   departInMinutes: departure,
+  /** The destination's district. Rooms are public, so this is all they show of it. */
+  destinationArea: z.string().trim().min(2).max(60).optional(),
 });
 export type CreateGroupInput = z.infer<typeof createGroupInput>;
 

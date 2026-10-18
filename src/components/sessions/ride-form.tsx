@@ -21,7 +21,7 @@ export interface RideValues {
   displayName: string;
   selfieDataUrl: string;
   origin: { point: GeoPoint; label: string };
-  destination: { point: GeoPoint; label: string };
+  destination: { point: GeoPoint; label: string; area?: string };
   departInMinutes: DepartureChoice;
   delegatePreference: "delegate" | "passenger";
 }
@@ -112,6 +112,7 @@ export function RideForm({
         destination: {
           point: destination.point,
           label: destination.label.trim(),
+          area: destination.area,
         },
         departInMinutes: when,
       });
@@ -125,6 +126,7 @@ export function RideForm({
       destination: {
         point: destination.point,
         label: destination.label.trim(),
+        area: destination.area,
       },
       departInMinutes: when,
       delegatePreference:

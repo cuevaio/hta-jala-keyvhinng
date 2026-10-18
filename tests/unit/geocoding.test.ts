@@ -86,10 +86,12 @@ describe("searchAddress", () => {
       {
         label: "Parque Kennedy, Avenida José Larco 345, Miraflores, Lima",
         point: { latitude: -12.12, longitude: -77.03 },
+        area: "Miraflores",
       },
       {
         label: "Avenida Morales Duarez, Lima",
         point: { latitude: -12.04, longitude: -77.08 },
+        area: "Lima",
       },
     ]);
   });

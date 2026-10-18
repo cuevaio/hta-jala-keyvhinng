@@ -56,6 +56,8 @@ const searchSchema = z.object({
 export interface AddressMatch {
   label: string;
   point: GeoPoint;
+  /** District, or city when OSM has none: the coarse name a room may show publicly. */
+  area?: string;
 }
 
 /**
@@ -92,6 +94,7 @@ export async function searchAddress(
         : undefined;
       const parts = [p.name, street, p.district, p.city, p.state];
       return {
+        area: p.district ?? p.city,
         label: parts
           .filter((part, i): part is string =>
             Boolean(part && parts.indexOf(part) === i),

@@ -14,6 +14,8 @@ export interface PickedLocation {
   /** Null until the person marks the map, searches or shares their position. */
   point: GeoPoint | null;
   label: string;
+  /** District of a chosen suggestion; the only part of a destination a room shows publicly. */
+  area?: string;
 }
 
 type Lookup = "idle" | "loading" | "failed";
@@ -184,7 +186,11 @@ export function LocationPicker({
     labelEdited.current = false;
     setLookup("idle");
     lastPoint.current = match.point;
-    onChange({ point: match.point, label: match.label.slice(0, 200) });
+    onChange({
+      point: match.point,
+      label: match.label.slice(0, 200),
+      area: match.area,
+    });
     onFocusPoint(match.point);
     clearSearch();
   }

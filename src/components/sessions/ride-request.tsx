@@ -11,6 +11,7 @@ import {
   type RideDraft,
   type RideValues,
 } from "./ride-form";
+import { clearRideDraft, saveRideDraft, useSavedRideDraft } from "./ride-draft";
 import { sessionApi, SessionRequestError } from "./session-api";
 
 /** Group as the search endpoint returns it (dates are ISO strings). */
@@ -29,21 +30,6 @@ const distance = (meters: number) =>
 
 const shortLabel = (label: string) => label.split(",")[0];
 
-/** The draft as a URL, so signing in mid-request brings the person back to it. */
-export function draftQuery(
-  values: Pick<RideValues, "origin" | "destination" | "departInMinutes">,
-) {
-  return new URLSearchParams({
-    olat: String(values.origin.point.latitude),
-    olng: String(values.origin.point.longitude),
-    olabel: values.origin.label,
-    dlat: String(values.destination.point.latitude),
-    dlng: String(values.destination.point.longitude),
-    dlabel: values.destination.label,
-    when: String(values.departInMinutes),
-  }).toString();
-}
-
 export function RideRequest({
   authenticated,
   initial,
@@ -61,6 +47,9 @@ export function RideRequest({
   const [groups, setGroups] = useState<FoundGroup[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // A route chosen before signing in comes back from this tab's storage, not the URL.
+  const saved = useSavedRideDraft();
+  const restored = initial.origin || initial.destination ? null : saved;
   // Going back to edit keeps what was typed, not the URL the page loaded with.
   const draft: RideDraft = values
     ? {
@@ -68,7 +57,7 @@ export function RideRequest({
         destination: values.destination,
         departInMinutes: values.departInMinutes,
       }
-    : initial;
+    : (restored ?? initial);
 
   async function search(next: RideValues) {
     setBusy(true);
@@ -97,11 +86,12 @@ export function RideRequest({
     setError("");
     try {
       const session = await sessionApi<{ id: string }>(path, body);
+      clearRideDraft();
       router.push(`/sessions/${session.id}`);
     } catch (e) {
       if (e instanceof SessionRequestError && e.status === 401) {
-        const next = `/ride?${draftQuery(current)}`;
-        router.push(`/sign-in?next=${encodeURIComponent(next)}`);
+        saveRideDraft(current);
+        router.push(`/sign-in?next=${encodeURIComponent("/ride")}`);
         return;
       }
       setError(e instanceof Error ? e.message : "No pudimos entrar a la sala.");
@@ -118,6 +108,7 @@ export function RideRequest({
     destinationLabel: v.destination.label,
     latitude: v.destination.point.latitude,
     longitude: v.destination.point.longitude,
+    destinationArea: v.destination.area,
     delegatePreference: v.delegatePreference,
   });
 
@@ -275,12 +266,13 @@ export function RideRequest({
         </p>
       )}
       <RideForm
+        key={restored ? "restored" : "initial"}
         onRouteContinue={
           authenticated
             ? undefined
             : (route) => {
-                const next = `/ride?${draftQuery(route)}`;
-                router.push(`/sign-up?next=${encodeURIComponent(next)}`);
+                saveRideDraft(route);
+                router.push(`/sign-up?next=${encodeURIComponent("/ride")}`);
               }
         }
         initial={draft}
