@@ -1,0 +1,8 @@
+PUBLIC_EXACT_DESTINATION {"label":"Fictional private home 456","point":{"latitude":-12.1,"longitude":-77.03}}
+{"level":"info","message":"Matching round completed","time":"2026-10-18T10:52:24.179Z","sessionId":"fb19f9c1-e885-4da8-bca9-cc3afd982f2f","candidateCount":2,"createdPartyCount":1,"unmatchedCount":0}
+SELFIE_RETAINED_AFTER_COMPLETION true
+COMPLETED_POOL_REJOIN already_matched
+CONCURRENT_CREATES {"outcomes":["fulfilled","fulfilled"],"waitingPoolCount":2}
+{"level":"info","message":"Matching round completed","time":"2026-10-18T10:52:24.808Z","sessionId":"208460d8-2671-4422-a406-f5172daef3a9","candidateCount":2,"createdPartyCount":1,"unmatchedCount":0}
+{"level":"info","message":"Matching round completed","time":"2026-10-18T10:52:24.810Z","sessionId":"a212113f-70b9-4e55-8a6b-3cd955a2381b","candidateCount":2,"createdPartyCount":1,"unmatchedCount":0}
+SAME_ACCOUNT_LIVE_PARTIES 2
