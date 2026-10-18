@@ -1377,6 +1377,8 @@ fieldset legend {
   padding-right: 56px;
 }
 .address-google-maps {
+  border: 0;
+  cursor: pointer;
   position: absolute;
   top: 50%;
   right: 4px;
@@ -1392,6 +1394,10 @@ fieldset legend {
 }
 .address-google-maps:hover {
   background: #e8f0fe;
+}
+.address-google-maps:disabled {
+  opacity: 0.5;
+  cursor: wait;
 }
 .address-search-row .form-input {
   flex: 1;

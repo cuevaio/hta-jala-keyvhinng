@@ -65,6 +65,12 @@ export function LocationPicker({
   const [lookup, setLookup] = useState<Lookup>("idle");
   const [results, setResults] = useState<AddressMatch[] | null>(null);
   const [searching, setSearching] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [locationError, setLocationError] = useState("");
+  const locateRequest = useRef<{
+    cancelled: boolean;
+    tab: Window | null;
+  } | null>(null);
   const labelEdited = useRef(false);
   const lookupAbort = useRef<AbortController | null>(null);
   const searchAbort = useRef<AbortController | null>(null);
@@ -78,6 +84,10 @@ export function LocationPicker({
     () => () => {
       lookupAbort.current?.abort();
       searchAbort.current?.abort();
+      if (locateRequest.current) {
+        locateRequest.current.cancelled = true;
+        locateRequest.current.tab?.close();
+      }
     },
     [],
   );
@@ -97,6 +107,78 @@ export function LocationPicker({
     searchAbort.current?.abort();
     setSearching(false);
     setResults(null);
+  }
+
+  function cancelLocation() {
+    if (locateRequest.current) {
+      locateRequest.current.cancelled = true;
+      locateRequest.current.tab?.close();
+      locateRequest.current = null;
+    }
+    setLocating(false);
+    setLocationError("");
+  }
+
+  function locateOrigin() {
+    cancelLocation();
+    if (!navigator.geolocation) {
+      setLocationError(
+        "Tu navegador no permite obtener la ubicación. Escribe tu dirección.",
+      );
+      return;
+    }
+    // Reserve the tab during the click so browsers allow navigation after GPS resolves.
+    const tab = window.open("about:blank", "_blank");
+    if (tab) tab.opener = null;
+    const request = { cancelled: false, tab };
+    locateRequest.current = request;
+    setLocating(true);
+    clearSearch();
+    lookupAbort.current?.abort();
+    setLookup("idle");
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        if (request.cancelled) return;
+        locateRequest.current = null;
+        setLocating(false);
+        const point = {
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+        };
+        labelEdited.current = false;
+        lastPoint.current = point;
+        onChangeRef.current({
+          point,
+          label: `${point.latitude.toFixed(6)}, ${point.longitude.toFixed(6)}`,
+        });
+        onFocusPoint(point);
+        onActivate();
+        resolveLabel(point);
+        const href = `https://www.google.com/maps/search/?${new URLSearchParams(
+          {
+            api: "1",
+            query: `${point.latitude},${point.longitude}`,
+          },
+        )}`;
+        if (tab && !tab.closed) tab.location.href = href;
+        else
+          setLocationError(
+            "Ubicación guardada. Tu navegador bloqueó la pestaña de Google Maps.",
+          );
+      },
+      (error) => {
+        if (request.cancelled) return;
+        tab?.close();
+        locateRequest.current = null;
+        setLocating(false);
+        setLocationError(
+          error.code === 1
+            ? "Permite el acceso a tu ubicación en el navegador o escribe tu dirección."
+            : "No pudimos obtener tu ubicación. Intenta otra vez o escribe tu dirección.",
+        );
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+    );
   }
 
   function resolveLabel(point: GeoPoint) {
@@ -122,6 +204,7 @@ export function LocationPicker({
   }
 
   function choose(match: AddressMatch) {
+    cancelLocation();
     // The chosen address is the person's own pick, so it replaces any earlier label.
     lookupAbort.current?.abort();
     labelEdited.current = false;
@@ -159,15 +242,19 @@ export function LocationPicker({
     // Search after typing pauses; callbacks and the current value are read through refs.
   }, [value?.label, value?.point]);
 
-  const help = searching
-    ? "Buscando direcciones…"
-    : lookup === "loading"
-      ? "Buscando la dirección…"
-      : lookup === "failed"
-        ? "No encontramos el nombre de ese punto. Escríbelo; el punto se guarda igual."
-        : value?.point
-          ? ""
-          : "Escribe tu dirección y elige una sugerencia.";
+  const help =
+    locationError ||
+    (locating
+      ? "Obteniendo tu ubicación actual…"
+      : searching
+        ? "Buscando direcciones…"
+        : lookup === "loading"
+          ? "Buscando la dirección…"
+          : lookup === "failed"
+            ? "No encontramos el nombre de ese punto. Escríbelo; el punto se guarda igual."
+            : value?.point
+              ? ""
+              : "Escribe tu dirección y elige una sugerencia.");
 
   return (
     <div className={`location-field location-field-${end}`}>
@@ -194,6 +281,7 @@ export function LocationPicker({
             value={value?.label ?? ""}
             onFocus={onActivate}
             onChange={(event) => {
+              cancelLocation();
               lookupAbort.current?.abort();
               clearSearch();
               setLookup("idle");
@@ -208,16 +296,29 @@ export function LocationPicker({
             }}
             placeholder={copy.placeholder}
           />
-          <a
-            href={mapsHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="address-google-maps"
-            aria-label={`Abrir ${end === "origin" ? "punto de partida" : "destino"} en Google Maps (se abre en otra pestaña)`}
-            title="Abrir en Google Maps"
-          >
-            <MapPinned size={22} aria-hidden="true" />
-          </a>
+          {end === "origin" ? (
+            <button
+              type="button"
+              className="address-google-maps"
+              disabled={locating}
+              onClick={locateOrigin}
+              aria-label="Usar mi ubicación actual como punto de partida y abrir en Google Maps"
+              title="Ubicación actual en Google Maps"
+            >
+              <MapPinned size={22} aria-hidden="true" />
+            </button>
+          ) : (
+            <a
+              href={mapsHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="address-google-maps"
+              aria-label="Abrir destino en Google Maps (se abre en otra pestaña)"
+              title="Abrir en Google Maps"
+            >
+              <MapPinned size={22} aria-hidden="true" />
+            </a>
+          )}
         </div>
       </div>
       <p id={`${id}-address-help`} className="input-help" role="status">
