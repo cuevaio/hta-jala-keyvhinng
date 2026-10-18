@@ -39,7 +39,12 @@ export function fail(error: unknown) {
   }
   if (error instanceof NotFoundError) {
     return NextResponse.json<ApiFailure>(
-      { error: { code: "not_found", message: error.message } },
+      {
+        error: {
+          code: "not_found",
+          message: "No encontramos lo que buscas.",
+        },
+      },
       { status: 404 },
     );
   }
@@ -48,7 +53,7 @@ export function fail(error: unknown) {
       {
         error: {
           code: "validation_error",
-          message: "Invalid request",
+          message: "Revisa los datos e inténtalo de nuevo.",
           details: error.issues.map((i) => ({
             path: i.path.join("."),
             message: i.message,
@@ -62,7 +67,12 @@ export function fail(error: unknown) {
     error: error instanceof Error ? error.message : String(error),
   });
   return NextResponse.json<ApiFailure>(
-    { error: { code: "internal_error", message: "Internal server error" } },
+    {
+      error: {
+        code: "internal_error",
+        message: "Algo salió mal de nuestro lado. Inténtalo de nuevo.",
+      },
+    },
     { status: 500 },
   );
 }

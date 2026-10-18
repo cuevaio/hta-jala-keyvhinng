@@ -27,7 +27,7 @@ async function main() {
       {
         ...common,
         slug: "universidad-demo-lima",
-        name: "[DEMO] Universidad del Pacífico Demo",
+        name: "Universidad del Pacífico Demo",
         kind: "university",
         description:
           "Campus FICTICIO. Salida de las 10 p. m. cuando terminan las clases de noche.",
@@ -38,7 +38,7 @@ async function main() {
       {
         ...common,
         slug: "mall-demo-lima",
-        name: "[DEMO] Centro Comercial Larcomar Demo",
+        name: "Centro Comercial Larcomar Demo",
         kind: "mall",
         description: "Centro comercial FICTICIO frente al mar.",
         address: "Malecón de la Reserva, Miraflores",
@@ -48,7 +48,7 @@ async function main() {
       {
         ...common,
         slug: "teatro-demo-lima",
-        name: "[DEMO] Teatro Nacional Demo",
+        name: "Teatro Nacional Demo",
         kind: "venue",
         description:
           "Teatro FICTICIO para probar la salida después de una función.",
@@ -59,7 +59,7 @@ async function main() {
       {
         ...common,
         slug: "estadio-demo-lima",
-        name: "[DEMO] Estadio Demo (concierto)",
+        name: "Estadio Demo (concierto)",
         kind: "venue",
         description: "Estadio FICTICIO. Noche de Cumbia Andina imaginaria.",
         address: "Av. Aviación, San Borja",

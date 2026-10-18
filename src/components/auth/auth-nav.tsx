@@ -33,7 +33,8 @@ export function AuthNav() {
     router.refresh();
   }
 
-  if (me === undefined) return <span className="auth-nav" aria-hidden="true" />;
+  if (me === undefined)
+    return <span className="auth-nav auth-nav-loading" aria-hidden="true" />;
   if (!me)
     return (
       <span className="auth-nav">

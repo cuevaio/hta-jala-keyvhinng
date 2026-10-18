@@ -1,8 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEventHandler } from "react";
-import { MapPin, UserRound, CarFront, ShieldCheck } from "lucide-react";
-import { reverseGeocode } from "@/lib/geocoding";
+import { MapPin, Search, UserRound, CarFront, ShieldCheck } from "lucide-react";
+import {
+  reverseGeocode,
+  searchAddress,
+  type AddressMatch,
+} from "@/lib/geocoding";
 import type { GeoPoint } from "@/modules/places/domain/place";
 import { DestinationMap } from "./destination-map";
 
@@ -22,6 +26,10 @@ export function SessionJoinForm({
   const [point, setPoint] = useState<GeoPoint | null>(null);
   const [label, setLabel] = useState("");
   const [lookup, setLookup] = useState<"idle" | "loading" | "failed">("idle");
+  const [focus, setFocus] = useState<GeoPoint | null>(null);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<AddressMatch[] | null>(null);
+  const [searching, setSearching] = useState(false);
   const labelEdited = useRef(false);
   const lookupAbort = useRef<AbortController | null>(null);
 
@@ -44,6 +52,30 @@ export function SessionJoinForm({
       .catch(() => {
         if (!controller.signal.aborted) setLookup("failed");
       });
+  }
+
+  async function search() {
+    const text = query.trim();
+    if (text.length < 3) return;
+    setSearching(true);
+    try {
+      setResults(await searchAddress(text));
+    } catch {
+      setResults([]);
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  function choose(match: AddressMatch) {
+    // The chosen address is the person's own pick, so it replaces any earlier label.
+    lookupAbort.current?.abort();
+    labelEdited.current = false;
+    setLabel(match.label.slice(0, 200));
+    setLookup("idle");
+    setPoint(match.point);
+    setFocus(match.point);
+    setResults(null);
   }
 
   function editCoordinate(axis: keyof GeoPoint, raw: string) {
@@ -109,11 +141,76 @@ export function SessionJoinForm({
       </div>
       <fieldset className="coordinates-section">
         <legend>Ubicación del destino</legend>
+        <div className="address-search" role="search">
+          <label htmlFor="address-query">Buscar una dirección</label>
+          <div className="address-search-row">
+            <div className="input-with-icon">
+              <Search size={19} aria-hidden="true" />
+              <input
+                id="address-query"
+                className="form-input"
+                type="search"
+                enterKeyHint="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    void search();
+                  }
+                }}
+                placeholder="Ej. Av. Larco 345, Miraflores"
+              />
+            </div>
+            <button
+              type="button"
+              className="action action-secondary"
+              disabled={searching || query.trim().length < 3}
+              onClick={() => void search()}
+            >
+              {searching ? "Buscando…" : "Buscar"}
+            </button>
+          </div>
+          {results && (
+            <ul
+              className="address-results"
+              role="listbox"
+              aria-label="Resultados"
+            >
+              {results.length === 0 && (
+                <li className="input-help" role="status">
+                  No encontramos esa dirección. Prueba con otra o marca el mapa.
+                </li>
+              )}
+              {results.map((match) => (
+                <li key={`${match.point.latitude},${match.point.longitude}`}>
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={false}
+                    onClick={() => choose(match)}
+                  >
+                    {match.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
         <p className="input-help">
-          Toca el mapa para marcar dónde te dejan. Arrastra el punto para
+          O toca el mapa para marcar dónde te dejan y arrastra el punto para
           afinarlo.
+          <span className="touch-hint">
+            {" "}
+            En el celular, mueve el mapa con dos dedos.
+          </span>
         </p>
-        <DestinationMap center={mapCenter} value={point} onPick={pick} />
+        <DestinationMap
+          center={mapCenter}
+          value={point}
+          focus={focus}
+          onPick={pick}
+        />
         <details className="coordinates-manual">
           <summary>Prefiero escribir las coordenadas</summary>
           <div className="coordinate-fields">
@@ -191,10 +288,16 @@ export function SessionJoinForm({
       </p>
       <button
         disabled={busy || !point}
+        aria-describedby="join-hint"
         className="action action-primary form-submit"
       >
         {busy ? "Guardando tu destino…" : "Unirme a la sala"}
       </button>
+      <p id="join-hint" className="input-help" role="status">
+        {!point && !busy
+          ? "Marca tu destino en el mapa o búscalo por dirección para continuar."
+          : ""}
+      </p>
     </form>
   );
 }

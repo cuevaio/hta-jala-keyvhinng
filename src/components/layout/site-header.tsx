@@ -55,7 +55,11 @@ export function SiteHeader() {
         </button>
         <div id="site-menu" className="site-menu">
           <nav aria-label="Principal">
-            <Link href="/places" className="nav-link">
+            <Link
+              href="/places"
+              className="nav-link"
+              aria-current={pathname.startsWith("/places") ? "page" : undefined}
+            >
               Lugares
             </Link>
             <Link href="/#como-funciona" className="nav-link">

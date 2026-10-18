@@ -16,16 +16,20 @@ const ATTRIBUTION =
 export function DestinationMap({
   center,
   value,
+  focus,
   onPick,
 }: {
   center: GeoPoint;
   value: GeoPoint | null;
+  /** When it changes, the view moves there (e.g. after an address search). */
+  focus?: GeoPoint | null;
   onPick: (point: GeoPoint) => void;
 }) {
   const container = useRef<HTMLDivElement>(null);
   const onPickRef = useRef(onPick);
   const valueRef = useRef(value);
   const syncMarker = useRef<(point: GeoPoint | null) => void>(() => {});
+  const moveView = useRef<(point: GeoPoint) => void>(() => {});
 
   useEffect(() => {
     onPickRef.current = onPick;
@@ -37,18 +41,19 @@ export function DestinationMap({
 
     void import("leaflet").then((L) => {
       if (disposed || !container.current) return;
-      const map = L.map(container.current).setView(
-        [center.latitude, center.longitude],
-        14,
-      );
+      // One-finger drags scroll the page on phones; two fingers pan and pinch the map.
+      const map = L.map(container.current, {
+        dragging: !L.Browser.mobile,
+        touchZoom: true,
+      }).setView([center.latitude, center.longitude], 14);
       L.tileLayer(TILE_URL, { maxZoom: 19, attribution: ATTRIBUTION }).addTo(
         map,
       );
       // A CSS pin avoids Leaflet's default marker images, which bundlers break.
       const icon = L.divIcon({
         className: "destination-pin",
-        iconSize: [26, 26],
-        iconAnchor: [13, 26],
+        iconSize: [32, 32],
+        iconAnchor: [16, 32],
       });
       let marker: import("leaflet").Marker | null = null;
 
@@ -58,7 +63,12 @@ export function DestinationMap({
           marker.setLatLng(latlng);
           return;
         }
-        marker = L.marker(latlng, { icon, draggable: true }).addTo(map);
+        marker = L.marker(latlng, {
+          icon,
+          draggable: true,
+          alt: "Tu destino",
+          title: "Tu destino. Arrástralo para afinarlo.",
+        }).addTo(map);
         marker.on("dragend", () => {
           const { lat, lng } = marker!.getLatLng();
           onPickRef.current({ latitude: lat, longitude: lng });
@@ -80,6 +90,8 @@ export function DestinationMap({
           marker = null;
         }
       };
+      moveView.current = (point) =>
+        map.setView([point.latitude, point.longitude], 16);
       syncMarker.current(valueRef.current);
       cleanup = () => map.remove();
     });
@@ -87,6 +99,7 @@ export function DestinationMap({
     return () => {
       disposed = true;
       syncMarker.current = () => {};
+      moveView.current = () => {};
       cleanup();
     };
     // The map is created once; `center` only seeds the initial view.
@@ -98,12 +111,16 @@ export function DestinationMap({
     syncMarker.current(value);
   }, [value]);
 
+  useEffect(() => {
+    if (focus) moveView.current(focus);
+  }, [focus]);
+
   return (
     <div
       ref={container}
       className="destination-map"
-      role="application"
-      aria-label="Mapa para marcar tu destino. Toca el mapa para colocar el punto."
+      role="group"
+      aria-label="Mapa para marcar tu destino. Si prefieres no usar el mapa, busca una dirección arriba."
     />
   );
 }

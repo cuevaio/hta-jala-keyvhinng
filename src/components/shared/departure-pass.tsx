@@ -11,12 +11,12 @@ export function DeparturePass() {
         <span className="pass-stamp">Con Jala</span>
       </div>
       <div className="pass-main">
-        <h2>
+        <p className="pass-title">
           Misma salida.
           <br />
           Cada quien
           <br />a su puerta.
-        </h2>
+        </p>
         <svg
           className="route-art"
           viewBox="0 0 360 220"

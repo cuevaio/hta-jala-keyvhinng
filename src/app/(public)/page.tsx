@@ -16,7 +16,7 @@ const steps = [
   {
     icon: Users,
     title: "Comparte la sala",
-    text: "Te juntamos con 1 o 2 personas que van por tu ruta, confirman el reparto y salen juntas.",
+    text: "Te juntamos con 1 o 2 personas que van por tu ruta. Todas confirman el reparto antes de salir.",
   },
 ];
 export default function LandingPage() {
@@ -39,7 +39,7 @@ export default function LandingPage() {
             Elegir mi lugar
           </Link>
           <p className="hero-footnote">
-            Tú conservas tu destino. El delegado reserva afuera.
+            Tú conservas tu destino. Quien reserva el taxi lo pide afuera.
           </p>
         </div>
         <DeparturePass />
@@ -67,11 +67,11 @@ export default function LandingPage() {
           S/
         </span>
         <div>
-          <h2>El taxi y la comisión son cosas distintas.</h2>
+          <h2>El taxi se paga afuera, entre ustedes.</h2>
           <p>
-            La propuesta de Jala exonera la comisión de tus primeros cinco
-            viajes y la de quien reserva. Cada persona paga su parte del taxi.
-            Esta demo no realiza cobros.
+            Jala no reserva ni cobra el taxi: quien reserva lo pide en otra app
+            y cada persona paga su parte. Jala te muestra cuánto le toca a cada
+            una según la distancia recorrida. Esta demo no realiza cobros.
           </p>
         </div>
       </aside>

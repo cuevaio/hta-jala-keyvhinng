@@ -44,7 +44,7 @@ export function createPlaceRepository(db: Database): PlaceRepository {
       .select()
       .from(meetingPoints)
       .where(eq(meetingPoints.placeId, row.id))
-      .orderBy(asc(meetingPoints.name));
+      .orderBy(asc(meetingPoints.createdAt), asc(meetingPoints.id));
     return { ...toPlace(row), meetingPoints: points.map(toMeetingPoint) };
   }
 

@@ -18,7 +18,7 @@ const COPY = {
   },
   "sign-up": {
     title: "Crea tu cuenta",
-    intro: "Con tu cuenta Jala recuerda tus salidas y tus viajes gratis.",
+    intro: "Con tu cuenta entras a salas de salida y coordinas tu grupo.",
     submit: "Crear cuenta",
     busy: "Creando cuenta…",
     switchText: "¿Ya tienes cuenta?",

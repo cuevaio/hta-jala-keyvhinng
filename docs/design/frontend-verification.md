@@ -13,7 +13,7 @@ The frontend-design direction is implemented across home, events, event detail, 
 
 ## Accessibility review
 
-Embedded axe-core 4.12.1 returned zero automated violations on the checked home, form and waiting room. The mobile form and room had no incomplete checks. The home illustration produced a manual contrast check because of its inline icon; white on cobalt `#2457E6` has a calculated 5.86:1 contrast ratio. This is a bounded review, not a complete accessibility certification.
+Embedded axe-core 4.12.1 returned zero automated violations on the checked home, form and waiting room. **That is not clearance.** axe cannot detect type that is too small to read outdoors, a map that traps one-finger scrolling on a phone, focus lost after a state change, or disabled-button contrast in context. Those were found by manual review and fixed in the UX pass (docs/design/ux-pass.md). The remaining checks need a real phone: iOS input zoom, the two-finger map, the mobile menu at 320px and screen-reader behavior.
 
 Removed an unnecessary label on a generic illustration container. Fixed spacing in the event-entry heading when its line break is hidden on mobile.
 

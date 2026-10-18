@@ -52,7 +52,7 @@ export default async function PlaceDetailPage({
                 </span>
               )}
             </div>
-            <h1>{place.name.replace(/^\[DEMO\]\s*/, "")}</h1>
+            <h1>{place.name}</h1>
             {place.address && (
               <p className="place-fact">
                 <MapPin size={19} aria-hidden="true" />
@@ -64,8 +64,8 @@ export default async function PlaceDetailPage({
           <section className="meeting-section" aria-labelledby="puntos">
             <h2 id="puntos">Puntos para encontrarse</h2>
             <p className="section-help">
-              Referencias cerca de este lugar. Todavía no tienes un punto
-              asignado.
+              Tu grupo se encuentra en el primer punto de la lista. Lo
+              confirmamos cuando te unamos a un grupo.
             </p>
             {place.meetingPoints.length === 0 ? (
               <p className="empty-state">

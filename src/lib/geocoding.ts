@@ -33,3 +33,49 @@ export async function reverseGeocode(
   const parsed = reverseSchema.safeParse(await response.json());
   return parsed.success ? parsed.data.display_name : null;
 }
+
+const searchSchema = z.array(
+  z.object({
+    display_name: z.string().min(1),
+    lat: z.string(),
+    lon: z.string(),
+  }),
+);
+
+export interface AddressMatch {
+  label: string;
+  point: GeoPoint;
+}
+
+/**
+ * Forward search biased to Peru. Same Nominatim limits as `reverseGeocode`: call it
+ * only on a deliberate user action (a submitted search), never while typing.
+ */
+export async function searchAddress(
+  query: string,
+  options: { signal?: AbortSignal; fetch?: typeof fetch } = {},
+): Promise<AddressMatch[]> {
+  const url = new URL(NOMINATIM_URL.replace("/reverse", "/search"));
+  url.search = new URLSearchParams({
+    format: "jsonv2",
+    q: query,
+    countrycodes: "pe",
+    limit: "5",
+    "accept-language": "es",
+  }).toString();
+  const response = await (options.fetch ?? fetch)(url, {
+    signal: options.signal,
+  });
+  if (!response.ok) return [];
+  const parsed = searchSchema.safeParse(await response.json());
+  if (!parsed.success) return [];
+  return parsed.data
+    .map((row) => ({
+      label: row.display_name,
+      point: { latitude: Number(row.lat), longitude: Number(row.lon) },
+    }))
+    .filter(
+      (m) =>
+        Number.isFinite(m.point.latitude) && Number.isFinite(m.point.longitude),
+    );
+}

@@ -20,7 +20,7 @@ export function PlaceCard({ place }: { place: Place }) {
             <span className="fiction-label">Lugar ficticio</span>
           )}
         </div>
-        <h2>{place.name.replace(/^\[DEMO\]\s*/, "")}</h2>
+        <h2>{place.name}</h2>
         {place.address && (
           <p>
             <MapPin size={16} aria-hidden="true" />
