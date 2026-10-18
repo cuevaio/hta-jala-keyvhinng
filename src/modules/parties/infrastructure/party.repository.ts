@@ -131,9 +131,10 @@ export function createPartyRepository(db: Database) {
             await tx
               .delete(ridePartyMembers)
               .where(eq(ridePartyMembers.partyId, party.id));
+            // The leaver's photo goes with them; the others keep theirs to rematch.
             await tx
               .update(sessionParticipants)
-              .set({ status: "withdrawn", updatedAt: now })
+              .set({ status: "withdrawn", selfieDataUrl: null, updatedAt: now })
               .where(
                 and(
                   eq(sessionParticipants.sessionId, sessionId),
@@ -166,6 +167,16 @@ export function createPartyRepository(db: Database) {
               .update(ridePartyMembers)
               .set({ status: "dropped_off", updatedAt: now })
               .where(eq(ridePartyMembers.partyId, party.id));
+            // Selfies only serve to find each other at pickup; the trip is over.
+            await tx
+              .update(sessionParticipants)
+              .set({ selfieDataUrl: null, updatedAt: now })
+              .where(
+                inArray(
+                  sessionParticipants.id,
+                  members.map((m) => m.participantId),
+                ),
+              );
             await tx
               .update(users)
               .set({ completedRides: sql`${users.completedRides} + 1` })

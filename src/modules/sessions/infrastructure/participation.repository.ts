@@ -132,7 +132,7 @@ async function waitingCount(
 async function claimExclusivity(tx: Tx, sessionId: string, userId: string) {
   const released = await tx
     .update(sessionParticipants)
-    .set({ status: "withdrawn" })
+    .set({ status: "withdrawn", selfieDataUrl: null })
     .where(
       and(
         eq(sessionParticipants.userId, userId),
@@ -461,7 +461,7 @@ export function createParticipationRepository(db: Database) {
           .update(sessionParticipants)
           .set(
             action === "withdraw"
-              ? { status: "withdrawn" }
+              ? { status: "withdrawn", selfieDataUrl: null }
               : { delegatePreference: "delegate" },
           )
           .where(
@@ -706,6 +706,8 @@ export function createParticipationRepository(db: Database) {
           and(
             eq(ridePartyMembers.participantId, participantId),
             eq(rideParties.sessionId, sessionId),
+            // Photos are for finding each other before and during the ride only.
+            inArray(rideParties.status, [...LIVE_PARTY_STATUSES]),
             isNotNull(sessionParticipants.selfieDataUrl),
           ),
         );

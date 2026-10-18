@@ -164,8 +164,27 @@ describe.skipIf(!url)("party lifecycle", () => {
         ).map((u) => [u.id, u.credit]),
       );
     const before = await balances();
+    const members = (await room(s.id, 1)).party!.members;
+    // While the ride is live, a member can see the others' photos.
+    expect(
+      await participation.selfieFor(s.id, b, members[0].participantId),
+    ).not.toBeNull();
     await parties.apply(s.id, a, "complete");
     const after = await balances();
+    // Photos only serve to meet at pickup: gone once the trip ends.
+    expect(
+      await participation.selfieFor(s.id, b, members[0].participantId),
+    ).toBeNull();
+    const photos = await db
+      .select({ selfie: schema.sessionParticipants.selfieDataUrl })
+      .from(schema.sessionParticipants)
+      .where(
+        inArray(
+          schema.sessionParticipants.id,
+          members.map((m) => m.participantId),
+        ),
+      );
+    expect(photos.every((p) => p.selfie === null)).toBe(true);
     // `a` is the delegate and rides free; passengers pay S/ 0.10 each.
     expect(after.get(a)).toBe(before.get(a));
     expect(after.get(b)).toBe(before.get(b)! - 10);
@@ -205,6 +224,17 @@ describe.skipIf(!url)("party lifecycle", () => {
 
     // Everyone's party is gone, the leaver is out, the others wait again.
     expect((await room(s.id, 1)).party).toBeNull();
+    const seats = await db
+      .select({
+        userId: schema.sessionParticipants.userId,
+        selfie: schema.sessionParticipants.selfieDataUrl,
+      })
+      .from(schema.sessionParticipants)
+      .where(eq(schema.sessionParticipants.sessionId, s.id));
+    const photoOf = (u: string) => seats.find((x) => x.userId === u)?.selfie;
+    // The leaver's photo is deleted; the others keep theirs to be matched again.
+    expect(photoOf(c)).toBeNull();
+    expect(photoOf(a)).not.toBeNull();
     expect((await room(s.id, 1)).me.status).toBe("waiting");
     await expect(room(s.id, 2)).rejects.toMatchObject({ status: 403 });
     const [old] = await db

@@ -282,7 +282,8 @@ export const PartyView = forwardRef<
 
           <p className="fine">
             Jala no reserva ni cobra. El reparto se calcula por distancia, suma
-            100% y solo tu grupo de viaje ve estas direcciones.
+            100% y solo tu grupo de viaje ve estas direcciones. Las selfies se
+            borran al terminar el viaje.
           </p>
         </div>
         <aside className="room-side">
