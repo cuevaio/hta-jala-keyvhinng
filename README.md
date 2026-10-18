@@ -7,7 +7,8 @@ percentages. Jala operates no vehicles and processes no payments in the MVP.
 
 Status: **the core journey works end to end** (sign up, pick a place, join with a destination,
 road-based matching, confirm the split, chat with the group, start and finish the trip).
-Notifications, departure times, safety features and place administration are not built yet.
+Room notifications use Web Push (iOS needs the app on the home screen). Departure times,
+safety features and place administration are not built yet.
 All seeded data is fictional. See [docs/status.md](docs/status.md) for what is done, what is
 missing and what comes next.
 
@@ -37,14 +38,17 @@ bun dev                        # http://localhost:3000
 
 ### Environment variables
 
-| Variable              | Required | Default                     | Description                            |
-| --------------------- | -------- | --------------------------- | -------------------------------------- |
-| `DATABASE_URL`        | yes      | –                           | PostgreSQL connection string           |
-| `NEXT_PUBLIC_APP_URL` | no       | `http://localhost:3000`     | Public base URL                        |
-| `LOG_LEVEL`           | no       | `info`                      | `debug` \| `info` \| `warn` \| `error` |
-| `ROUTING_BASE_URL`    | no       | public OSRM demo            | OSRM-compatible routing server         |
-| `RESEND_API_KEY`      | no       | – (log-only mailer)         | Enables password reset emails          |
-| `MAIL_FROM`           | no       | `Jala <jala@jala.oak4.xyz>` | Sender for emails                      |
+| Variable              | Required | Default                     | Description                                   |
+| --------------------- | -------- | --------------------------- | --------------------------------------------- |
+| `DATABASE_URL`        | yes      | –                           | PostgreSQL connection string                  |
+| `NEXT_PUBLIC_APP_URL` | no       | `http://localhost:3000`     | Public base URL                               |
+| `LOG_LEVEL`           | no       | `info`                      | `debug` \| `info` \| `warn` \| `error`        |
+| `ROUTING_BASE_URL`    | no       | public OSRM demo            | OSRM-compatible routing server                |
+| `RESEND_API_KEY`      | no       | – (log-only mailer)         | Enables password reset emails                 |
+| `MAIL_FROM`           | no       | `Jala <jala@jala.oak4.xyz>` | Sender for emails                             |
+| `VAPID_PUBLIC_KEY`    | no       | – (log-only push)           | Web Push key pair; enables room notifications |
+| `VAPID_PRIVATE_KEY`   | no       | –                           | Private half of the VAPID pair                |
+| `VAPID_SUBJECT`       | no       | `mailto:jala@jala.oak4.xyz` | Contact sent to push services                 |
 
 `.env.local` is git-ignored; never commit real credentials.
 
@@ -70,24 +74,26 @@ bun dev                        # http://localhost:3000
 
 All responses are `{ "data": ... }` or `{ "error": { "code", "message", "details?" } }`.
 
-| Endpoint                                    | Description                                     |
-| ------------------------------------------- | ----------------------------------------------- |
-| `POST /api/auth/sign-up`                    | Create an account and establish a session       |
-| `POST /api/auth/sign-in`                    | Sign in to an existing account                  |
-| `POST /api/auth/password-reset/request`     | Email a reset link (always 200)                 |
-| `POST /api/auth/password-reset/confirm`     | Set a new password with a reset token           |
-| `POST /api/auth/change-password`            | Change password; revokes other sessions         |
-| `GET /api/groups/search`                    | Open groups that fit a start, destination, time |
-| `POST /api/groups`                          | Create a ride group and join it                 |
-| `POST /api/sessions/:id/join`               | Join or update own waiting participation        |
-| `POST /api/sessions/:id/match`              | Find and persist compatible ride groups         |
-| `POST /api/sessions/:id/party`              | Group action: confirm, leave, start, complete   |
-| `GET /api/sessions/:id/waiting-room`        | Roster, own destination and own group proposal  |
-| `GET /api/health`                           | Liveness + database check (503 if DB is down)   |
-| `GET /api/places?status=&kind=&limit=`      | List places                                     |
-| `GET /api/places/:id`                       | Place with meeting points                       |
-| `GET /api/sessions?placeId=&status=&limit=` | List sessions with participant counts           |
-| `GET /api/sessions/:id`                     | Session detail                                  |
+| Endpoint                                         | Description                                                                                   |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| `POST /api/auth/sign-up`                         | Create an account and establish a session                                                     |
+| `POST /api/auth/sign-in`                         | Sign in to an existing account                                                                |
+| `POST /api/auth/password-reset/request`          | Email a reset link (always 200)                                                               |
+| `POST /api/auth/password-reset/confirm`          | Set a new password with a reset token                                                         |
+| `POST /api/auth/change-password`                 | Change password; revokes other sessions                                                       |
+| `GET /api/groups/search`                         | Open groups that fit a start, destination, time                                               |
+| `POST /api/groups`                               | Create a ride group and join it                                                               |
+| `POST /api/sessions/:id/join`                    | Join or update own waiting participation                                                      |
+| `POST /api/sessions/:id/match`                   | Find and persist compatible ride groups                                                       |
+| `POST /api/sessions/:id/party`                   | Group action: confirm, leave, start, complete                                                 |
+| `GET /api/sessions/:id/waiting-room`             | Roster, own destination and own group proposal; `?rev=` returns only the clock when unchanged |
+| `GET /api/sessions/:id/participants/:pid/selfie` | A party member's photo, for that party only                                                   |
+| `POST`/`DELETE /api/push/subscriptions`          | Link or unlink this browser for room notifications                                            |
+| `GET /api/health`                                | Liveness + database check (503 if DB is down)                                                 |
+| `GET /api/places?status=&kind=&limit=`           | List places                                                                                   |
+| `GET /api/places/:id`                            | Place with meeting points                                                                     |
+| `GET /api/sessions?placeId=&status=&limit=`      | List sessions with participant counts                                                         |
+| `GET /api/sessions/:id`                          | Session detail                                                                                |
 
 ## Structure
 

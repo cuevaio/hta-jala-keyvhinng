@@ -2406,3 +2406,16 @@ ol.roster {
   border-color: #b88b24;
   color: #58400b;
 }
+
+/* Room notification opt-in */
+.push-opt-in {
+  flex-wrap: wrap;
+  margin: 16px 0;
+}
+.push-opt-in p {
+  flex: 1 1 220px;
+  margin: 0;
+}
+.push-status {
+  margin: 12px 0;
+}

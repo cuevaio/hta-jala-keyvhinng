@@ -9,6 +9,7 @@ import { roomDeadline } from "./room-clock";
 import { useRoomClock } from "./use-room-clock";
 import { PartyView } from "./party-view";
 import { PoolView } from "./pool-view";
+import { PushOptIn } from "./push-opt-in";
 import { FULL_REFRESH_MS, nextPollDelay } from "./poll-delay";
 import type { Room, RoomUnchanged } from "./room";
 import { RideForm, type RideValues } from "./ride-form";
@@ -39,6 +40,7 @@ export function WaitingRoom({
   initialRoom,
   initialSignedOut,
   accountName,
+  pushPublicKey,
 }: {
   sessionId: string;
   initialServerNow: string;
@@ -50,6 +52,8 @@ export function WaitingRoom({
   initialRoom: Room | null;
   initialSignedOut: boolean;
   accountName: string;
+  /** VAPID public key; null when the server cannot send notifications. */
+  pushPublicKey: string | null;
 }) {
   const [room, setRoom] = useState<Room | null>(initialRoom);
   const [signedOut, setSignedOut] = useState(initialSignedOut);
@@ -185,13 +189,24 @@ export function WaitingRoom({
         active?.abort();
       }
     };
+    // A push for this room means it changed: check now rather than at the next tick.
+    const onPush = (event: MessageEvent) => {
+      if (
+        event.data?.type === "room-changed" &&
+        event.data.url === `/sessions/${sessionId}` &&
+        document.visibilityState === "visible"
+      )
+        void poll();
+    };
     timer = setTimeout(poll, 0);
     document.addEventListener("visibilitychange", onVisible);
+    navigator.serviceWorker?.addEventListener("message", onPush);
     return () => {
       stopped = true;
       clearTimeout(timer);
       active?.abort();
       document.removeEventListener("visibilitychange", onVisible);
+      navigator.serviceWorker?.removeEventListener("message", onPush);
     };
   }, [sessionId, apply, synchronize]);
 
@@ -353,6 +368,11 @@ export function WaitingRoom({
           {pollError}
         </p>
       )}
+      {room &&
+        !left &&
+        (room.party
+          ? room.party.status === "forming" || room.party.status === "confirmed"
+          : !closed) && <PushOptIn publicKey={pushPublicKey} />}
       {closed && !room?.party && (
         <div role="status" className="session-closed">
           <h2 ref={!room ? heading : undefined} tabIndex={-1}>

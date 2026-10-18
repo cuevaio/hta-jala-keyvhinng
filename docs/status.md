@@ -22,7 +22,7 @@ and tracks the group through confirm, start and finish. Jala does not book or ch
 | Ride record and completed-ride counter                     | Done        | `rides` row; `users.completed_rides` incremented                      |
 | Share the room (copy link, WhatsApp)                       | Done        |                                                                       |
 | Contact between group members                             | Done        | Group chat in the room (polling, quick replies); read-only after the trip; no phone or push |
-| Notifications (group found, everyone confirmed)            | **Missing** | The room polls; a closed tab learns nothing                           |
+| Notifications (group found, everyone confirmed)            | Done        | Web Push, opt-in in the room; iOS only once installed ([notifications](notifications.md)); not yet tested on a real phone |
 | Arbitrary departure time ("I leave at 10 pm")              | **Missing** | Only now / 15 / 30 / 60 minutes                                       |
 | Background matching                                        | Done        | Runs after each join and after a dissolve (ADR 0008); button retries  |
 | Expiry of stalled groups, no-show handling                 | **Missing** | A group nobody confirms never expires                                 |
@@ -58,7 +58,8 @@ whole product is about half.
 ## Next, in order
 
 1. Real-device check of geolocation and the new ride flow.
-2. Notify people when a group forms and when everyone has confirmed.
+2. Real-phone check of notifications (Android, installed iPhone app); set the VAPID keys
+   in production.
 3. Expire stalled groups and handle no-shows.
 4. Minimal admin page to create places and meeting points.
 
@@ -71,5 +72,6 @@ whole product is about half.
 | Group lifecycle                    | [party-lifecycle.md](party-lifecycle.md)                             |
 | Accounts, sessions, abuse controls | [auth.md](auth.md)                                                   |
 | Join and waiting-room contract     | [shared-session-contract.md](shared-session-contract.md)             |
+| Room notifications (Web Push)      | [notifications.md](notifications.md)                                 |
 | UX review and what was fixed       | [design/ux-pass.md](design/ux-pass.md)                               |
 | Decisions                          | [decisions/](decisions/) (0005 leaving dissolves, 0006 places, 0007 ride groups, 0008 automatic matching) |

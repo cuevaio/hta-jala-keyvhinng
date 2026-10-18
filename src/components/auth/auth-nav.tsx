@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ArrowRight, Wallet } from "lucide-react";
+import { disablePush } from "@/components/sessions/push-client";
 import { sessionApi } from "@/components/sessions/session-api";
 import { formatSoles } from "@/modules/payments/domain/fees";
 
@@ -30,6 +31,8 @@ export function AuthNav() {
   }, [pathname]);
 
   async function signOut() {
+    // This browser must stop receiving the account's notifications; needs the session.
+    await disablePush().catch(() => {});
     await sessionApi("/api/auth/sign-out", {}).catch(() => {});
     setMe(null);
     router.push("/");

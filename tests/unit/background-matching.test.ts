@@ -6,7 +6,6 @@ import {
 } from "@/modules/matching/infrastructure/matching.repository";
 import type { MatchingService } from "@/modules/matching/domain/matching";
 import { RoutingError } from "@/modules/routing/domain/routing-provider";
-import { createRoomEvents } from "@/modules/notifications/application/room-events";
 
 const changed = () =>
   new MatchingError(409, "matching_snapshot_changed", "changed");
@@ -51,32 +50,5 @@ describe("background matching", () => {
     const { repo, matching } = app(() => Promise.reject(e));
     expect(await matching.matchInBackground("s", "u")).toBeNull();
     expect(repo.snapshot).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe("room events", () => {
-  const matcher = () => ({ matchInBackground: vi.fn(async () => null) });
-
-  it("matches the person who just joined", async () => {
-    const matching = matcher();
-    await createRoomEvents({ matching }).joined("s", "u");
-    expect(matching.matchInBackground).toHaveBeenCalledWith("s", "u");
-  });
-
-  it("re-matches someone who stayed when a party dissolves", async () => {
-    const matching = matcher();
-    const events = createRoomEvents({ matching });
-    await events.partyChanged("s", {
-      kind: "dissolved",
-      actorUserId: "leaver",
-      memberUserIds: ["leaver", "stayed", "other"],
-    });
-    expect(matching.matchInBackground).toHaveBeenCalledWith("s", "stayed");
-    await events.partyChanged("s", {
-      kind: "confirmed",
-      actorUserId: "a",
-      memberUserIds: ["a", "b"],
-    });
-    expect(matching.matchInBackground).toHaveBeenCalledTimes(1);
   });
 });

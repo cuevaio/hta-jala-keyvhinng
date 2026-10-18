@@ -96,9 +96,14 @@ export function createMatchingApplication(
             error instanceof MatchingError &&
             error.code === "matching_snapshot_changed";
           if (changed && attempt < 3) continue;
-          const expected =
-            error instanceof MatchingError || error instanceof RoutingError;
-          logger[expected ? "info" : "error"]("Background matching skipped", {
+          // Room closed or person gone is routine; routing down is worth a look.
+          const level =
+            error instanceof MatchingError
+              ? "info"
+              : error instanceof RoutingError
+                ? "warn"
+                : "error";
+          logger[level]("Background matching skipped", {
             sessionId,
             error: error instanceof Error ? error.message : String(error),
           });

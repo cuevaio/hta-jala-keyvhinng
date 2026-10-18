@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { ApiError, assertSameOrigin, handle, ok } from "@/lib/http";
 import { getServices } from "@/lib/services";
 import { requireIdentity } from "@/modules/participants/infrastructure/browser-identity";
@@ -21,9 +22,14 @@ export const POST = handle(
       );
     }
     try {
-      const { createdPartyCount, alreadyMatched } =
-        await getServices().matching.match(id, userId);
-      const response = ok({ createdPartyCount, alreadyMatched });
+      const services = getServices();
+      const outcome = await services.matching.match(id, userId);
+      if (outcome.createdPartyCount)
+        after(() => services.roomEvents.matched(id, userId, outcome));
+      const response = ok({
+        createdPartyCount: outcome.createdPartyCount,
+        alreadyMatched: outcome.alreadyMatched,
+      });
       response.headers.set("Cache-Control", "private, no-store");
       return response;
     } catch (error) {

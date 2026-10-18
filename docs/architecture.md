@@ -24,6 +24,7 @@ Rules:
 3. Application services receive repositories as arguments (plain factory functions, no DI framework).
 4. Server components call services directly; they do not call the HTTP API.
 5. Client components are used only where browser interaction is required (join form and polling waiting room).
+6. Side effects of a write (background matching, notifications) run in `after()` through `roomEvents`, never inside the write transaction.
 
 ## Modules
 
@@ -35,6 +36,7 @@ Rules:
 | `routing`      | contract + OSRM    | `RoutingProvider` contract, `RoutingError`, OSRM adapter (`ROUTING_BASE_URL`)     |
 | `parties`      | implemented        | Group lifecycle (confirm, leave, start, complete); `RideProviderAdapter` boundary |
 | `payments`     | implemented        | Fare split in soles; PEN 5.00 welcome credit, PEN 0.10 passenger fee debited on completion |
+| `notifications` | implemented       | Web Push to subscribed browsers and `roomEvents`: side effects run after commit (background matching, notifications); see [notifications](notifications.md) |
 | `verification` | not created        | QR verification; add when there is code to put in it                              |
 
 `routing` and `matching` never reference a mapping vendor. `RideProviderAdapter` keeps external

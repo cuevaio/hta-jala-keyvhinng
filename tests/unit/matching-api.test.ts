@@ -4,12 +4,25 @@ import { MatchingError } from "@/modules/matching/infrastructure/matching.reposi
 import { ApiError } from "@/lib/http";
 import { resetRateLimits } from "@/lib/rate-limit";
 
-const mocks = vi.hoisted(() => ({ identity: vi.fn(), match: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  identity: vi.fn(),
+  match: vi.fn(),
+  matched: vi.fn(),
+  after: vi.fn(),
+}));
+// after() needs a Next request scope; run the scheduled task inline instead.
+vi.mock("next/server", async (original) => ({
+  ...(await original<typeof import("next/server")>()),
+  after: mocks.after,
+}));
 vi.mock("@/modules/participants/infrastructure/browser-identity", () => ({
   requireIdentity: mocks.identity,
 }));
 vi.mock("@/lib/services", () => ({
-  getServices: () => ({ matching: { match: mocks.match } }),
+  getServices: () => ({
+    matching: { match: mocks.match },
+    roomEvents: { matched: mocks.matched },
+  }),
 }));
 import { POST } from "@/app/api/sessions/[id]/match/route";
 const id = "a3574ead-5049-4b3c-8487-871900b90a48";
@@ -26,6 +39,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   resetRateLimits();
   mocks.identity.mockResolvedValue({ userId: "account" });
+  mocks.after.mockImplementation((task: () => unknown) => task());
   mocks.match.mockResolvedValue({
     createdPartyCount: 1,
     alreadyMatched: false,
@@ -49,6 +63,12 @@ describe("matching HTTP boundary", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("private, no-store");
     expect(mocks.match).toHaveBeenCalledWith(id, "account");
+    // The new party's other members hear about it after the response.
+    expect(mocks.matched).toHaveBeenCalledWith(
+      id,
+      "account",
+      expect.objectContaining({ createdPartyCount: 1 }),
+    );
   });
   it.each([403, 409])(
     "maps application failure %i to the common envelope",
