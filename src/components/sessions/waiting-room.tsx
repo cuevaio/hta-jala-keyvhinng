@@ -315,9 +315,12 @@ export function WaitingRoom({
     }, "No pudimos completar la acción.");
   }
 
-  function partyAction(action: PartyCommand) {
+  function partyAction(action: PartyCommand, fareMinor?: number) {
     return run(async () => {
-      await sessionApi(`/api/sessions/${sessionId}/party`, { action });
+      await sessionApi(`/api/sessions/${sessionId}/party`, {
+        action,
+        fareMinor,
+      });
       if (action === "leave") {
         hadParty.current = false;
         setLeft("party");

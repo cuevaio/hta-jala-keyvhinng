@@ -16,6 +16,8 @@ export interface Room {
     confirmBy: string | null;
     startBy: string | null;
     startedAt: string | null;
+    /** The taxi total the booker posted (céntimos), or null before they do. */
+    fareMinor: number | null;
     members: {
       participantId: string;
       status: string;

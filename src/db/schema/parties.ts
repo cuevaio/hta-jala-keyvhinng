@@ -45,11 +45,17 @@ export const rideParties = pgTable(
     confirmBy: timestamp("confirm_by", { withTimezone: true }),
     /** Set on confirmation: the ride must start by then. */
     startBy: timestamp("start_by", { withTimezone: true }),
+    /** Taxi quote the booker posted, in céntimos; members confirm against it. */
+    fareMinor: integer("fare_minor"),
     ...timestamps,
   },
   (t) => [
     index("ride_parties_session_status_idx").on(t.sessionId, t.status),
     index("ride_parties_meeting_point_idx").on(t.meetingPointId),
+    check(
+      "ride_parties_fare_range",
+      sql`${t.fareMinor} IS NULL OR ${t.fareMinor} BETWEEN 1 AND 99999`,
+    ),
   ],
 );
 

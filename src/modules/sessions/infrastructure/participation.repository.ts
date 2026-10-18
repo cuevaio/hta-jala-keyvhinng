@@ -597,6 +597,7 @@ export function createParticipationRepository(db: Database) {
               plan: rideParties.routePlan,
               confirmBy: rideParties.confirmBy,
               startBy: rideParties.startBy,
+              fareMinor: rideParties.fareMinor,
               startedAt: rides.startedAt,
             })
             .from(ridePartyMembers)

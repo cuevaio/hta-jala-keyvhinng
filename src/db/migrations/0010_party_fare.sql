@@ -1,0 +1,2 @@
+ALTER TABLE "ride_parties" ADD COLUMN "fare_minor" integer;--> statement-breakpoint
+ALTER TABLE "ride_parties" ADD CONSTRAINT "ride_parties_fare_range" CHECK ("ride_parties"."fare_minor" IS NULL OR "ride_parties"."fare_minor" BETWEEN 1 AND 99999);

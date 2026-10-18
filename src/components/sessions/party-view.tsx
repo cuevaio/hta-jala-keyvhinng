@@ -49,7 +49,8 @@ export const PartyView = forwardRef<
     /** Server-synced clock (ms), for deadlines. */
     now: number;
     busy: boolean;
-    onAction: (action: PartyCommand) => void;
+    /** `fareMinor` accompanies `set_fare`. */
+    onAction: (action: PartyCommand, fareMinor?: number) => void;
   }
 >(function PartyView(
   { sessionId, party, meId, revision, now, busy, onAction },
@@ -82,13 +83,14 @@ export const PartyView = forwardRef<
   );
   const pending = party.members.length - confirmed.size;
   const others = party.members.length - 1;
-  const fareMinor = parseFareMinor(fareInput);
-  const fareInvalid = fareInput.trim() !== "" && fareMinor === null;
+  // The booker's draft amount; only a posted fare is shared with the group.
+  const draftFare = parseFareMinor(fareInput);
+  const fareInvalid = fareInput.trim() !== "" && draftFare === null;
   const split =
-    fareMinor === null
+    party.fareMinor == null
       ? null
       : apportionMinor(
-          fareMinor,
+          party.fareMinor,
           plan.stops.map((s) => s.fareShareBps),
         );
   const myIndex = plan.stops.findIndex((s) => s.participantId === meId);
@@ -126,35 +128,69 @@ export const PartyView = forwardRef<
               </strong>
               <small>
                 {split
-                  ? `${percent(me.fareShareBps)} del taxi`
-                  : "del taxi. Escribe la tarifa para verla en soles."}
+                  ? `${percent(me.fareShareBps)} de ${formatSoles(party.fareMinor!)}`
+                  : "del taxi, cuando quien reserva publique la tarifa."}
               </small>
             </div>
           )}
 
-          <div className="fare-calculator">
-            <label htmlFor="fare-input">
-              Tarifa del taxi, si ya la conocen
-            </label>
-            <div className="fare-input-row">
-              <span aria-hidden="true">S/</span>
-              <input
-                id="fare-input"
-                inputMode="decimal"
-                autoComplete="off"
-                value={fareInput}
-                aria-invalid={fareInvalid}
-                aria-describedby={fareInvalid ? "fare-error" : undefined}
-                onChange={(e) => setFareInput(e.target.value)}
-                placeholder="45.00"
-              />
-            </div>
-            {fareInvalid && (
-              <p id="fare-error" role="alert" className="form-error">
-                Escribe solo el monto en soles, por ejemplo 45 o 45.50.
+          {isDelegate && live ? (
+            <form
+              className="fare-calculator"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (draftFare !== null) onAction("set_fare", draftFare);
+              }}
+            >
+              <label htmlFor="fare-input">
+                Tarifa que muestra tu app de taxi
+              </label>
+              <div className="fare-post">
+                <div className="fare-input-row">
+                  <span aria-hidden="true">S/</span>
+                  <input
+                    id="fare-input"
+                    inputMode="decimal"
+                    autoComplete="off"
+                    value={fareInput}
+                    aria-invalid={fareInvalid}
+                    aria-describedby="fare-help"
+                    onChange={(e) => setFareInput(e.target.value)}
+                    placeholder={
+                      party.fareMinor
+                        ? (party.fareMinor / 100).toFixed(2)
+                        : "45.00"
+                    }
+                  />
+                </div>
+                <button
+                  className="action action-secondary"
+                  disabled={busy || draftFare === null}
+                >
+                  {party.fareMinor ? "Actualizar tarifa" : "Publicar tarifa"}
+                </button>
+              </div>
+              {fareInvalid ? (
+                <p id="fare-help" role="alert" className="form-error">
+                  Escribe solo el monto en soles, por ejemplo 45 o 45.50.
+                </p>
+              ) : (
+                <p id="fare-help" className="fine">
+                  {party.fareMinor
+                    ? `Publicaste ${formatSoles(party.fareMinor)}. Si la cambias, todos confirman de nuevo.`
+                    : "El grupo confirma contra este monto; cada parte se calcula por distancia."}
+                </p>
+              )}
+            </form>
+          ) : (
+            live && (
+              <p className="fare-posted" role="status">
+                {party.fareMinor
+                  ? `Tarifa del grupo: ${formatSoles(party.fareMinor)}, publicada por quien reserva el taxi.`
+                  : "Esperando la tarifa de quien reserva el taxi. Podrás confirmar cuando la publique."}
               </p>
-            )}
-          </div>
+            )
+          )}
 
           <h3>Ruta y reparto</h3>
           <ol className="roster">
@@ -210,10 +246,12 @@ export const PartyView = forwardRef<
             <button
               type="button"
               className="action action-primary"
-              disabled={busy}
+              disabled={busy || !split}
               onClick={() => onAction("confirm")}
             >
-              Confirmar mi lugar y el reparto
+              {split
+                ? `Confirmar mi lugar · ${formatSoles(split[myIndex])}`
+                : "Confirmar mi lugar"}
             </button>
           )}
           {party.status === "forming" && mine?.status === "confirmed" && (

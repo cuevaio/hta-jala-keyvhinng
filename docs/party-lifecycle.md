@@ -27,10 +27,14 @@ and matching. No migration: statuses already existed in the schema.
 Waiting seats (`POST /api/sessions/:id/seat`): `withdraw` leaves the room,
 `offer_to_book` volunteers as the group's booker and rematches at once.
 
-The waiting-room `party` now includes `members: { participantId, status }[]` (identical
-for every member). The UI also offers a display-only fare calculator: the group types the
-taxi fare and `apportionMinor` splits integer céntimos by the saved basis points.
-Nothing about the fare is persisted and Jala still neither books nor charges the taxi.
+The waiting-room `party` includes `members: { participantId, status }[]` (identical
+for every member) and `fareMinor`. The booker posts the taxi quote with
+`{ "action": "set_fare", "fareMinor": 3240 }` (céntimos, forming or confirmed only).
+Everyone then sees the same total, split into integer céntimos by the saved basis points
+(`apportionMinor`), and confirms against it: `confirm` without a posted fare is
+`409 fare_missing`. Changing the fare clears every confirmation, returns a confirmed
+group to `forming` and restarts the confirmation window, so nobody is held to an amount
+they did not see. Jala still neither books nor charges the taxi.
 
 ## Group chat
 

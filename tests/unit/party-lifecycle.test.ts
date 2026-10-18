@@ -15,6 +15,7 @@ const party = (
   statuses: PartyState["members"][number]["status"][] = ["invited", "invited"],
 ): PartyState => ({
   status,
+  fareMinor: 3000,
   members: statuses.map((s, i) => ({
     userId: `u${i}`,
     role: i === 0 ? "delegate" : "passenger",
@@ -178,5 +179,60 @@ describe("deadlines", () => {
     expect(() =>
       decide({ ...party, status: "confirmed" }, "rider", "start", at(31)),
     ).toThrow(expect.objectContaining({ code: "delegate_required" }));
+  });
+});
+
+describe("the group fare", () => {
+  const code = (fn: () => unknown) => {
+    try {
+      fn();
+    } catch (e) {
+      return (e as PartyError).code;
+    }
+    return null;
+  };
+
+  it("cannot be confirmed before the booker posts it", () => {
+    const unpriced = { ...party("forming"), fareMinor: null };
+    expect(code(() => decide(unpriced, "u1", "confirm"))).toBe("fare_missing");
+  });
+
+  it("is posted by the booker only, and a change asks everyone again", () => {
+    expect(
+      decide(party("forming"), "u0", "confirm", new Date(), undefined).kind,
+    ).toBe("confirm");
+    expect(
+      code(() => decide(party("forming"), "u1", "set_fare", new Date(), 4500)),
+    ).toBe("delegate_required");
+    expect(
+      decide(
+        party("confirmed", ["confirmed", "confirmed"]),
+        "u0",
+        "set_fare",
+        new Date(),
+        4500,
+      ),
+    ).toEqual({ kind: "set_fare", fareMinor: 4500 });
+    expect(PARTY_TRANSITIONS.confirmed).toContain("forming");
+  });
+
+  it("rejects missing or impossible amounts and ignores a repeat", () => {
+    for (const amount of [undefined, 0, -5, 12.5, 100_000])
+      expect(
+        code(() =>
+          decide(party("forming"), "u0", "set_fare", new Date(), amount),
+        ),
+      ).toBe("invalid_fare");
+    expect(
+      decide(party("forming"), "u0", "set_fare", new Date(), 3000),
+    ).toEqual({ kind: "noop" });
+  });
+
+  it("cannot change once the ride started", () => {
+    expect(
+      code(() =>
+        decide(party("in_progress"), "u0", "set_fare", new Date(), 4500),
+      ),
+    ).toBe("invalid_party_state");
   });
 });

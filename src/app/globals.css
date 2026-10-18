@@ -1907,6 +1907,20 @@ ol.roster {
   font-size: 14px;
   font-weight: 700;
 }
+.fare-post {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.fare-posted {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--sage);
+  font-size: 14px;
+  line-height: 1.5;
+}
 .fare-input-row {
   display: flex;
   align-items: center;

@@ -130,6 +130,9 @@ describe.skipIf(!url)("room revision", () => {
     await matching.match(s.id, userIds[0]);
     expect(await changed()).toBe(true);
 
+    await parties.apply(s.id, userIds[0], "set_fare", 3000);
+    expect(await changed()).toBe(true);
+
     await chat.post(s.id, userIds[1], "Ya llegué.");
     expect(await changed()).toBe(true);
 

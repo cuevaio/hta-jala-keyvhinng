@@ -1,8 +1,12 @@
 import { z } from "zod";
-import { PARTY_COMMANDS } from "../domain/party-lifecycle";
+import { MAX_FARE_MINOR, PARTY_COMMANDS } from "../domain/party-lifecycle";
 import { PARTY_MESSAGE_MAX_LENGTH } from "../domain/party-message";
 
-export const partyCommandBody = z.object({ action: z.enum(PARTY_COMMANDS) });
+export const partyCommandBody = z.object({
+  action: z.enum(PARTY_COMMANDS),
+  /** Céntimos; only `set_fare` uses it. */
+  fareMinor: z.number().int().positive().lt(MAX_FARE_MINOR).optional(),
+});
 
 export const partyMessageBody = z.object({
   body: z.string().trim().min(1).max(PARTY_MESSAGE_MAX_LENGTH),

@@ -76,6 +76,9 @@ describe.skipIf(!url)("party lifecycle", () => {
         delegatePreference: i === 0 ? "delegate" : "passenger",
       });
     await matching.match(session.id, userIds[0]);
+    // The booker posts the taxi quote, so members have an amount to confirm.
+    if (count >= 2)
+      await parties.apply(session.id, userIds[0], "set_fare", 3000);
     return session;
   }
   const room = (sessionId: string, user: number) =>
@@ -253,6 +256,28 @@ describe.skipIf(!url)("party lifecycle", () => {
     expect(after.plan!.stops.map((x) => x.userId).sort()).toEqual(
       [a, b, userIds[3]].sort(),
     );
+  });
+
+  it("makes everyone confirm again when the booker changes the fare", async () => {
+    const s = await matchedSession();
+    for (const user of userIds.slice(0, 3))
+      await parties.apply(s.id, user, "confirm");
+    expect((await room(s.id, 1)).party).toMatchObject({
+      status: "confirmed",
+      fareMinor: 3000,
+    });
+    // A passenger cannot change the agreed amount.
+    await expect(
+      parties.apply(s.id, userIds[1], "set_fare", 9000),
+    ).rejects.toMatchObject({ code: "delegate_required" });
+
+    await parties.apply(s.id, userIds[0], "set_fare", 4500);
+    const party = (await room(s.id, 1)).party!;
+    expect(party.status).toBe("forming");
+    expect(party.fareMinor).toBe(4500);
+    expect(party.startBy).toBeNull();
+    expect(party.confirmBy!.getTime()).toBeGreaterThan(Date.now());
+    expect(party.members.every((m) => m.status === "invited")).toBe(true);
   });
 
   describe("deadlines", () => {

@@ -78,6 +78,9 @@ describe.skipIf(!url)("party chat", () => {
         delegatePreference: i === 0 ? "delegate" : "passenger",
       });
     await matching.match(session.id, userIds[0]);
+    // The booker posts the taxi quote, so members have an amount to confirm.
+    if (count >= 2)
+      await parties.apply(session.id, userIds[0], "set_fare", 3000);
     return session;
   }
 

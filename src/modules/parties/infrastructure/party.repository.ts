@@ -15,6 +15,7 @@ import { calculatePlatformFee } from "@/modules/payments/domain/fees";
 import { bumpRoomRevision } from "@/modules/sessions/infrastructure/room-revision";
 import { missedDeadline } from "./party-deadlines";
 import {
+  confirmDeadline,
   decide,
   expiryOf,
   PartyError,
@@ -159,6 +160,8 @@ export function createPartyRepository(db: Database) {
       sessionId: string,
       userId: string,
       command: PartyCommand,
+      /** The taxi quote, for `set_fare`. */
+      fareMinor?: number,
     ): Promise<{ partyStatus: RidePartyStatus; event: PartyEvent | null }> {
       return db.transaction(async (tx) => {
         const [session] = await tx
@@ -191,6 +194,7 @@ export function createPartyRepository(db: Database) {
             status: rideParties.status,
             confirmBy: rideParties.confirmBy,
             startBy: rideParties.startBy,
+            fareMinor: rideParties.fareMinor,
             startedAt: rides.startedAt,
           })
           .from(rideParties)
@@ -215,10 +219,16 @@ export function createPartyRepository(db: Database) {
           .where(eq(ridePartyMembers.partyId, party.id));
 
         const decision = decide(
-          { status: party.status, startedAt: party.startedAt, members },
+          {
+            status: party.status,
+            fareMinor: party.fareMinor,
+            startedAt: party.startedAt,
+            members,
+          },
           userId,
           command,
           now,
+          fareMinor,
         );
         // Every command but a no-op changes what members see.
         if (decision.kind !== "noop") await bumpRoomRevision(tx, sessionId);
@@ -264,6 +274,24 @@ export function createPartyRepository(db: Database) {
                   ? event("confirmed")
                   : null,
             };
+          }
+          case "set_fare": {
+            // A new amount needs everyone's agreement again, with a fresh window.
+            await tx
+              .update(rideParties)
+              .set({
+                fareMinor: decision.fareMinor,
+                status: "forming",
+                confirmBy: confirmDeadline(now),
+                startBy: null,
+                updatedAt: now,
+              })
+              .where(eq(rideParties.id, party.id));
+            await tx
+              .update(ridePartyMembers)
+              .set({ status: "invited", updatedAt: now })
+              .where(eq(ridePartyMembers.partyId, party.id));
+            return { partyStatus: "forming", event: null };
           }
           case "dissolve": {
             const others = members

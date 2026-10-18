@@ -15,7 +15,7 @@ export const POST = handle(
     assertSameOrigin(request);
     const { userId } = await requireIdentity();
     const { id } = sessionIdParams.parse(await ctx.params);
-    const { action } = partyCommandBody.parse(await request.json());
+    const { action, fareMinor } = partyCommandBody.parse(await request.json());
     if (!(await consume(`party:${userId}`, 30, 60_000)))
       throw new ApiError(
         429,
@@ -30,12 +30,14 @@ export const POST = handle(
         id,
         userId,
         action,
+        fareMinor,
       );
       logger.info(`party.${action}`, {
         sessionId: id,
         userId,
         partyStatus,
         event: event?.kind ?? null,
+        ...(action === "set_fare" && { fareMinor }),
       });
       if (event) after(() => services.roomEvents.partyChanged(id, event));
       const response = ok({ partyStatus });

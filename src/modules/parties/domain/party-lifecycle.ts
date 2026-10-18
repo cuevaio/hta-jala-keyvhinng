@@ -17,7 +17,8 @@ export const PARTY_TRANSITIONS: Record<
   readonly RidePartyStatus[]
 > = {
   forming: ["confirmed", "cancelled"],
-  confirmed: ["in_progress", "cancelled"],
+  // A new fare after everyone confirmed sends the group back to confirming it.
+  confirmed: ["in_progress", "cancelled", "forming"],
   in_progress: ["completed"],
   completed: [],
   cancelled: [],
@@ -28,7 +29,11 @@ export const PARTY_COMMANDS = [
   "leave",
   "start",
   "complete",
+  "set_fare",
 ] as const;
+
+/** A taxi quote in céntimos: positive and below S/ 1,000. */
+export const MAX_FARE_MINOR = 100_000;
 export type PartyCommand = (typeof PARTY_COMMANDS)[number];
 
 /** A matched group has this long for everyone to confirm. */
@@ -75,6 +80,8 @@ export function expiryOf(
 
 export interface PartyState {
   status: RidePartyStatus;
+  /** The total the booker posted (céntimos); members confirm against it. */
+  fareMinor?: number | null;
   /** When the ride started; lets any member close it after the fallback window. */
   startedAt?: Date | null;
   members: readonly {
@@ -103,6 +110,11 @@ export type PartyDecision =
   | { kind: "dissolve" }
   | { kind: "start" }
   | { kind: "complete" }
+  /**
+   * The booker posted or changed the total. Everyone must confirm the new amount, so
+   * every confirmation is cleared and a confirmed group goes back to forming.
+   */
+  | { kind: "set_fare"; fareMinor: number }
   /** The command was already applied; nothing to write. */
   | { kind: "noop" };
 
@@ -131,6 +143,8 @@ export function decide(
   userId: string,
   command: PartyCommand,
   now: Date = new Date(),
+  /** Required for `set_fare`. */
+  fareMinor?: number,
 ): PartyDecision {
   const me = memberOf(party, userId);
   switch (command) {
@@ -143,6 +157,13 @@ export function decide(
           "invalid_party_state",
           "Esta acción ya no está disponible para el grupo.",
         );
+      // Confirming means agreeing to an amount, so there must be one.
+      if (party.fareMinor == null)
+        throw new PartyError(
+          409,
+          "fare_missing",
+          "Espera a que quien reserva el taxi publique la tarifa.",
+        );
       const everyone = party.members.every(
         (m) => m.userId === userId || m.status === "confirmed",
       );
@@ -150,6 +171,33 @@ export function decide(
         kind: "confirm",
         partyStatus: everyone ? "confirmed" : "forming",
       };
+    }
+    case "set_fare": {
+      if (me.role !== "delegate")
+        throw new PartyError(
+          403,
+          "delegate_required",
+          "Solo quien reserva el taxi publica la tarifa.",
+        );
+      if (party.status !== "forming" && party.status !== "confirmed")
+        throw new PartyError(
+          409,
+          "invalid_party_state",
+          "La tarifa ya no se puede cambiar.",
+        );
+      if (
+        fareMinor === undefined ||
+        !Number.isInteger(fareMinor) ||
+        fareMinor <= 0 ||
+        fareMinor >= MAX_FARE_MINOR
+      )
+        throw new PartyError(
+          400,
+          "invalid_fare",
+          "Ingresa la tarifa total del taxi, mayor que cero.",
+        );
+      if (fareMinor === party.fareMinor) return { kind: "noop" };
+      return { kind: "set_fare", fareMinor };
     }
     case "leave": {
       if (party.status === "in_progress")
