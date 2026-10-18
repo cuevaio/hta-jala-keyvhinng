@@ -57,8 +57,8 @@ Existing fee tables/functions do not establish a working revenue feature.
 
 ## 3. Current journey and terminology
 
-1. On the home page, choose current location, a featured place or **Otra dirección**
-   and enter a specific starting address. Continue to `/ride` to confirm the address
+1. On the home page, type directly into **Punto de partida** or press
+   **Usar mi ubicación**; there is no starting-point dropdown. Continue to `/ride` to confirm the address
    search result or select a point on the map. GPS is requested only after pressing
    **Usar mi ubicación**, and is never required. Use one **Origen** field and one
    **Destino** field. Each field both
@@ -86,7 +86,7 @@ P2 follows validated demand. Priorities below are proposed product decisions.
 
 | ID | Priority / state | Requirement and acceptance criteria |
 | --- | --- | --- |
-| R1 | P0 / implemented | Visitors can search without signing in. Join/create require an account. The home page accepts a specific starting address as well as current location and featured places. Denied geolocation still permits manual address/map entry; a delayed GPS response must not replace a subsequent manual choice. Rehearse draft recovery through sign-in on the latest flow. |
+| R1 | P0 / implemented | Visitors can search without signing in. Join/create require an account. The home page offers a starting-address field and **Usar mi ubicación** without a dropdown. Featured places remain optional shortcuts through their cards. Denied geolocation still permits manual address/map entry; a delayed GPS response must not replace a subsequent manual choice. Rehearse draft recovery through sign-in on the latest flow. |
 | R2 | P0 / implemented | Discovery accepts pools within 1.5 km of origin, 3 km of the destination anchor and ±30 minutes of requested departure; ranks by normalized fit. Explain that these are straight-line discovery distances. |
 | R3 | P0 / implemented | Creating a pool also joins its creator. Pickup uses an active place's meeting point when its place is within 400 m of origin, otherwise the origin itself. Joining rechecks server-side fit and capacity. |
 | R4 | P0 / implemented | One waiting pool per person. Switching releases the previous waiting participation; an active forming/confirmed/in-progress party blocks switching. Pools close to joins 30 minutes after planned departure. |

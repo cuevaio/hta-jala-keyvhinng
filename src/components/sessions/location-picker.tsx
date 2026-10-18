@@ -218,16 +218,16 @@ export function LocationPicker({
     locating === "locating"
       ? "Buscando tu ubicación…"
       : locating === "denied"
-        ? "No pudimos leer tu ubicación. Escríbela o márcala en el mapa."
+        ? "No pudimos leer tu ubicación. Escribe y busca tu dirección."
         : locating === "unsupported"
-          ? "Tu navegador no ofrece ubicación. Escríbela o márcala en el mapa."
+          ? "Tu navegador no ofrece ubicación. Escribe y busca tu dirección."
           : lookup === "loading"
             ? "Buscando la dirección…"
             : lookup === "failed"
               ? "No encontramos el nombre de ese punto. Escríbelo; el punto se guarda igual."
               : value?.point
                 ? ""
-                : "Escribe y busca, o toca el mapa.";
+                : "Escribe y busca tu dirección.";
 
   return (
     <div className={`location-field location-field-${end}`}>
@@ -296,7 +296,7 @@ export function LocationPicker({
         <ul className="address-results" aria-label={copy.results}>
           {results.length === 0 && (
             <li className="input-help" role="status">
-              No encontramos esa dirección. Prueba con otra o toca el mapa.
+              No encontramos esa dirección. Prueba con otra.
             </li>
           )}
           {results.map((match) => (

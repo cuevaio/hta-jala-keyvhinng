@@ -3,37 +3,27 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, MapPin } from "lucide-react";
-import type { GeoPoint } from "@/modules/places/domain/place";
+import {
+  LocationPicker,
+  type PickedLocation,
+} from "@/components/sessions/location-picker";
 
-export interface OriginChoice {
-  id: string;
-  name: string;
-  location: GeoPoint;
-}
-
-const HERE = "here";
-const CUSTOM = "custom";
-
-/**
- * The landing's shortcut into /ride. It only carries what was typed; the ride page
- * runs the address search so the person picks the exact match themselves.
- */
-export function HeroSearch({ origins }: { origins: OriginChoice[] }) {
+/** Carries the selected starting point or typed address into the ride form. */
+export function HeroSearch() {
   const router = useRouter();
-  const [origin, setOrigin] = useState(HERE);
-  const [originAddress, setOriginAddress] = useState("");
+  const [origin, setOrigin] = useState<PickedLocation | null>(null);
   const [destination, setDestination] = useState("");
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const query = new URLSearchParams();
-    const place = origins.find((o) => o.id === origin);
-    if (place) {
-      query.set("olat", String(place.location.latitude));
-      query.set("olng", String(place.location.longitude));
-      query.set("olabel", place.name);
+    if (origin?.point) {
+      query.set("olat", String(origin.point.latitude));
+      query.set("olng", String(origin.point.longitude));
+      query.set("olabel", origin.label);
+    } else if (origin?.label.trim()) {
+      query.set("oq", origin.label.trim());
     }
-    if (origin === CUSTOM) query.set("oq", originAddress.trim());
     if (destination.trim().length >= 3) query.set("dq", destination.trim());
     const search = query.toString();
     router.push(search ? `/ride?${search}` : "/ride");
@@ -41,33 +31,15 @@ export function HeroSearch({ origins }: { origins: OriginChoice[] }) {
 
   return (
     <form className="search-form" onSubmit={submit}>
-      <label>
-        <span>
-          <span className="dot" aria-hidden="true" /> Punto de partida
-        </span>
-        <select value={origin} onChange={(e) => setOrigin(e.target.value)}>
-          <option value={HERE}>Mi ubicación actual</option>
-          <option value={CUSTOM}>Otra dirección</option>
-          {origins.map((o) => (
-            <option key={o.id} value={o.id}>
-              {o.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      {origin === CUSTOM && (
-        <label>
-          <span>Dirección de partida</span>
-          <input
-            value={originAddress}
-            onChange={(e) => setOriginAddress(e.target.value)}
-            required
-            minLength={3}
-            maxLength={200}
-            placeholder="Distrito, calle o lugar de partida"
-          />
-        </label>
-      )}
+      <LocationPicker
+        id="home-origin"
+        end="origin"
+        value={origin}
+        onChange={setOrigin}
+        onActivate={() => {}}
+        onFocusPoint={() => {}}
+        locate
+      />
       <label>
         <span>
           <MapPin size={14} aria-hidden="true" /> ¿A dónde vas?

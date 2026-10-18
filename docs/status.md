@@ -12,7 +12,7 @@ and tracks the group through confirm, start and finish. Jala does not book or ch
 | ---------------------------------------------------------- | ----------- | --------------------------------------------------------------------- |
 | Sign up, sign in, sign out                                 | Done        | scrypt, hashed session tokens, Postgres-backed rate limits            |
 | Password reset and change                                  | Done        | Emails go through Resend when `RESEND_API_KEY` is set; log-only otherwise |
-| Choose starting location, destination and time          | Done        | Home offers current location, a featured place or a specific address; opt-in GPS, address search or map pin on `/ride`; now / 15 / 30 / 60 min |
+| Choose starting location, destination and time          | Done        | Home offers a starting-address field and current-location button; opt-in GPS, address search or map pin on `/ride`; now / 15 / 30 / 60 min |
 | Find open groups by route affinity, or create one          | Done        | ADR 0007; pickup 1.5 km, destination 3 km, departure ±30 min          |
 | Browse places, filter by kind                              | Done        | Optional pickup anchors; start a request from a place                 |
 | Join with exact destination (map pin or address search)    | Done        | Reverse and forward lookup via public Nominatim                       |

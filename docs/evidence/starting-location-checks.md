@@ -1,6 +1,8 @@
 # Starting-location checks
 
-Checked locally on 2026-10-18 using an isolated browser session and the task worktree.
+Initial checks on 2026-10-18 using an isolated browser session and the task worktree.
+The dropdown described below was subsequently simplified to a direct address field
+and **Usar mi ubicación** button; see the follow-up checks at the end.
 
 - Home offers current location, **Otra dirección** and featured places.
 - Choosing **Otra dirección** exposes a required starting-address input.
@@ -20,3 +22,16 @@ Checked locally on 2026-10-18 using an isolated browser session and the task wor
 Checks: lint and typecheck passed; 93 tests passed, with 33 integration tests
 skipped by the existing environment configuration. This check covers public
 origin selection and discovery, not authenticated joins or real taxi trips.
+
+## Follow-up: direct starting-address entry
+
+- Removed the home starting-point dropdown. A single **Punto de partida** field
+  accepts an address directly and offers **Usar mi ubicación** beside its label.
+- Typing `Plaza San Martín, Lima` and `Miraflores`, then continuing, preserves both
+  texts on `/ride` and displays actual address search results.
+- At a 320 px viewport, the home page content width is 320 px and the form has no
+  starting-point select menu.
+- Controlled GPS denial displays the address-entry fallback. A successful retry
+  uses actual reverse geocoding to fill the starting address, and continuation
+  carries the GPS coordinates into `/ride`.
+- Lint and typecheck passed; 93 tests passed, 33 existing integration tests skipped.

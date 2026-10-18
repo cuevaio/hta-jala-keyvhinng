@@ -663,12 +663,13 @@ fieldset legend {
   background: #fff;
   box-shadow: 0 8px 28px rgb(18 52 59 / 0.06);
 }
-.search-form label {
+.search-form > label,
+.search-form > .location-field {
   display: block;
   padding: 12px 14px;
   border-bottom: 1px solid var(--line-soft);
 }
-.search-form label > span {
+.search-form > label > span {
   display: flex;
   align-items: center;
   gap: 7px;
@@ -677,8 +678,7 @@ fieldset legend {
   font-weight: 600;
   color: var(--muted-text);
 }
-.search-form select,
-.search-form input {
+.search-form > label input {
   display: block;
   width: 100%;
   min-height: 32px;
@@ -693,16 +693,19 @@ fieldset legend {
   color: #8a989a;
   font-weight: 500;
 }
-.search-form select:focus-visible,
-.search-form input:focus-visible {
+.search-form > label input:focus-visible {
   outline: none;
 }
-.search-form label:focus-within {
+.search-form > label:focus-within,
+.search-form > .location-field:focus-within {
   box-shadow: inset 3px 0 0 var(--orange);
 }
-.search-form .action {
+.search-form > .action {
   width: 100%;
   margin-top: 8px;
+}
+.search-form .location-field-head {
+  flex-wrap: wrap;
 }
 .hero-note {
   display: flex;

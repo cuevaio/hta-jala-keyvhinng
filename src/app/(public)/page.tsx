@@ -22,7 +22,7 @@ const steps = [
   {
     icon: LocateFixed,
     title: "Elige desde dónde sales",
-    text: "Usa tu ubicación actual, escribe una dirección o elige uno de los lugares frecuentes.",
+    text: "Escribe tu dirección de partida o usa tu ubicación actual.",
   },
   {
     icon: Clock3,
@@ -89,13 +89,7 @@ export default async function LandingPage() {
             Comparte un taxi con personas que salen cerca de ti y van hacia tu
             misma zona. Cada quien llega a su puerta y paga su parte.
           </p>
-          <HeroSearch
-            origins={places.map(({ id, name, location }) => ({
-              id,
-              name,
-              location,
-            }))}
-          />
+          <HeroSearch />
           <p className="hero-note">
             <ShieldCheck size={17} aria-hidden="true" /> Tu destino exacto solo
             se comparte con tu grupo de viaje.
