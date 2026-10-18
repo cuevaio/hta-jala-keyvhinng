@@ -1,7 +1,7 @@
 # Domain model
 
 ```
-Event 1 ──< Session 1 ──< RideParty 1 ── 1 Ride
+Place 1 ──< Session 1 ──< RideParty 1 ── 1 Ride
   │             │              │
   │             │              └──< RidePartyMember >── 1 User
   │             └──< SessionParticipant >── 1 User
@@ -10,8 +10,8 @@ Event 1 ──< Session 1 ──< RideParty 1 ── 1 Ride
 Ride 1 ──< FeeLedgerEntry >── 1 User
 ```
 
-- **Event** – a concert, play or festival. Has a venue and predefined **MeetingPoints**.
-- **Session** – a temporary pool of passengers for an event or departure window. One event can
+- **Place** – somewhere people leave together: a venue, university, mall or station. Has a location and predefined **MeetingPoints**.
+- **Session** – a temporary pool of passengers for one departure window at a place. One place can
   have many sessions. Holds the vehicle capacity used for matching.
 - **SessionParticipant** – a user in a session with an exact destination (latitude/longitude) and
   a **delegate preference** (`delegate` | `passenger`). Unique per (session, user).

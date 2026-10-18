@@ -1,6 +1,6 @@
 # Shared session milestone (Stage 0–1)
 
-Implemented: event → open/reuse temporary session → exact destination and delegate preference → persisted waiting room. Road matching and saved group proposals are now implemented; see [the matching contract](matching.md). Verification, bookings and ride completion remain future milestones. No fares or payments are collected.
+Implemented: place → open/reuse temporary session → exact destination and delegate preference → persisted waiting room. Road matching and saved group proposals are now implemented; see [the matching contract](matching.md). Verification, bookings and ride completion remain future milestones. No fares or payments are collected.
 
 ## HTTP contract
 
@@ -12,7 +12,7 @@ All endpoints use `{ data }` or `{ error: { code, message, details? } }`. IDs ar
 | `POST /api/auth/sign-in` | `{ email, password }` | `{ userId, displayName }`, sets a fresh session cookie; 401 `invalid_credentials` (same for unknown email and wrong password); 429 when throttled |
 | `POST /api/auth/sign-out` | empty JSON | Deletes the server-side session and clears the cookie |
 | `GET /api/auth/me` | session cookie | `{ userId, displayName }` or `null` |
-| `POST /api/sessions` | `{ eventId }`, session cookie | Existing currently open pool or a new two-hour pool, capacity 3 |
+| `POST /api/sessions` | `{ placeId }`, session cookie | Existing currently open pool or a new two-hour pool, capacity 3 |
 | `POST /api/sessions/:id/join` | `{ displayName, destinationLabel, latitude, longitude, delegatePreference }`, session cookie | Own persisted participant; retries update the same row |
 | `GET /api/sessions/:id/waiting-room` | member session cookie | `{ session, me, participants, party, acceptingJoins }` |
 
@@ -31,7 +31,7 @@ Errors: 400 invalid input/JSON, 401 missing or expired identity, 403 nonmember/c
 ## Persistence and concurrency
 
 - Additive migration `0001_unique_the_twelve.sql` adds browser credentials without changing existing records. Apply before deploying the new handlers; the previous app can coexist with this table.
-- Event-row lock serializes open/reuse so simultaneous creates share one currently open pool. Expiry is checked against server time, with no scheduler needed.
+- Place-row lock serializes open/reuse so simultaneous creates share one currently open pool. Expiry is checked against server time, with no scheduler needed.
 - Session-row lock serializes joins; unique `(session_id, user_id)` prevents duplicate participation. Matching commits acquire the same lock and revalidate the candidate snapshot.
 - A pool holds many waiting participants. Vehicle capacity limits future parties, not the pool size.
 - Existing matched participants cannot rejoin as waiting. Matching persists parties and assignments atomically; see the matching contract for its invariants.

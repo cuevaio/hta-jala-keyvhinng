@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { GeoPoint } from "@/modules/events/domain/event";
+import type { GeoPoint } from "@/modules/places/domain/place";
 import {
   RoutingError,
   type RouteEstimate,

@@ -12,7 +12,7 @@ describe.skipIf(!url)("persisted shared sessions", () => {
   const sql = postgres(url ?? "postgres://unused", { max: 5 });
   const db = drizzle(sql, { schema });
   const repo = createParticipationRepository(db);
-  const eventId = randomUUID();
+  const placeId = randomUUID();
   const userIds = [randomUUID(), randomUUID(), randomUUID()];
   let sessionId: string;
   const input = {
@@ -24,15 +24,12 @@ describe.skipIf(!url)("persisted shared sessions", () => {
   };
 
   beforeAll(async () => {
-    await db.insert(schema.events).values({
-      id: eventId,
-      slug: `test-${eventId}`,
+    await db.insert(schema.places).values({
+      id: placeId,
+      slug: `test-${placeId}`,
       name: "Integration fixture",
-      venueName: "Test",
-      venueLatitude: -12,
-      venueLongitude: -77,
-      startsAt: new Date(),
-      endsAt: new Date(Date.now() + 86400000),
+      latitude: -12,
+      longitude: -77,
       status: "active",
       isFictional: true,
     });
@@ -41,13 +38,13 @@ describe.skipIf(!url)("persisted shared sessions", () => {
       .values(userIds.map((id) => ({ id, displayName: "Test" })));
   });
   afterAll(async () => {
-    await db.delete(schema.events).where(eq(schema.events.id, eventId));
+    await db.delete(schema.places).where(eq(schema.places.id, placeId));
     await db.delete(schema.users).where(inArray(schema.users.id, userIds));
     await sql.end();
   });
   it("simultaneous session creation reuses one expiring pool", async () => {
     const results = await Promise.all(
-      Array.from({ length: 5 }, () => repo.openForEvent(eventId)),
+      Array.from({ length: 5 }, () => repo.openForPlace(placeId)),
     );
     expect(new Set(results.map((s) => s.id)).size).toBe(1);
     sessionId = results[0].id;
@@ -121,15 +118,15 @@ describe.skipIf(!url)("persisted shared sessions", () => {
     expect((await repo.waitingRoom(sessionId, userIds[1])).acceptingJoins).toBe(
       false,
     );
-    expect((await repo.openForEvent(eventId)).id).not.toBe(sessionId);
+    expect((await repo.openForPlace(placeId)).id).not.toBe(sessionId);
   });
-  it("rejects cancelled events", async () => {
+  it("rejects inactive places", async () => {
     await db
-      .update(schema.events)
-      .set({ status: "cancelled" })
-      .where(eq(schema.events.id, eventId));
-    await expect(repo.openForEvent(eventId)).rejects.toMatchObject({
-      code: "event_unavailable",
+      .update(schema.places)
+      .set({ status: "inactive" })
+      .where(eq(schema.places.id, placeId));
+    await expect(repo.openForPlace(placeId)).rejects.toMatchObject({
+      code: "place_unavailable",
     });
   });
 });

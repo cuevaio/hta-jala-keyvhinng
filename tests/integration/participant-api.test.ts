@@ -12,7 +12,7 @@ describe.skipIf(!base || !url)(
   () => {
     const sql = postgres(url ?? "postgres://unused", { max: 1 });
     const db = drizzle(sql, { schema });
-    const eventId = randomUUID();
+    const placeId = randomUUID();
     const userIds: string[] = [];
     let cookieA: string;
     let cookieB: string;
@@ -25,28 +25,25 @@ describe.skipIf(!base || !url)(
       });
     }
     beforeAll(async () => {
-      await db.insert(schema.events).values({
-        id: eventId,
-        slug: `http-test-${eventId}`,
+      await db.insert(schema.places).values({
+        id: placeId,
+        slug: `http-test-${placeId}`,
         name: "HTTP fixture",
-        venueName: "Test",
-        venueLatitude: -12,
-        venueLongitude: -77,
-        startsAt: new Date(),
-        endsAt: new Date(Date.now() + 86400000),
+        latitude: -12,
+        longitude: -77,
         status: "active",
         isFictional: true,
       });
     });
     afterAll(async () => {
-      await db.delete(schema.events).where(eq(schema.events.id, eventId));
+      await db.delete(schema.places).where(eq(schema.places.id, placeId));
       if (userIds.length)
         await db.delete(schema.users).where(inArray(schema.users.id, userIds));
       await sql.end();
     });
     it("signs up with an opaque session cookie, stores no plaintext secrets, and signs in/out", async () => {
-      const emailA = `a-${eventId}@test.example`;
-      const emailB = `b-${eventId}@test.example`;
+      const emailA = `a-${placeId}@test.example`;
+      const emailB = `b-${placeId}@test.example`;
       const first = await post("/api/auth/sign-up", {
         displayName: "Ana",
         email: emailA,
@@ -99,7 +96,7 @@ describe.skipIf(!base || !url)(
         password: "wrong-password",
       });
       const unknown = await post("/api/auth/sign-in", {
-        email: `nobody-${eventId}@test.example`,
+        email: `nobody-${placeId}@test.example`,
         password: "wrong-password",
       });
       expect(wrong.status).toBe(401);
@@ -122,7 +119,7 @@ describe.skipIf(!base || !url)(
       expect((await after.json()).data).toBeNull();
     });
     it("enforces authentication/membership and shares a persisted roster", async () => {
-      const opened = await post("/api/sessions", { eventId }, cookieA);
+      const opened = await post("/api/sessions", { placeId }, cookieA);
       expect(opened.status).toBe(200);
       sessionId = (await opened.json()).data.id;
       const path = `/api/sessions/${sessionId}/waiting-room`;
@@ -188,7 +185,7 @@ describe.skipIf(!base || !url)(
           "Content-Type": "application/json",
           origin: "https://unrelated.test",
         },
-        body: JSON.stringify({ eventId }),
+        body: JSON.stringify({ placeId }),
       });
       expect(crossSite.status).toBe(403);
     });

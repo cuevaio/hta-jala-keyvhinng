@@ -19,7 +19,7 @@ describe.skipIf(!url)("durable matching", () => {
   const db = drizzle(sql, { schema });
   const participation = createParticipationRepository(db);
   const repository = createMatchingRepository(db);
-  const eventId = randomUUID();
+  const placeId = randomUUID();
   const userIds = Array.from({ length: 15 }, () => randomUUID());
   const routing: RoutingProvider = {
     estimateMatrix: async (points) => ({
@@ -54,7 +54,7 @@ describe.skipIf(!url)("durable matching", () => {
     const [session] = await db
       .insert(schema.sessions)
       .values({
-        eventId,
+        placeId,
         name: "Matching test",
         vehicleCapacity: 3,
         opensAt: new Date(Date.now() - 1000),
@@ -69,15 +69,12 @@ describe.skipIf(!url)("durable matching", () => {
     return session;
   }
   beforeAll(async () => {
-    await db.insert(schema.events).values({
-      id: eventId,
-      slug: `match-${eventId}`,
+    await db.insert(schema.places).values({
+      id: placeId,
+      slug: `match-${placeId}`,
       name: "Matching fixture",
-      venueName: "Fixture venue",
-      venueLatitude: -12,
-      venueLongitude: -77,
-      startsAt: new Date(),
-      endsAt: new Date(Date.now() + 86400000),
+      latitude: -12,
+      longitude: -77,
       status: "active",
       isFictional: true,
     });
@@ -86,7 +83,7 @@ describe.skipIf(!url)("durable matching", () => {
       .values(userIds.map((id) => ({ id, displayName: "Matching fixture" })));
   });
   afterAll(async () => {
-    await db.delete(schema.events).where(eq(schema.events.id, eventId));
+    await db.delete(schema.places).where(eq(schema.places.id, placeId));
     await db.delete(schema.users).where(inArray(schema.users.id, userIds));
     await sql.end();
   });

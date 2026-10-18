@@ -1,7 +1,7 @@
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import type { Database } from "@/db";
 import {
-  events,
+  places,
   meetingPoints,
   rideParties,
   ridePartyMembers,
@@ -48,17 +48,16 @@ async function load(db: Reader, sessionId: string, userId: string) {
     );
   // Retries after assignment do not route or create additional groups.
   if (me.status === "matched") return { kind: "assigned" as const };
-  const [event] = await db
+  const [place] = await db
     .select()
-    .from(events)
-    .where(eq(events.id, session.eventId));
+    .from(places)
+    .where(eq(places.id, session.placeId));
   const now = new Date();
   if (
     session.status !== "open" ||
     session.opensAt > now ||
     session.closesAt <= now ||
-    event.status === "ended" ||
-    event.status === "cancelled"
+    place.status !== "active"
   ) {
     throw new MatchingError(
       409,
@@ -69,7 +68,7 @@ async function load(db: Reader, sessionId: string, userId: string) {
   const [pickup] = await db
     .select()
     .from(meetingPoints)
-    .where(eq(meetingPoints.eventId, session.eventId))
+    .where(eq(meetingPoints.placeId, session.placeId))
     .orderBy(asc(meetingPoints.createdAt), asc(meetingPoints.id))
     .limit(1);
   const origin = pickup
@@ -79,9 +78,9 @@ async function load(db: Reader, sessionId: string, userId: string) {
         label: pickup.name,
       }
     : {
-        latitude: event.venueLatitude,
-        longitude: event.venueLongitude,
-        label: event.venueName,
+        latitude: place.latitude,
+        longitude: place.longitude,
+        label: place.name,
       };
   const fields = {
     participantId: sessionParticipants.id,

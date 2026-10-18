@@ -1,5 +1,5 @@
 import { pgEnum } from "drizzle-orm/pg-core";
-import { EVENT_STATUSES } from "@/modules/events/domain/event";
+import { PLACE_KINDS, PLACE_STATUSES } from "@/modules/places/domain/place";
 import {
   DELEGATE_PREFERENCES,
   PARTICIPANT_STATUSES,
@@ -15,7 +15,8 @@ import {
 import { FEE_ENTRY_TYPES } from "@/modules/payments/domain/fees";
 
 // The domain layer owns the allowed values; the database enums mirror them.
-export const eventStatus = pgEnum("event_status", EVENT_STATUSES);
+export const placeStatus = pgEnum("place_status", PLACE_STATUSES);
+export const placeKind = pgEnum("place_kind", PLACE_KINDS);
 export const sessionStatus = pgEnum("session_status", SESSION_STATUSES);
 /** What the user *prefers* to be. The assigned role lives on ride_party_members. */
 export const delegatePreference = pgEnum(

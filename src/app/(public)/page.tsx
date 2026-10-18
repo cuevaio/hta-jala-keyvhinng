@@ -1,22 +1,22 @@
 import Link from "next/link";
-import { CalendarDays, MapPin, Users } from "lucide-react";
+import { MapPin, Route, Users } from "lucide-react";
 import { DeparturePass } from "@/components/shared/departure-pass";
 
 const steps = [
   {
-    icon: CalendarDays,
-    title: "Elige tu evento",
-    text: "Abre una sala de salida y comparte el enlace con otras personas del evento.",
+    icon: MapPin,
+    title: "Elige dónde estás",
+    text: "Universidad, centro comercial, concierto o estación. Abre la sala de salida y comparte el enlace con quienes también se van.",
   },
   {
-    icon: MapPin,
+    icon: Route,
     title: "Dinos a dónde vas",
     text: "Guarda tu destino exacto e indica si puedes reservar el taxi para el grupo.",
   },
   {
     icon: Users,
     title: "Comparte la sala",
-    text: "Ve quién está esperando. El emparejamiento automático llegará en la siguiente etapa.",
+    text: "Te juntamos con 1 o 2 personas que van por tu ruta, confirman el reparto y salen juntas.",
   },
 ];
 export default function LandingPage() {
@@ -25,17 +25,18 @@ export default function LandingPage() {
       <section className="home-hero">
         <div className="hero-copy">
           <h1>
-            Del último
+            De la salida
             <br />
-            aplauso
-            <br />a tu puerta.
+            a tu
+            <br />
+            puerta.
           </h1>
           <p>
-            La salida también es parte del plan. Reúnete con personas de tu
-            evento para organizar un taxi compartido.
+            La salida también es parte del plan. Reúnete con personas que salen
+            del mismo lugar para organizar un taxi compartido.
           </p>
-          <Link href="/events" className="action action-primary">
-            Elegir mi evento
+          <Link href="/places" className="action action-primary">
+            Elegir mi lugar
           </Link>
           <p className="hero-footnote">
             Tú conservas tu destino. El delegado reserva afuera.

@@ -11,8 +11,8 @@ lasts for the session and the existing participant uniqueness constraint is reta
 - Groups contain two or three people, never more than the session vehicle capacity.
 - Exactly one member who explicitly volunteered is assigned delegate. Additional
   volunteers can be passengers. No volunteer or no compatible partner means waiting.
-- Pickup is the event's earliest predefined meeting point (creation time, then ID),
-  or the event venue if none exists. The chosen coordinates and label are saved.
+- Pickup is the place's earliest predefined meeting point (creation time, then ID),
+  or the place itself if none exists. The chosen coordinates and label are saved.
 - Maximum detour is 300 seconds per person compared with a direct road trip from
   pickup to their exact destination. Arrival times include all preceding stops.
 - Directed road times come from one OSRM table request. Enumerate feasible ordered
@@ -40,7 +40,7 @@ for the requester's resulting group (a round can create groups for other waiters
 
 - 401: no signed-in account; 403: nonmember/cross-origin request.
 - 404: unknown session; 409 `session_unavailable`: closed/future/expired session or
-  cancelled/ended event; 409 `matching_snapshot_changed`: inputs changed, retry.
+  inactive place; 409 `matching_snapshot_changed`: inputs changed, retry.
 - 429: more than six matching requests per account per minute (existing per-process
   limiter; multiple production instances need a shared limit).
 - 503 `routing_unavailable`: routing timed out, failed or returned invalid data;
@@ -61,7 +61,7 @@ cannot render the new plans, so deploy the updated waiting-room reader with the 
 This release does not rewrite historical parties or enable cancellation/rematching.
 
 Snapshot candidates, obtain routing and calculate plans **outside** a transaction. For
-commit, lock the session row (same protocol as joins), recheck membership, event/session
+commit, lock the session row (same protocol as joins), recheck membership, place/session
 availability, pickup, capacity and all candidate inputs, then write parties, members and
 matched participant states together. Concurrent assigned retries return success; stale
 unassigned snapshots return a conflict. Existing unique participant/delegate constraints
@@ -95,6 +95,6 @@ capacity, unreachable routes, full-route revalidation, malformed responses and i
 checks over deterministic varied road networks.
 
 Browser rehearsal: sign in using separate accounts in independent browser sessions,
-join the same event session with nearby exact destinations, volunteer on one account,
+join the same place session with nearby exact destinations, volunteer on one account,
 and select **Buscar mi grupo**. Verify the group/stop/share details appear in every member's
 poll and persist on refresh. A fourth unassigned attendee must not receive that plan.

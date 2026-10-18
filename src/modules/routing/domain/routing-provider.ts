@@ -1,4 +1,4 @@
-import type { GeoPoint } from "@/modules/events/domain/event";
+import type { GeoPoint } from "@/modules/places/domain/place";
 
 export interface RouteLeg {
   from: GeoPoint;

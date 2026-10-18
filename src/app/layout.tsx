@@ -18,11 +18,11 @@ const displayFont = Barlow_Condensed({
 
 export const metadata: Metadata = {
   title: {
-    default: "Jala — Comparte taxi al salir del evento",
+    default: "Jala — Comparte taxi al salir de donde estés",
     template: "%s · Jala",
   },
   description:
-    "Jala te conecta con otras personas que salen del mismo evento para compartir taxi y dividir el costo.",
+    "Jala te conecta con otras personas que salen del mismo lugar —universidad, centro comercial, concierto— para compartir taxi y dividir el costo.",
 };
 
 export const viewport: Viewport = {

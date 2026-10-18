@@ -1,6 +1,6 @@
 /**
  * Seeds FICTIONAL demo data for local development. Safe to re-run: it wipes
- * and recreates only rows it owns (events flagged is_fictional, plus users it created).
+ * and recreates only rows it owns (places flagged is_fictional, plus users it created).
  */
 import { drizzle } from "drizzle-orm/postgres-js";
 import { eq } from "drizzle-orm";
@@ -17,67 +17,100 @@ const hours = (n: number) => n * 3_600_000;
 const now = Date.now();
 
 async function main() {
-  await db.delete(schema.events).where(eq(schema.events.isFictional, true));
+  await db.delete(schema.places).where(eq(schema.places.isFictional, true));
   await db.delete(schema.users).where(eq(schema.users.phone, "FICTIONAL"));
 
-  const [concert] = await db
-    .insert(schema.events)
-    .values({
-      slug: "concierto-demo-lima",
-      name: "[DEMO] Noche de Cumbia Andina",
-      description:
-        "Evento FICTICIO de demostración. Un concierto imaginario en Lima para probar Jala.",
-      venueName: "Estadio Demo (ficticio), San Borja",
-      venueLatitude: -12.0897,
-      venueLongitude: -77.0071,
-      startsAt: new Date(now + hours(6)),
-      endsAt: new Date(now + hours(10)),
-      status: "active",
-      isFictional: true,
-    })
+  const common = { isFictional: true, status: "active" as const };
+  const [campus, mall, , stadium] = await db
+    .insert(schema.places)
+    .values([
+      {
+        ...common,
+        slug: "universidad-demo-lima",
+        name: "[DEMO] Universidad del Pacífico Demo",
+        kind: "university",
+        description:
+          "Campus FICTICIO. Salida de las 10 p. m. cuando terminan las clases de noche.",
+        address: "Av. Javier Prado Este, San Borja",
+        latitude: -12.0897,
+        longitude: -77.0071,
+      },
+      {
+        ...common,
+        slug: "mall-demo-lima",
+        name: "[DEMO] Centro Comercial Larcomar Demo",
+        kind: "mall",
+        description: "Centro comercial FICTICIO frente al mar.",
+        address: "Malecón de la Reserva, Miraflores",
+        latitude: -12.1319,
+        longitude: -77.0305,
+      },
+      {
+        ...common,
+        slug: "teatro-demo-lima",
+        name: "[DEMO] Teatro Nacional Demo",
+        kind: "venue",
+        description:
+          "Teatro FICTICIO para probar la salida después de una función.",
+        address: "Av. Javier Prado Este 2225, San Borja",
+        latitude: -12.0912,
+        longitude: -76.9998,
+      },
+      {
+        ...common,
+        slug: "estadio-demo-lima",
+        name: "[DEMO] Estadio Demo (concierto)",
+        kind: "venue",
+        description: "Estadio FICTICIO. Noche de Cumbia Andina imaginaria.",
+        address: "Av. Aviación, San Borja",
+        latitude: -12.0889,
+        longitude: -77.0052,
+      },
+    ])
     .returning();
-
-  await db.insert(schema.events).values({
-    slug: "teatro-demo-lima",
-    name: "[DEMO] Obra: El Último Micro",
-    description: "Función de teatro FICTICIA para pruebas.",
-    venueName: "Teatro Demo (ficticio), Miraflores",
-    venueLatitude: -12.1211,
-    venueLongitude: -77.0297,
-    startsAt: new Date(now + hours(30)),
-    endsAt: new Date(now + hours(33)),
-    status: "scheduled",
-    isFictional: true,
-  });
 
   await db.insert(schema.meetingPoints).values([
     {
-      eventId: concert.id,
+      placeId: campus.id,
+      name: "Puerta principal",
+      description: "Frente a la garita, junto al paradero.",
+      latitude: -12.0893,
+      longitude: -77.0068,
+    },
+    {
+      placeId: campus.id,
+      name: "Biblioteca (lado Javier Prado)",
+      description: "Esquina iluminada, a un minuto de la puerta.",
+      latitude: -12.0901,
+      longitude: -77.0079,
+    },
+    {
+      placeId: mall.id,
+      name: "Ingreso por el parque",
+      description: "Junto a las escaleras mecánicas.",
+      latitude: -12.1322,
+      longitude: -77.0299,
+    },
+    {
+      placeId: stadium.id,
       name: "Puerta 3 (Av. Aviación)",
       description: "Frente al paradero, junto al kiosco.",
       latitude: -12.0889,
       longitude: -77.0052,
     },
     {
-      eventId: concert.id,
+      placeId: stadium.id,
       name: "Grifo Demo (Javier Prado)",
       description: "Esquina del grifo, zona bien iluminada.",
       latitude: -12.0912,
       longitude: -77.0098,
-    },
-    {
-      eventId: concert.id,
-      name: "Parque Demo",
-      description: "Entrada principal del parque.",
-      latitude: -12.0868,
-      longitude: -77.0105,
     },
   ]);
 
   const [session] = await db
     .insert(schema.sessions)
     .values({
-      eventId: concert.id,
+      placeId: campus.id,
       name: "Salida demo abierta",
       status: "open",
       opensAt: new Date(now - hours(1)),
@@ -143,7 +176,7 @@ async function main() {
   );
 
   console.log(
-    "Seeded fictional data: 2 events, 3 meeting points, 1 session, 5 passengers.",
+    "Seeded fictional data: 2 places, 3 meeting points, 1 session, 5 passengers.",
   );
   const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   console.log(

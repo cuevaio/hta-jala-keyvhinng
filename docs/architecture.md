@@ -18,7 +18,7 @@ modules/<feature>/schemas        Zod schemas for external input
 Rules:
 
 1. `domain/` imports nothing from Next.js, Drizzle or other layers. It owns lifecycle values
-   (e.g. `EVENT_STATUSES`); the DB enums in `src/db/schema/enums.ts` mirror them.
+   (e.g. `PLACE_STATUSES`); the DB enums in `src/db/schema/enums.ts` mirror them.
 2. Route handlers only parse input (Zod), call an application service and format the response
    (`lib/http.ts`). Errors are mapped centrally (`handle()` / `fail()`).
 3. Application services receive repositories as arguments (plain factory functions, no DI framework).
@@ -29,8 +29,8 @@ Rules:
 
 | Module         | Status             | Responsibility                                                                    |
 | -------------- | ------------------ | --------------------------------------------------------------------------------- |
-| `events`       | implemented (read) | Events and their predefined meeting points                                        |
-| `sessions`     | implemented (read) | Temporary matching pools per event                                                |
+| `places`       | implemented (read) | Places (venue, university, mall, transit) and their meeting points                                        |
+| `sessions`     | implemented (read) | Temporary matching pools per place                                                |
 | `matching`     | implemented            | Bounded road matching, saved route plans and atomic participant assignment                            |
 | `routing`      | contract + OSRM    | `RoutingProvider` contract, `RoutingError`, OSRM adapter (`ROUTING_BASE_URL`)     |
 | `parties`      | domain only        | Ride party / member / ride types; `RideProviderAdapter` boundary for Uber etc.    |

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { GeoPoint } from "@/modules/events/domain/event";
+import type { GeoPoint } from "@/modules/places/domain/place";
 import "leaflet/dist/leaflet.css";
 
 const TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";

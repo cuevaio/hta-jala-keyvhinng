@@ -12,7 +12,7 @@ export function SiteFooter() {
         <div className="footer-note">
           <p>Hecho en Lima para Hack The Andes 2026.</p>
           <p>
-            Demo con eventos ficticios. Jala no opera taxis ni procesa pagos.
+            Demo con lugares ficticios. Jala no opera taxis ni procesa pagos.
           </p>
         </div>
       </div>

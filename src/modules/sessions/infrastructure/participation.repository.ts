@@ -1,7 +1,7 @@
 import { and, asc, eq, gt, lte } from "drizzle-orm";
 import type { Database } from "@/db";
 import {
-  events,
+  places,
   rideParties,
   ridePartyMembers,
   sessionParticipants,
@@ -21,27 +21,27 @@ function assertOpen(session: typeof sessions.$inferSelect, now: Date) {
     throw new ApiError(
       409,
       "session_unavailable",
-      "Esta sesión no está abierta. Vuelve al evento para elegir otra.",
+      "Esta sesión no está abierta. Vuelve al lugar para elegir otra.",
     );
   }
 }
 
 export function createParticipationRepository(db: Database) {
   return {
-    /** Event lock serializes creation; simultaneous visitors reuse the same open pool. */
-    async openForEvent(eventId: string) {
+    /** Place lock serializes creation; simultaneous visitors reuse the same open pool. */
+    async openForPlace(placeId: string) {
       return db.transaction(async (tx) => {
-        const [event] = await tx
+        const [place] = await tx
           .select()
-          .from(events)
-          .where(eq(events.id, eventId))
+          .from(places)
+          .where(eq(places.id, placeId))
           .for("update");
-        if (!event) throw new NotFoundError("Event");
-        if (event.status === "cancelled" || event.status === "ended") {
+        if (!place) throw new NotFoundError("Place");
+        if (place.status !== "active") {
           throw new ApiError(
             409,
-            "event_unavailable",
-            "El evento ya no admite sesiones.",
+            "place_unavailable",
+            "Este lugar ya no admite salidas.",
           );
         }
         const now = new Date();
@@ -50,7 +50,7 @@ export function createParticipationRepository(db: Database) {
           .from(sessions)
           .where(
             and(
-              eq(sessions.eventId, eventId),
+              eq(sessions.placeId, placeId),
               eq(sessions.status, "open"),
               lte(sessions.opensAt, now),
               gt(sessions.closesAt, now),
@@ -62,7 +62,7 @@ export function createParticipationRepository(db: Database) {
         const [created] = await tx
           .insert(sessions)
           .values({
-            eventId,
+            placeId,
             name: "Salida compartida",
             opensAt: now,
             closesAt: new Date(now.getTime() + 2 * 60 * 60 * 1000),
@@ -82,15 +82,15 @@ export function createParticipationRepository(db: Database) {
           .for("update");
         if (!session) throw new NotFoundError("Session");
         assertOpen(session, new Date());
-        const [event] = await tx
+        const [place] = await tx
           .select()
-          .from(events)
-          .where(eq(events.id, session.eventId));
-        if (event.status === "ended" || event.status === "cancelled")
+          .from(places)
+          .where(eq(places.id, session.placeId));
+        if (place.status !== "active")
           throw new ApiError(
             409,
-            "event_unavailable",
-            "El evento ya no admite pasajeros.",
+            "place_unavailable",
+            "Este lugar ya no admite pasajeros.",
           );
         const [existing] = await tx
           .select()
@@ -168,10 +168,10 @@ export function createParticipationRepository(db: Database) {
               ),
             )
             .orderBy(asc(sessionParticipants.createdAt));
-          const [event] = await tx
-            .select({ status: events.status })
-            .from(events)
-            .where(eq(events.id, session.eventId));
+          const [place] = await tx
+            .select({ status: places.status })
+            .from(places)
+            .where(eq(places.id, session.placeId));
           const [party] = await tx
             .select({
               id: rideParties.id,
@@ -207,8 +207,7 @@ export function createParticipationRepository(db: Database) {
             party: party ? { ...party, members } : null,
             participants,
             acceptingJoins:
-              event.status !== "ended" &&
-              event.status !== "cancelled" &&
+              place.status === "active" &&
               session.status === "open" &&
               session.opensAt <= now &&
               session.closesAt > now,

@@ -1,6 +1,6 @@
 export * from "./enums";
 export * from "./users";
-export * from "./events";
+export * from "./places";
 export * from "./meeting-points";
 export * from "./sessions";
 export * from "./parties";

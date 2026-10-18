@@ -14,7 +14,7 @@ export function createSessionRepository(db: Database): SessionRepository {
     db
       .select({
         id: sessions.id,
-        eventId: sessions.eventId,
+        placeId: sessions.placeId,
         name: sessions.name,
         status: sessions.status,
         opensAt: sessions.opensAt,
@@ -30,9 +30,9 @@ export function createSessionRepository(db: Database): SessionRepository {
       .groupBy(sessions.id);
 
   return {
-    async list({ eventId, status, limit }) {
+    async list({ placeId, status, limit }) {
       const filters: SQL[] = [];
-      if (eventId) filters.push(eq(sessions.eventId, eventId));
+      if (placeId) filters.push(eq(sessions.placeId, placeId));
       if (status) filters.push(eq(sessions.status, status));
       return select()
         .where(filters.length ? and(...filters) : undefined)

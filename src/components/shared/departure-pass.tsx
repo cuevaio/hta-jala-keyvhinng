@@ -12,7 +12,7 @@ export function DeparturePass() {
       </div>
       <div className="pass-main">
         <h2>
-          Mismo evento.
+          Misma salida.
           <br />
           Cada quien
           <br />a su puerta.

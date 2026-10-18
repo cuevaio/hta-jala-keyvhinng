@@ -1,4 +1,4 @@
-import type { GeoPoint } from "@/modules/events/domain/event";
+import type { GeoPoint } from "@/modules/places/domain/place";
 import type { RouteEstimate } from "@/modules/routing/domain/routing-provider";
 
 /** Immutable estimate saved when participants are assigned; never recomputed on reads. */

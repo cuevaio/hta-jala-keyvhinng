@@ -15,8 +15,10 @@
     "db:up": "docker compose up -d postgres",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "bun --env-file=.env.local scripts/migrate.ts",
+    "db:reset": "bun --env-file=.env.local scripts/reset-db.ts",
     "db:seed": "bun --env-file=.env.local scripts/seed.ts",
-    "demo": "bun run db:migrate && bun run db:seed"
+    "demo:crew": "bun --env-file=.env.local scripts/demo-crew.ts",
+    "demo": "bun run db:reset && bun run db:seed"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

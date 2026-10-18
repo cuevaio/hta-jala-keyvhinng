@@ -11,8 +11,8 @@ async function loadSession(id: string) {
   try {
     const services = getServices();
     const session = await services.sessions.getById(id);
-    const event = await services.events.getById(session.eventId);
-    return { session, event };
+    const place = await services.places.getById(session.placeId);
+    return { session, place };
   } catch (error) {
     if (error instanceof NotFoundError) notFound();
     throw error;
@@ -25,12 +25,12 @@ export default async function SessionPage({
   await connection();
   const parsed = sessionIdParams.safeParse(await params);
   if (!parsed.success) notFound();
-  const { session, event } = await loadSession(parsed.data.id);
+  const { session, place } = await loadSession(parsed.data.id);
   return (
     <article className="session-page">
-      <Link href={`/events/${event.id}`} className="back-link">
+      <Link href={`/places/${place.id}`} className="back-link">
         <ChevronLeft size={17} aria-hidden="true" />
-        {event.name.replace(/^\[DEMO\]\s*/, "")}
+        {place.name.replace(/^\[DEMO\]\s*/, "")}
       </Link>
       <header className="session-heading">
         <h1>Tu salida compartida.</h1>
@@ -38,15 +38,14 @@ export default async function SessionPage({
       </header>
       <WaitingRoom
         sessionId={session.id}
-        eventId={session.eventId}
+        placeId={session.placeId}
         vehicleCapacity={session.vehicleCapacity}
-        mapCenter={event.venue}
+        mapCenter={place.location}
         closesAt={session.closesAt.toISOString()}
         initiallyOpen={
           session.status === "open" &&
           session.opensAt <= new Date() &&
-          event.status !== "ended" &&
-          event.status !== "cancelled"
+          place.status === "active"
         }
       />
     </article>

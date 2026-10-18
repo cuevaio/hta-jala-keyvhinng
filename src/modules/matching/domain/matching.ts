@@ -1,5 +1,5 @@
 import type { RouteEstimate } from "@/modules/routing/domain/routing-provider";
-import type { GeoPoint } from "@/modules/events/domain/event";
+import type { GeoPoint } from "@/modules/places/domain/place";
 import type { DelegatePreference } from "@/modules/sessions/domain/session";
 
 /** A session participant eligible for matching. */

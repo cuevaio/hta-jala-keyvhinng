@@ -100,7 +100,11 @@ export function AuthForm({
             type="email"
             required
             maxLength={254}
-            autoComplete="email"
+            // The email is the account's username; this pairs it with the password
+            // field so password managers offer to generate and save credentials.
+            autoComplete="username"
+            autoCapitalize="none"
+            spellCheck={false}
             placeholder="tu@correo.com"
           />
         </div>

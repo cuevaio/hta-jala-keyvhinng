@@ -1,25 +1,25 @@
 import { relations } from "drizzle-orm";
-import { events } from "./events";
+import { places } from "./places";
 import { feeLedgerEntries } from "./fees";
 import { meetingPoints } from "./meeting-points";
 import { rideParties, ridePartyMembers, rides } from "./parties";
 import { sessionParticipants, sessions } from "./sessions";
 import { users } from "./users";
 
-export const eventsRelations = relations(events, ({ many }) => ({
+export const placesRelations = relations(places, ({ many }) => ({
   sessions: many(sessions),
   meetingPoints: many(meetingPoints),
 }));
 
 export const meetingPointsRelations = relations(meetingPoints, ({ one }) => ({
-  event: one(events, {
-    fields: [meetingPoints.eventId],
-    references: [events.id],
+  place: one(places, {
+    fields: [meetingPoints.placeId],
+    references: [places.id],
   }),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one, many }) => ({
-  event: one(events, { fields: [sessions.eventId], references: [events.id] }),
+  place: one(places, { fields: [sessions.placeId], references: [places.id] }),
   participants: many(sessionParticipants),
   parties: many(rideParties),
 }));

@@ -1,4 +1,4 @@
-import type { GeoPoint } from "@/modules/events/domain/event";
+import type { GeoPoint } from "@/modules/places/domain/place";
 
 export const SESSION_STATUSES = [
   "open",
@@ -20,10 +20,10 @@ export const PARTICIPANT_STATUSES = [
 ] as const;
 export type ParticipantStatus = (typeof PARTICIPANT_STATUSES)[number];
 
-/** A temporary pool of passengers participating in matching for an event. */
+/** A temporary pool of passengers participating in matching for a place. */
 export interface Session {
   id: string;
-  eventId: string;
+  placeId: string;
   name: string;
   status: SessionStatus;
   opensAt: Date;

@@ -39,7 +39,7 @@ describe.skipIf(!url)("party lifecycle", () => {
     createRoadMatchingService(routing),
     "fixture",
   );
-  const eventId = randomUUID();
+  const placeId = randomUUID();
   const userIds = Array.from({ length: 4 }, () => randomUUID());
   const input = {
     displayName: "Lifecycle fixture",
@@ -54,7 +54,7 @@ describe.skipIf(!url)("party lifecycle", () => {
     const [session] = await db
       .insert(schema.sessions)
       .values({
-        eventId,
+        placeId,
         name: "Lifecycle test",
         vehicleCapacity: 3,
         opensAt: new Date(Date.now() - 1000),
@@ -73,15 +73,12 @@ describe.skipIf(!url)("party lifecycle", () => {
     participation.waitingRoom(sessionId, userIds[user]);
 
   beforeAll(async () => {
-    await db.insert(schema.events).values({
-      id: eventId,
-      slug: `lifecycle-${eventId}`,
+    await db.insert(schema.places).values({
+      id: placeId,
+      slug: `lifecycle-${placeId}`,
       name: "Lifecycle fixture",
-      venueName: "Fixture venue",
-      venueLatitude: -12,
-      venueLongitude: -77,
-      startsAt: new Date(),
-      endsAt: new Date(Date.now() + 86400000),
+      latitude: -12,
+      longitude: -77,
       status: "active",
       isFictional: true,
     });
@@ -90,7 +87,7 @@ describe.skipIf(!url)("party lifecycle", () => {
       .values(userIds.map((id) => ({ id, displayName: "Lifecycle fixture" })));
   });
   afterAll(async () => {
-    await db.delete(schema.events).where(eq(schema.events.id, eventId));
+    await db.delete(schema.places).where(eq(schema.places.id, placeId));
     await db.delete(schema.users).where(inArray(schema.users.id, userIds));
     await sql.end();
   });

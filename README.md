@@ -1,6 +1,6 @@
 # Jala
 
-Real-time, event-based taxi-sharing coordination for **Hack The Andes 2026** (Lima, Perú).
+Real-time taxi-sharing coordination for people leaving the same place (venues, universities, malls, stations) for **Hack The Andes 2026** (Lima, Perú).
 People leaving concerts, plays and festivals are grouped with compatible destinations, a volunteer
 delegate books a taxi through an existing service (e.g. Uber), and costs are split by recommended
 percentages. Jala operates no vehicles and processes no payments in the MVP.
@@ -66,14 +66,14 @@ All responses are `{ "data": ... }` or `{ "error": { "code", "message", "details
 | ------------------------------------------- | ---------------------------------------------- |
 | `POST /api/auth/sign-up`                    | Create an account and establish a session      |
 | `POST /api/auth/sign-in`                    | Sign in to an existing account                 |
-| `POST /api/sessions`                        | Open/reuse an expiring event session           |
+| `POST /api/sessions`                        | Open/reuse an expiring departure session       |
 | `POST /api/sessions/:id/join`               | Join or update own waiting participation       |
 | `POST /api/sessions/:id/match`              | Find and persist compatible ride groups        |
 | `GET /api/sessions/:id/waiting-room`        | Roster, own destination and own group proposal |
 | `GET /api/health`                           | Liveness + database check (503 if DB is down)  |
-| `GET /api/events?status=&limit=`            | List events                                    |
-| `GET /api/events/:id`                       | Event with meeting points                      |
-| `GET /api/sessions?eventId=&status=&limit=` | List sessions with participant counts          |
+| `GET /api/places?status=&kind=&limit=`      | List places                                    |
+| `GET /api/places/:id`                       | Place with meeting points                      |
+| `GET /api/sessions?placeId=&status=&limit=` | List sessions with participant counts          |
 | `GET /api/sessions/:id`                     | Session detail                                 |
 
 ## Structure

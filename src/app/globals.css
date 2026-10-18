@@ -129,7 +129,7 @@
   }
 }
 
-/* Jala: the event departure pass, carried through the whole journey. */
+/* Jala: the departure pass, carried through the whole journey. */
 :root {
   --jala-yellow: #f6d65b;
   --jala-sky: #e6eeff;
@@ -468,7 +468,7 @@ select:focus-visible {
   text-align: right;
   max-width: 400px;
 }
-.events-page {
+.places-page {
   max-width: 920px;
   margin-inline: auto;
 }
@@ -507,11 +507,11 @@ select:focus-visible {
   font-weight: 600;
   color: var(--foreground);
 }
-.event-list {
+.place-list {
   display: grid;
   gap: 18px;
 }
-.event-ticket {
+.place-ticket {
   display: grid;
   grid-template-columns: 95px 1fr auto;
   background: #fff;
@@ -521,7 +521,7 @@ select:focus-visible {
   min-height: 174px;
   transition: border-color 0.15s ease;
 }
-.event-ticket:hover {
+.place-ticket:hover {
   border-color: var(--primary);
 }
 .ticket-date {
@@ -554,7 +554,7 @@ select:focus-visible {
   flex-wrap: wrap;
   gap: 13px;
 }
-.event-status {
+.place-status {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -565,21 +565,17 @@ select:focus-visible {
   background: #edf1f8;
   color: var(--muted-foreground);
 }
-.event-status > span {
+.place-status > span {
   width: 5px;
   height: 5px;
   border-radius: 50%;
   background: currentColor;
 }
-.event-status-active {
+.place-status-active {
   color: #276248;
   background: #e4f1e9;
 }
-.event-status-scheduled {
-  color: #234494;
-  background: var(--jala-sky);
-}
-.event-status-cancelled {
+.place-status-inactive {
   color: var(--destructive);
   background: #fff0f1;
 }
@@ -660,14 +656,14 @@ select:focus-visible {
 .back-link:hover {
   color: var(--primary);
 }
-.event-detail-grid {
+.place-detail-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
   align-items: start;
   gap: 68px;
   margin-top: 21px;
 }
-.event-heading h1 {
+.place-heading h1 {
   font-family: var(--font-display), sans-serif;
   font-weight: 700;
   font-size: clamp(44px, 5vw, 62px);
@@ -675,19 +671,19 @@ select:focus-visible {
   margin: 18px 0 24px;
   letter-spacing: -0.015em;
 }
-.event-fact {
+.place-fact {
   display: flex;
   align-items: flex-start;
   gap: 11px;
   font-size: 13px;
   margin-top: 13px;
 }
-.event-fact svg {
+.place-fact svg {
   flex-shrink: 0;
   color: var(--primary);
   margin-top: 1px;
 }
-.event-description {
+.place-description {
   font-size: 13px;
   color: var(--muted-foreground);
   margin-top: 23px;
@@ -1223,7 +1219,7 @@ select:focus-visible {
   .pass-punches {
     display: none;
   }
-  .event-detail-grid {
+  .place-detail-grid {
     gap: 35px;
     grid-template-columns: minmax(0, 1fr) 280px;
   }
@@ -1235,9 +1231,6 @@ select:focus-visible {
   }
   .location-tag {
     display: none;
-  }
-  .site-header nav {
-    margin-left: auto;
   }
 }
 @media (max-width: 640px) {
@@ -1255,15 +1248,7 @@ select:focus-visible {
     width: 27px;
     height: 27px;
   }
-  .site-header nav {
-    gap: 0;
-  }
-  .nav-secondary {
-    display: none;
-  }
-  .nav-link {
-    font-size: 13px;
-  }
+
   .home-hero {
     grid-template-columns: 1fr;
     padding: 13px 0 43px;
@@ -1393,7 +1378,7 @@ select:focus-visible {
   .desktop-break {
     display: none;
   }
-  .event-ticket {
+  .place-ticket {
     grid-template-columns: 65px minmax(0, 1fr);
     min-height: 174px;
   }
@@ -1425,19 +1410,19 @@ select:focus-visible {
   .ticket-open {
     display: none;
   }
-  .event-detail-grid {
+  .place-detail-grid {
     grid-template-columns: 1fr;
     gap: 29px;
     margin-top: 14px;
   }
-  .event-heading h1 {
+  .place-heading h1 {
     font-size: 48px;
     margin-top: 17px;
   }
-  .event-fact {
+  .place-fact {
     font-size: 12px;
   }
-  .event-description {
+  .place-description {
     font-size: 12px;
   }
   .join-pass {
@@ -1605,4 +1590,104 @@ select:focus-visible {
 .auth-cta {
   padding: 8px 14px;
   font-size: 13px;
+}
+
+/* Header: logo and links on the left, account controls pinned right. */
+.site-menu {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+.site-menu .auth-nav {
+  margin-left: auto;
+}
+.menu-toggle {
+  display: none;
+  margin-left: auto;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--foreground);
+  cursor: pointer;
+}
+.site-header {
+  position: relative;
+}
+@media (max-width: 768px) {
+  .site-header-inner {
+    gap: 12px;
+  }
+  .menu-toggle {
+    display: inline-flex;
+  }
+  .site-menu {
+    display: none;
+    position: absolute;
+    inset: 100% 0 auto 0;
+    z-index: 20;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    padding: 12px 21px 20px;
+    background: var(--background);
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 14px 24px rgba(22, 44, 69, 0.08);
+  }
+  .menu-open .site-menu {
+    display: flex;
+  }
+  .site-menu nav {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+  }
+  .site-menu .nav-link {
+    min-height: 48px;
+    font-size: 16px;
+  }
+  .site-menu .auth-nav {
+    margin: 8px 0 0;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .site-menu .auth-cta {
+    flex: 1;
+    min-height: 48px;
+  }
+}
+
+/* Place kind filter and card icon */
+.kind-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 22px;
+}
+.kind-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+.kind-chip:hover {
+  border-color: var(--primary);
+}
+.kind-chip[aria-current="true"] {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+.ticket-date svg {
+  color: var(--primary);
 }

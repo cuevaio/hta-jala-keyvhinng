@@ -11,17 +11,17 @@ import {
 } from "drizzle-orm/pg-core";
 import { coordinateChecks, coordinateColumns, id, timestamps } from "./_shared";
 import { delegatePreference, participantStatus, sessionStatus } from "./enums";
-import { events } from "./events";
+import { places } from "./places";
 import { users } from "./users";
 
-/** A temporary matching pool for an event or departure window. */
+/** A temporary matching pool of people leaving a place in one departure window. */
 export const sessions = pgTable(
   "sessions",
   {
     id: id(),
-    eventId: uuid("event_id")
+    placeId: uuid("place_id")
       .notNull()
-      .references(() => events.id, { onDelete: "cascade" }),
+      .references(() => places.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     status: sessionStatus("status").notNull().default("open"),
     opensAt: timestamp("opens_at", { withTimezone: true }).notNull(),
@@ -31,7 +31,7 @@ export const sessions = pgTable(
     ...timestamps,
   },
   (t) => [
-    index("sessions_event_status_idx").on(t.eventId, t.status),
+    index("sessions_place_status_idx").on(t.placeId, t.status),
     check("sessions_capacity_range", sql`${t.vehicleCapacity} BETWEEN 2 AND 8`),
     check("sessions_closes_after_opens", sql`${t.closesAt} > ${t.opensAt}`),
   ],

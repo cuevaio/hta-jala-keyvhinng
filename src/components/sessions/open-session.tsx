@@ -6,10 +6,10 @@ import { useRouter } from "next/navigation";
 import { sessionApi, SessionRequestError } from "./session-api";
 
 export function OpenSession({
-  eventId,
+  placeId,
   disabled,
 }: {
-  eventId: string;
+  placeId: string;
   disabled: boolean;
 }) {
   const router = useRouter();
@@ -20,13 +20,13 @@ export function OpenSession({
     setError("");
     try {
       const session = await sessionApi<{ id: string }>("/api/sessions", {
-        eventId,
+        placeId,
       });
       router.push(`/sessions/${session.id}`);
     } catch (error) {
       if (error instanceof SessionRequestError && error.status === 401) {
         router.push(
-          `/sign-in?next=${encodeURIComponent(`/events/${eventId}`)}`,
+          `/sign-in?next=${encodeURIComponent(`/places/${placeId}`)}`,
         );
         return;
       }
@@ -47,7 +47,7 @@ export function OpenSession({
           empieza aquí.
         </h2>
         <p>
-          Entra a la sala del evento, guarda tu destino y conoce a quienes
+          Entra a la sala de este lugar, guarda tu destino y conoce a quienes
           también están por salir.
         </p>
         <button
@@ -58,7 +58,7 @@ export function OpenSession({
           {busy
             ? "Abriendo sala…"
             : disabled
-              ? "Evento cerrado"
+              ? "Lugar cerrado"
               : "Entrar a la sala"}
         </button>
         {error && (

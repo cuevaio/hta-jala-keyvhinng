@@ -16,6 +16,6 @@ export const GET = handle(async (request: Request) => {
 export const POST = handle(async (request: Request) => {
   assertSameOrigin(request);
   await requireIdentity();
-  const { eventId } = createSessionInput.parse(await readJson(request));
-  return ok(await getServices().participation.openForEvent(eventId));
+  const { placeId } = createSessionInput.parse(await readJson(request));
+  return ok(await getServices().participation.openForPlace(placeId));
 });

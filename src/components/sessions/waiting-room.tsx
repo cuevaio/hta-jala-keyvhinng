@@ -11,7 +11,7 @@ import {
   CarFront,
   ShieldCheck,
 } from "lucide-react";
-import type { GeoPoint } from "@/modules/events/domain/event";
+import type { GeoPoint } from "@/modules/places/domain/place";
 import { SessionJoinForm } from "./session-join-form";
 import { sessionApi, SessionRequestError } from "./session-api";
 
@@ -66,14 +66,14 @@ function parseFareMinor(value: string): number | null {
 
 export function WaitingRoom({
   sessionId,
-  eventId,
+  placeId,
   closesAt,
   initiallyOpen,
   vehicleCapacity,
   mapCenter,
 }: {
   sessionId: string;
-  eventId: string;
+  placeId: string;
   closesAt: string;
   initiallyOpen: boolean;
   vehicleCapacity: number;
@@ -270,10 +270,10 @@ export function WaitingRoom({
         <h2>Saliste del grupo.</h2>
         <p>
           El grupo se deshizo para recalcular rutas y reparto con quienes
-          quedan. Puedes volver al evento y elegir otra salida.
+          quedan. Puedes volver al lugar y elegir otra salida.
         </p>
-        <Link className="action action-secondary" href={`/events/${eventId}`}>
-          Volver al evento
+        <Link className="action action-secondary" href={`/places/${placeId}`}>
+          Volver al lugar
         </Link>
       </div>
     );
@@ -312,9 +312,9 @@ export function WaitingRoom({
       {closed && !room?.party && (
         <div role="status" className="session-closed">
           <h2>Esta sala ya no admite pasajeros.</h2>
-          <p>Puedes volver al evento y elegir otra salida.</p>
-          <Link className="action action-secondary" href={`/events/${eventId}`}>
-            Volver al evento
+          <p>Puedes volver al lugar y elegir otra salida.</p>
+          <Link className="action action-secondary" href={`/places/${placeId}`}>
+            Volver al lugar
           </Link>
         </div>
       )}

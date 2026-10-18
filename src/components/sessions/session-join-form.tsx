@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type FormEventHandler } from "react";
 import { MapPin, UserRound, CarFront, ShieldCheck } from "lucide-react";
 import { reverseGeocode } from "@/lib/geocoding";
-import type { GeoPoint } from "@/modules/events/domain/event";
+import type { GeoPoint } from "@/modules/places/domain/place";
 import { DestinationMap } from "./destination-map";
 
 export function SessionJoinForm({
@@ -14,7 +14,7 @@ export function SessionJoinForm({
 }: {
   onJoin: FormEventHandler<HTMLFormElement>;
   busy: boolean;
-  /** Initial map view, usually the event venue. */
+  /** Initial map view, usually the place. */
   mapCenter: GeoPoint;
   /** Prefills the display name from the signed-in account. */
   defaultName: string;
