@@ -2035,8 +2035,17 @@ ol.roster {
 
 /* ---------- Auth ---------- */
 .auth-page {
-  max-width: 480px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 64px;
   padding-top: 56px;
+}
+.auth-page-form {
+  min-width: 0;
+}
+.auth-page > .hero-visual {
+  margin-left: 0;
 }
 .join-form {
   padding: 32px;
@@ -2172,6 +2181,14 @@ ol.roster {
   }
 }
 @media (max-width: 760px) {
+  .auth-page {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 520px;
+    gap: 40px;
+  }
+  .auth-page-form {
+    grid-row: 1;
+  }
   .wrap,
   .places-page,
   .place-detail,
