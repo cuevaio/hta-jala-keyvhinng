@@ -1,6 +1,13 @@
 import { and, asc, eq, gt, lte } from "drizzle-orm";
 import type { Database } from "@/db";
-import { events, sessionParticipants, sessions, users } from "@/db/schema";
+import {
+  events,
+  rideParties,
+  ridePartyMembers,
+  sessionParticipants,
+  sessions,
+  users,
+} from "@/db/schema";
 import { NotFoundError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import type { JoinSessionInput } from "../schemas/session.schema";
@@ -67,7 +74,7 @@ export function createParticipationRepository(db: Database) {
     },
     async join(sessionId: string, userId: string, input: JoinSessionInput) {
       return db.transaction(async (tx) => {
-        // Serialize with future matching/closing operations on this same session row.
+        // All join and matching commits serialize on this same session row.
         const [session] = await tx
           .select()
           .from(sessions)
@@ -123,58 +130,81 @@ export function createParticipationRepository(db: Database) {
       });
     },
     async waitingRoom(sessionId: string, userId: string) {
-      const [session] = await db
-        .select()
-        .from(sessions)
-        .where(eq(sessions.id, sessionId));
-      if (!session) throw new NotFoundError("Session");
-      const [me] = await db
-        .select()
-        .from(sessionParticipants)
-        .where(
-          and(
-            eq(sessionParticipants.sessionId, sessionId),
-            eq(sessionParticipants.userId, userId),
-          ),
-        );
-      if (!me || me.status === "withdrawn")
-        throw new ApiError(
-          403,
-          "membership_required",
-          "Únete a esta sesión para ver a sus participantes.",
-        );
-      const participants = await db
-        .select({
-          id: sessionParticipants.id,
-          displayName: users.displayName,
-          delegatePreference: sessionParticipants.delegatePreference,
-          status: sessionParticipants.status,
-        })
-        .from(sessionParticipants)
-        .innerJoin(users, eq(users.id, sessionParticipants.userId))
-        .where(
-          and(
-            eq(sessionParticipants.sessionId, sessionId),
-            eq(sessionParticipants.status, "waiting"),
-          ),
-        )
-        .orderBy(asc(sessionParticipants.createdAt));
-      const [event] = await db
-        .select({ status: events.status })
-        .from(events)
-        .where(eq(events.id, session.eventId));
-      const now = new Date();
-      return {
-        session,
-        me,
-        participants,
-        acceptingJoins:
-          event.status !== "ended" &&
-          event.status !== "cancelled" &&
-          session.status === "open" &&
-          session.opensAt <= now &&
-          session.closesAt > now,
-      };
+      return db.transaction(
+        async (tx) => {
+          const [session] = await tx
+            .select()
+            .from(sessions)
+            .where(eq(sessions.id, sessionId));
+          if (!session) throw new NotFoundError("Session");
+          const [me] = await tx
+            .select()
+            .from(sessionParticipants)
+            .where(
+              and(
+                eq(sessionParticipants.sessionId, sessionId),
+                eq(sessionParticipants.userId, userId),
+              ),
+            );
+          if (!me || me.status === "withdrawn")
+            throw new ApiError(
+              403,
+              "membership_required",
+              "Únete a esta sesión para ver a sus participantes.",
+            );
+          const participants = await tx
+            .select({
+              id: sessionParticipants.id,
+              displayName: users.displayName,
+              delegatePreference: sessionParticipants.delegatePreference,
+              status: sessionParticipants.status,
+            })
+            .from(sessionParticipants)
+            .innerJoin(users, eq(users.id, sessionParticipants.userId))
+            .where(
+              and(
+                eq(sessionParticipants.sessionId, sessionId),
+                eq(sessionParticipants.status, "waiting"),
+              ),
+            )
+            .orderBy(asc(sessionParticipants.createdAt));
+          const [event] = await tx
+            .select({ status: events.status })
+            .from(events)
+            .where(eq(events.id, session.eventId));
+          const [party] = await tx
+            .select({
+              id: rideParties.id,
+              status: rideParties.status,
+              plan: rideParties.routePlan,
+            })
+            .from(ridePartyMembers)
+            .innerJoin(
+              rideParties,
+              eq(rideParties.id, ridePartyMembers.partyId),
+            )
+            .where(
+              and(
+                eq(ridePartyMembers.participantId, me.id),
+                eq(rideParties.sessionId, sessionId),
+              ),
+            );
+          const now = new Date();
+          return {
+            session,
+            me,
+            party: party ?? null,
+            participants,
+            acceptingJoins:
+              event.status !== "ended" &&
+              event.status !== "cancelled" &&
+              session.status === "open" &&
+              session.opensAt <= now &&
+              session.closesAt > now,
+          };
+        },
+        { isolationLevel: "repeatable read", accessMode: "read only" },
+      );
     },
   };
 }

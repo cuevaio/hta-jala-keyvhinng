@@ -20,7 +20,14 @@ export interface RouteEstimate {
  * Provider-agnostic routing contract (OSRM, Google, Mapbox, haversine fallback...).
  * Nothing here may reference a specific mapping vendor.
  */
+export interface RoutingMatrix {
+  /** Directed road times; null means no road route exists. */
+  durationsSeconds: (number | null)[][];
+}
+
 export interface RoutingProvider {
+  /** Optional batch optimization; order matches the supplied points. */
+  estimateMatrix?(points: readonly GeoPoint[]): Promise<RoutingMatrix>;
   /** Travel time in seconds between two coordinates. */
   estimateDuration(from: GeoPoint, to: GeoPoint): Promise<number>;
 

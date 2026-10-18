@@ -5,10 +5,12 @@ People leaving concerts, plays and festivals are grouped with compatible destina
 delegate books a taxi through an existing service (e.g. Uber), and costs are split by recommended
 percentages. Jala operates no vehicles and processes no payments in the MVP.
 
-Status: **shared-session milestone** – event pages, opaque browser identity, expiring session creation,
-transactional joining, exact destinations and a shared polling waiting room. Matching, account login,
-QR verification, payments and provider integrations are not implemented. All seeded data is fictional.
-See [the milestone contract and verification guide](docs/shared-session-contract.md).
+Status: **road matching implemented** – account sign-in, expiring sessions, transactional joining,
+exact destinations, a shared polling waiting room, and saved ride-group proposals with stop order,
+detour estimates and recommended fare percentages. Group acceptance, QR verification, bookings,
+ride completion and payments are not implemented. All seeded data is fictional.
+See [the matching contract and verification guide](docs/matching.md) and
+[the shared-session contract](docs/shared-session-contract.md).
 
 ## Stack
 
@@ -60,17 +62,19 @@ bun dev                        # http://localhost:3000
 
 All responses are `{ "data": ... }` or `{ "error": { "code", "message", "details?" } }`.
 
-| Endpoint                                    | Description                                   |
-| ------------------------------------------- | --------------------------------------------- |
-| `POST /api/participant`                     | Establish anonymous browser identity          |
-| `POST /api/sessions`                        | Open/reuse an expiring event session          |
-| `POST /api/sessions/:id/join`               | Join or update own waiting participation      |
-| `GET /api/sessions/:id/waiting-room`        | Member roster and own destination             |
-| `GET /api/health`                           | Liveness + database check (503 if DB is down) |
-| `GET /api/events?status=&limit=`            | List events                                   |
-| `GET /api/events/:id`                       | Event with meeting points                     |
-| `GET /api/sessions?eventId=&status=&limit=` | List sessions with participant counts         |
-| `GET /api/sessions/:id`                     | Session detail                                |
+| Endpoint                                    | Description                                    |
+| ------------------------------------------- | ---------------------------------------------- |
+| `POST /api/auth/sign-up`                    | Create an account and establish a session      |
+| `POST /api/auth/sign-in`                    | Sign in to an existing account                 |
+| `POST /api/sessions`                        | Open/reuse an expiring event session           |
+| `POST /api/sessions/:id/join`               | Join or update own waiting participation       |
+| `POST /api/sessions/:id/match`              | Find and persist compatible ride groups        |
+| `GET /api/sessions/:id/waiting-room`        | Roster, own destination and own group proposal |
+| `GET /api/health`                           | Liveness + database check (503 if DB is down)  |
+| `GET /api/events?status=&limit=`            | List events                                    |
+| `GET /api/events/:id`                       | Event with meeting points                      |
+| `GET /api/sessions?eventId=&status=&limit=` | List sessions with participant counts          |
+| `GET /api/sessions/:id`                     | Session detail                                 |
 
 ## Structure
 
@@ -90,3 +94,7 @@ docs/               architecture, domain model, decisions
 Modular monolith, server components by default, repositories isolate Drizzle, Zod validates input,
 money in integer minor units and fares in basis points. See [docs/architecture.md](docs/architecture.md),
 [docs/domain-model.md](docs/domain-model.md) and [docs/decisions/](docs/decisions/). Hackathon rules, submission checklist and judging rubric: [docs/hackathon-guide.md](docs/hackathon-guide.md).
+
+## Multi-agent workflow
+
+Agents working concurrently on this repo must use isolated Git worktrees (`.worktrees/<task-slug>`) and merge directly into `main` (no PRs) after passing `lint`, `typecheck`, and `test`. See [AGENTS.md](AGENTS.md) for the exact commands.

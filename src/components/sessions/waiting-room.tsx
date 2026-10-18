@@ -15,7 +15,10 @@ import type { GeoPoint } from "@/modules/events/domain/event";
 import { SessionJoinForm } from "./session-join-form";
 import { sessionApi, SessionRequestError } from "./session-api";
 
+import type { MatchingRoutePlan } from "@/modules/matching/domain/route-plan";
+
 interface Room {
+  party: { id: string; status: string; plan: MatchingRoutePlan | null } | null;
   me: {
     id: string;
     destinationLabel: string;
@@ -51,9 +54,18 @@ export function WaitingRoom({
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [matchNotice, setMatchNotice] = useState("");
   const [copied, setCopied] = useState(false);
+  const [signedOut, setSignedOut] = useState(false);
+  const [accountName, setAccountName] = useState("");
   const [now, setNow] = useState(() => Date.now());
   const expired = now >= Date.parse(closesAt);
+
+  useEffect(() => {
+    sessionApi<{ displayName: string } | null>("/api/auth/me")
+      .then((me) => setAccountName(me?.displayName ?? ""))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     let stopped = false;
@@ -65,9 +77,16 @@ export function WaitingRoom({
         );
         if (!stopped) {
           setRoom(result);
+          setSignedOut(false);
           setError("");
         }
       } catch (error) {
+        if (error instanceof SessionRequestError && error.status === 401) {
+          if (!stopped) {
+            setSignedOut(true);
+            setRoom(null);
+          }
+        }
         if (
           !stopped &&
           !(
@@ -100,7 +119,6 @@ export function WaitingRoom({
     setBusy(true);
     setError("");
     try {
-      await sessionApi("/api/participant", {});
       await sessionApi(`/api/sessions/${sessionId}/join`, {
         displayName: data.get("displayName"),
         destinationLabel: data.get("destinationLabel"),
@@ -116,6 +134,29 @@ export function WaitingRoom({
         error instanceof Error
           ? error.message
           : "No se pudo guardar tu destino.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function match() {
+    setBusy(true);
+    setError("");
+    setMatchNotice("");
+    try {
+      await sessionApi(`/api/sessions/${sessionId}/match`, {});
+      const result = await sessionApi<Room>(
+        `/api/sessions/${sessionId}/waiting-room`,
+      );
+      setRoom(result);
+      if (!result.party)
+        setMatchNotice(
+          "Aún no encontramos un grupo compatible para ti. Sigues en la sala; puedes intentar cuando lleguen más personas.",
+        );
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : "No pudimos buscar tu grupo.",
       );
     } finally {
       setBusy(false);
@@ -140,6 +181,25 @@ export function WaitingRoom({
         <p>Cargando tu sala…</p>
       </div>
     );
+  if (signedOut && !room)
+    return (
+      <div className="session-closed" role="status">
+        <h2>Inicia sesión para unirte.</h2>
+        <p>Necesitas una cuenta para guardar tu destino en la sala.</p>
+        <Link
+          className="action action-primary"
+          href={`/sign-in?next=${encodeURIComponent(`/sessions/${sessionId}`)}`}
+        >
+          Iniciar sesión
+        </Link>
+        <Link
+          className="action action-secondary"
+          href={`/sign-up?next=${encodeURIComponent(`/sessions/${sessionId}`)}`}
+        >
+          Crear cuenta
+        </Link>
+      </div>
+    );
   const closed =
     expired || !initiallyOpen || (room !== null && !room.acceptingJoins);
   return (
@@ -159,7 +219,7 @@ export function WaitingRoom({
         </span>
         <span>
           <Users size={17} aria-hidden="true" />
-          {vehicleCapacity} personas por futuro grupo
+          Hasta {Math.min(vehicleCapacity, 3)} personas por grupo
         </span>
       </div>
       {error && (
@@ -167,7 +227,7 @@ export function WaitingRoom({
           {error}
         </p>
       )}
-      {closed && (
+      {closed && !room?.party && (
         <div role="status" className="session-closed">
           <h2>Esta sala ya no admite pasajeros.</h2>
           <p>Puedes volver al evento y elegir otra salida.</p>
@@ -176,7 +236,76 @@ export function WaitingRoom({
           </Link>
         </div>
       )}
-      {room ? (
+      {room?.party?.plan ? (
+        <section className="waiting-room" aria-labelledby="matched-title">
+          <header className="room-heading">
+            <span className="room-heading-icon">
+              <CarFront size={24} aria-hidden="true" />
+            </span>
+            <div>
+              <h2 id="matched-title">Encontramos tu grupo.</h2>
+              <p>
+                Una propuesta de ruta compartida. El taxi aún no está reservado.
+              </p>
+            </div>
+          </header>
+          <div className="own-destination">
+            <MapPin size={23} aria-hidden="true" />
+            <div>
+              <span>Punto de encuentro</span>
+              <strong>{room.party.plan.origin.label}</strong>
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${room.party.plan.origin.latitude},${room.party.plan.origin.longitude}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Ver punto de encuentro
+              </a>
+            </div>
+          </div>
+          <h3>Ruta y reparto recomendado</h3>
+          <ol className="roster">
+            {room.party.plan.stops.map((stop) => (
+              <li key={stop.participantId}>
+                <span className="person-avatar" aria-hidden="true">
+                  {stop.dropOffOrder}
+                </span>
+                <div className="person-name">
+                  <strong>
+                    {stop.displayName}
+                    {stop.participantId === room.me.id ? " (Tú)" : ""}
+                  </strong>
+                  <span>{stop.destinationLabel}</span>
+                  <span>
+                    {stop.role === "delegate" ? "Reserva el taxi" : "Pasajero"}{" "}
+                    · {Math.ceil(stop.arrivalSeconds / 60)} min desde el
+                    encuentro · +{Math.ceil(stop.detourSeconds / 60)} min de
+                    desvío
+                  </span>
+                </div>
+                <span className="person-role">
+                  {(stop.fareShareBps / 100).toLocaleString("es-PE", {
+                    maximumFractionDigits: 2,
+                  })}
+                  %
+                </span>
+              </li>
+            ))}
+          </ol>
+          <p className="privacy-note">
+            Las direcciones de esta propuesta solo se comparten con tu grupo.
+          </p>
+          <div className="milestone-note">
+            <strong>Coordinen antes de salir.</strong>
+            <p>
+              La persona indicada reserva el taxi fuera de Jala. El reparto se
+              calcula por distancia recorrida y suma 100%; no es una tarifa del
+              proveedor. La aceptación del grupo y la reserva todavía se
+              coordinan entre ustedes.
+            </p>
+          </div>
+        </section>
+      ) : room ? (
         <section className="waiting-room" aria-labelledby="waiting-title">
           <header className="room-heading">
             <span className="room-heading-icon">
@@ -264,18 +393,35 @@ export function WaitingRoom({
               dirección exacta permanece privada.
             </span>
           </p>
+          {!closed && (
+            <button
+              type="button"
+              onClick={match}
+              disabled={busy || signedOut}
+              className="action action-primary"
+            >
+              {busy ? "Calculando rutas…" : "Buscar mi grupo"}
+            </button>
+          )}
+          <p role="status">{matchNotice}</p>
           <div className="milestone-note">
-            <strong>Por ahora, reunimos a quienes salen.</strong>
+            <strong>Un grupo compatible para compartir el taxi.</strong>
             <p>
-              El emparejamiento, las rutas y la confirmación de grupos todavía
-              no están disponibles. Estar en esta sala no significa tener un
-              taxi reservado.
+              Buscamos grupos de dos o tres con alguien que pueda reservar y un
+              desvío máximo de cinco minutos por persona. Al encontrar un grupo,
+              compartimos los destinos exactos solo entre sus integrantes. Jala
+              no reserva el taxi.
             </p>
           </div>
         </section>
       ) : (
         !closed && (
-          <SessionJoinForm onJoin={join} busy={busy} mapCenter={mapCenter} />
+          <SessionJoinForm
+            onJoin={join}
+            busy={busy}
+            mapCenter={mapCenter}
+            defaultName={accountName}
+          />
         )
       )}
     </div>

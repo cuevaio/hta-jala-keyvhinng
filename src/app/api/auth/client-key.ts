@@ -1,0 +1,8 @@
+/** Best-effort client identifier for throttling. Trusts the proxy's forwarded address. */
+export function clientKey(request: Request): string {
+  return (
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip") ||
+    "unknown"
+  );
+}

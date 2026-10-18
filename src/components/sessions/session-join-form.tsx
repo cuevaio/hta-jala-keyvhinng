@@ -10,11 +10,14 @@ export function SessionJoinForm({
   onJoin,
   busy,
   mapCenter,
+  defaultName,
 }: {
   onJoin: FormEventHandler<HTMLFormElement>;
   busy: boolean;
   /** Initial map view, usually the event venue. */
   mapCenter: GeoPoint;
+  /** Prefills the display name from the signed-in account. */
+  defaultName: string;
 }) {
   const [point, setPoint] = useState<GeoPoint | null>(null);
   const [label, setLabel] = useState("");
@@ -67,6 +70,8 @@ export function SessionJoinForm({
             id="display-name"
             className="form-input"
             name="displayName"
+            key={defaultName}
+            defaultValue={defaultName}
             required
             maxLength={60}
             autoComplete="nickname"

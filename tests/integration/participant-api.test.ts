@@ -44,27 +44,82 @@ describe.skipIf(!base || !url)(
         await db.delete(schema.users).where(inArray(schema.users.id, userIds));
       await sql.end();
     });
-    it("issues opaque cookies, reuses identity, and stores no plaintext token", async () => {
-      const first = await post("/api/participant", {});
-      expect(first.status).toBe(200);
+    it("signs up with an opaque session cookie, stores no plaintext secrets, and signs in/out", async () => {
+      const emailA = `a-${eventId}@test.example`;
+      const emailB = `b-${eventId}@test.example`;
+      const first = await post("/api/auth/sign-up", {
+        displayName: "Ana",
+        email: emailA,
+        password: "correct-horse",
+      });
+      expect(first.status).toBe(201);
       const setCookie = first.headers.get("set-cookie")!;
       expect(setCookie).toMatch(/HttpOnly/i);
       expect(setCookie).toMatch(/SameSite=lax/i);
       cookieA = setCookie.split(";")[0];
       const a = (await first.json()).data;
       userIds.push(a.userId);
-      const again = await post("/api/participant", {}, cookieA);
-      expect((await again.json()).data.userId).toBe(a.userId);
-      const second = await post("/api/participant", {});
+
+      const second = await post("/api/auth/sign-up", {
+        displayName: "Luis",
+        email: emailB,
+        password: "correct-horse",
+      });
       cookieB = second.headers.get("set-cookie")!.split(";")[0];
       const b = (await second.json()).data;
       userIds.push(b.userId);
       expect(a.userId).not.toBe(b.userId);
+
       const [credential] = await db
         .select()
         .from(schema.browserSessions)
         .where(eq(schema.browserSessions.userId, a.userId));
       expect(credential.tokenHash).not.toBe(cookieA.split("=")[1]);
+      const [user] = await db
+        .select()
+        .from(schema.users)
+        .where(eq(schema.users.id, a.userId));
+      expect(user.passwordHash).toMatch(/^scrypt\$/);
+      expect(user.passwordHash).not.toContain("correct-horse");
+
+      const me = await fetch(`${base}/api/auth/me`, {
+        headers: { cookie: cookieA },
+      });
+      expect((await me.json()).data.displayName).toBe("Ana");
+
+      const duplicate = await post("/api/auth/sign-up", {
+        displayName: "Ana 2",
+        email: emailA.toUpperCase(),
+        password: "another-pass",
+      });
+      expect(duplicate.status).toBe(409);
+
+      const wrong = await post("/api/auth/sign-in", {
+        email: emailA,
+        password: "wrong-password",
+      });
+      const unknown = await post("/api/auth/sign-in", {
+        email: `nobody-${eventId}@test.example`,
+        password: "wrong-password",
+      });
+      expect(wrong.status).toBe(401);
+      expect(unknown.status).toBe(401);
+      expect((await wrong.json()).error).toEqual((await unknown.json()).error);
+
+      const signedIn = await post("/api/auth/sign-in", {
+        email: emailA,
+        password: "correct-horse",
+      });
+      expect(signedIn.status).toBe(200);
+      const cookieA2 = signedIn.headers.get("set-cookie")!.split(";")[0];
+      expect(cookieA2).not.toBe(cookieA);
+
+      const out = await post("/api/auth/sign-out", {}, cookieA2);
+      expect(out.status).toBe(200);
+      const after = await fetch(`${base}/api/auth/me`, {
+        headers: { cookie: cookieA2 },
+      });
+      expect((await after.json()).data).toBeNull();
     });
     it("enforces authentication/membership and shares a persisted roster", async () => {
       const opened = await post("/api/sessions", { eventId }, cookieA);

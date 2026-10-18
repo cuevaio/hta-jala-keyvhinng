@@ -15,6 +15,20 @@
       "when": 1792296790895,
       "tag": "0001_unique_the_twelve",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792300713196,
+      "tag": "0002_whole_young_avengers",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792300954208,
+      "tag": "0003_nappy_viper",
+      "breakpoints": true
     }
   ]
 }

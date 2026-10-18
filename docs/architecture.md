@@ -23,7 +23,7 @@ Rules:
    (`lib/http.ts`). Errors are mapped centrally (`handle()` / `fail()`).
 3. Application services receive repositories as arguments (plain factory functions, no DI framework).
 4. Server components call services directly; they do not call the HTTP API.
-5. Client components are used only where browser interaction is required (none yet).
+5. Client components are used only where browser interaction is required (join form and polling waiting room).
 
 ## Modules
 
@@ -31,7 +31,7 @@ Rules:
 | -------------- | ------------------ | --------------------------------------------------------------------------------- |
 | `events`       | implemented (read) | Events and their predefined meeting points                                        |
 | `sessions`     | implemented (read) | Temporary matching pools per event                                                |
-| `matching`     | contracts only     | `MatchingService`: candidates → candidate ride parties                            |
+| `matching`     | implemented            | Bounded road matching, saved route plans and atomic participant assignment                            |
 | `routing`      | contract + OSRM    | `RoutingProvider` contract, `RoutingError`, OSRM adapter (`ROUTING_BASE_URL`)     |
 | `parties`      | domain only        | Ride party / member / ride types; `RideProviderAdapter` boundary for Uber etc.    |
 | `payments`     | domain only        | Platform fee rule, segment-based fare allocation, basis-point helper           |

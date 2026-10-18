@@ -3,7 +3,7 @@
 import { Users, Clock3 } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { sessionApi } from "./session-api";
+import { sessionApi, SessionRequestError } from "./session-api";
 
 export function OpenSession({
   eventId,
@@ -19,12 +19,17 @@ export function OpenSession({
     setBusy(true);
     setError("");
     try {
-      await sessionApi("/api/participant", {});
       const session = await sessionApi<{ id: string }>("/api/sessions", {
         eventId,
       });
       router.push(`/sessions/${session.id}`);
     } catch (error) {
+      if (error instanceof SessionRequestError && error.status === 401) {
+        router.push(
+          `/sign-in?next=${encodeURIComponent(`/events/${eventId}`)}`,
+        );
+        return;
+      }
       setError(
         error instanceof Error ? error.message : "No se pudo abrir la sesión.",
       );
@@ -38,8 +43,7 @@ export function OpenSession({
           <Users size={27} strokeWidth={1.5} aria-hidden="true" />
         </span>
         <h2>
-          Tu salida
-          <br />
+          Tu salida <br />
           empieza aquí.
         </h2>
         <p>

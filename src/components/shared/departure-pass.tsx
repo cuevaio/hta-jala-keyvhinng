@@ -3,10 +3,7 @@ import { MapPin, Ticket, Users } from "lucide-react";
 /** Brand illustration only; it deliberately shows no invented route estimates. */
 export function DeparturePass() {
   return (
-    <div
-      className="departure-pass"
-      aria-label="Una salida compartida, cada persona conserva su destino"
-    >
+    <div className="departure-pass">
       <div className="pass-top">
         <span>
           <Ticket size={18} aria-hidden="true" /> Tu próxima salida

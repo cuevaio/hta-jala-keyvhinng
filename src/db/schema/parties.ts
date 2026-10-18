@@ -1,8 +1,10 @@
+import type { MatchingRoutePlan } from "@/modules/matching/domain/route-plan";
 import { sql } from "drizzle-orm";
 import {
   check,
   index,
   integer,
+  jsonb,
   pgTable,
   text,
   timestamp,
@@ -36,6 +38,7 @@ export const rideParties = pgTable(
         onDelete: "set null",
       },
     ),
+    routePlan: jsonb("route_plan").$type<MatchingRoutePlan>(),
     status: ridePartyStatus("status").notNull().default("forming"),
     ...timestamps,
   },

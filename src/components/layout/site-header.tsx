@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AuthNav } from "@/components/auth/auth-nav";
 
 export function SiteHeader() {
   return (
@@ -26,7 +27,7 @@ export function SiteHeader() {
             Cómo funciona
           </Link>
         </nav>
-        <span className="location-tag">Hecho para salir juntos</span>
+        <AuthNav />
       </div>
     </header>
   );

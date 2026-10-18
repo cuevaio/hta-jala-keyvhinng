@@ -5,3 +5,17 @@ export class NotFoundError extends Error {
     this.name = "NotFoundError";
   }
 }
+
+export class EmailTakenError extends Error {
+  constructor() {
+    super("Email already registered");
+    this.name = "EmailTakenError";
+  }
+}
+
+export class InvalidCredentialsError extends Error {
+  constructor() {
+    super("Invalid email or password");
+    this.name = "InvalidCredentialsError";
+  }
+}

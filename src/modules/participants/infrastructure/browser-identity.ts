@@ -1,24 +1,33 @@
 import { createHash, randomBytes } from "node:crypto";
-import { and, eq, gt } from "drizzle-orm";
+import { and, eq, gt, isNotNull } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { getDb } from "@/db";
 import { browserSessions, users } from "@/db/schema";
 import { ApiError } from "@/lib/http";
 
 const COOKIE = "jala_participant";
+const SESSION_DAYS = 7;
 const hash = (token: string) =>
   createHash("sha256").update(token).digest("hex");
 
-export async function readIdentity() {
+async function readToken() {
   const token = (await cookies()).get(COOKIE)?.value;
-  if (!token || !/^[a-f0-9]{64}$/.test(token)) return null;
+  return token && /^[a-f0-9]{64}$/.test(token) ? token : null;
+}
+
+/** The signed-in account, or null. Legacy anonymous guests (no email) never match. */
+export async function readIdentity() {
+  const token = await readToken();
+  if (!token) return null;
   const [identity] = await getDb()
-    .select({ userId: browserSessions.userId })
+    .select({ userId: browserSessions.userId, displayName: users.displayName })
     .from(browserSessions)
+    .innerJoin(users, eq(users.id, browserSessions.userId))
     .where(
       and(
         eq(browserSessions.tokenHash, hash(token)),
         gt(browserSessions.expiresAt, new Date()),
+        isNotNull(users.email),
       ),
     );
   return identity ?? null;
@@ -30,26 +39,19 @@ export async function requireIdentity() {
     throw new ApiError(
       401,
       "identity_required",
-      "Tu sesión del navegador venció. Recarga para continuar.",
+      "Inicia sesión para continuar.",
     );
   return identity;
 }
 
-export async function ensureIdentity() {
-  const existing = await readIdentity();
-  if (existing) return existing;
+/** Issues a fresh session cookie for `userId`, revoking any session this browser held. */
+export async function startSession(userId: string) {
+  await endSession();
   const token = randomBytes(32).toString("hex");
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-  const identity = await getDb().transaction(async (tx) => {
-    const [user] = await tx
-      .insert(users)
-      .values({ displayName: "Participante" })
-      .returning({ userId: users.id });
-    await tx
-      .insert(browserSessions)
-      .values({ userId: user.userId, tokenHash: hash(token), expiresAt });
-    return user;
-  });
+  const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
+  await getDb()
+    .insert(browserSessions)
+    .values({ userId, tokenHash: hash(token), expiresAt });
   (await cookies()).set(COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
@@ -57,5 +59,14 @@ export async function ensureIdentity() {
     path: "/",
     expires: expiresAt,
   });
-  return identity;
+}
+
+/** Deletes this browser's session server-side and clears the cookie. */
+export async function endSession() {
+  const token = await readToken();
+  if (!token) return;
+  await getDb()
+    .delete(browserSessions)
+    .where(eq(browserSessions.tokenHash, hash(token)));
+  (await cookies()).delete(COOKIE);
 }

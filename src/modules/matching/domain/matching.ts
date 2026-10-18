@@ -1,3 +1,4 @@
+import type { RouteEstimate } from "@/modules/routing/domain/routing-provider";
 import type { GeoPoint } from "@/modules/events/domain/event";
 import type { DelegatePreference } from "@/modules/sessions/domain/session";
 
@@ -10,6 +11,8 @@ export interface MatchingCandidate {
 }
 
 export interface MatchingConstraints {
+  /** Shared pickup location; detours are measured from here. */
+  origin: GeoPoint;
   /** Maximum people per vehicle, delegate included. */
   vehicleCapacity: number;
   /** Maximum extra travel time any passenger accepts versus a direct trip. */
@@ -27,6 +30,8 @@ export interface CandidatePartyMember {
 /** A proposed grouping, not yet persisted. */
 export interface CandidateParty {
   members: CandidatePartyMember[];
+  route: RouteEstimate;
+  directDurationSeconds: number[];
 }
 
 export interface MatchingResult {
@@ -39,9 +44,9 @@ export interface MatchingResult {
  * Groups eligible participants into candidate ride parties.
  *
  * Contract:
- * - Every party has at most `constraints.vehicleCapacity` members.
- * - Every party has exactly one delegate, chosen preferably among participants
- *   who prefer to be delegates. Parties without an available delegate are not produced;
+ * - Every party has at least two and at most `constraints.vehicleCapacity` members.
+ * - Every party has exactly one delegate, chosen only among participants
+ *   who volunteer to be delegates. Parties without an available delegate are not produced;
  *   their members go to `unmatched`.
  * - Members of a party must satisfy route compatibility (`maxDetourSeconds`).
  * - Every input candidate appears exactly once, either in a party or in `unmatched`.

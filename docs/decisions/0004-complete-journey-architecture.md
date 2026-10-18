@@ -18,8 +18,9 @@ demonstration ledger, not payment collection.
 ## Keep
 
 - One Next.js deployable and PostgreSQL, with the current Drizzle migrations.
-- Opaque browser credentials for the hackathon, clearly described as membership rather
-  than verified identity. They cannot enforce a lifetime free-ride allowance across browsers.
+- Opaque session cookies. Update: sign-up/sign-in (email + password, unverified email)
+  now issues them, replacing anonymous guest identity, so the free-ride allowance can
+  follow an account across browsers. Still not verified real-world identity.
 - Short polling for small event pools; no realtime infrastructure until it is justified.
 - Integer basis points and the tested rounding helper.
 - Transactional joins, public deployment, and real database/HTTP integration tests.
@@ -153,7 +154,7 @@ never substitute district centroids for destinations.
 ## Defer
 
 NFC, driver operations, taxi-provider booking APIs, payment processing, chat, push,
-advanced account login, generalized provider registries, queues, event buses, microservices,
+advanced account login (OAuth, email verification, password reset, MFA), generalized provider registries, queues, event buses, microservices,
 CQRS frameworks and infrastructure for hypothetical scale. QR is convenience after a
 working short-code protocol. Build no generic transport platform.
 

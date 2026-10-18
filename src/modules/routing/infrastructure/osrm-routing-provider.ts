@@ -13,9 +13,14 @@ const osrmResponseSchema = z.object({
   routes: z
     .array(
       z.object({
-        distance: z.number(),
-        duration: z.number(),
-        legs: z.array(z.object({ distance: z.number(), duration: z.number() })),
+        distance: z.number().finite().nonnegative(),
+        duration: z.number().finite().nonnegative(),
+        legs: z.array(
+          z.object({
+            distance: z.number().finite().nonnegative(),
+            duration: z.number().finite().nonnegative(),
+          }),
+        ),
         geometry: z
           .object({ coordinates: z.array(z.tuple([z.number(), z.number()])) })
           .optional(),
@@ -95,6 +100,38 @@ export function createOsrmRoutingProvider(
   }
 
   return {
+    async estimateMatrix(points) {
+      const coordinates = points
+        .map((p) => `${p.longitude},${p.latitude}`)
+        .join(";");
+      try {
+        const response = await doFetch(
+          `${baseUrl}/table/v1/driving/${coordinates}?annotations=duration`,
+          {
+            signal: AbortSignal.timeout(timeoutMs),
+          },
+        );
+        const parsed = z
+          .object({
+            code: z.literal("Ok"),
+            durations: z.array(
+              z.array(z.number().finite().nonnegative().nullable()),
+            ),
+          })
+          .safeParse(await response.json());
+        if (
+          !response.ok ||
+          !parsed.success ||
+          parsed.data.durations.length !== points.length ||
+          parsed.data.durations.some((row) => row.length !== points.length)
+        ) {
+          throw new Error("Invalid OSRM table response");
+        }
+        return { durationsSeconds: parsed.data.durations };
+      } catch (cause) {
+        throw new RoutingError("Routing matrix request failed", { cause });
+      }
+    },
     estimateRoute,
     async estimateDistance(from, to) {
       return (await estimateRoute([from, to])).totalDistanceMeters;

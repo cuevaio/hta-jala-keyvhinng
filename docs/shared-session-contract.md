@@ -1,6 +1,6 @@
 # Shared session milestone (Stage 0–1)
 
-Implemented: event → open/reuse temporary session → exact destination and delegate preference → persisted waiting room. Matching, groups, verification, bookings and ride completion are the next milestone. No fares or payments are collected.
+Implemented: event → open/reuse temporary session → exact destination and delegate preference → persisted waiting room. Road matching and saved group proposals are now implemented; see [the matching contract](matching.md). Verification, bookings and ride completion remain future milestones. No fares or payments are collected.
 
 ## HTTP contract
 
@@ -8,16 +8,23 @@ All endpoints use `{ data }` or `{ error: { code, message, details? } }`. IDs ar
 
 | Endpoint | Input | Result |
 | --- | --- | --- |
-| `POST /api/participant` | empty JSON | `{ userId }`, establishes/reuses browser cookie |
-| `POST /api/sessions` | `{ eventId }`, browser cookie | Existing currently open pool or a new two-hour pool, capacity 3 |
-| `POST /api/sessions/:id/join` | `{ displayName, destinationLabel, latitude, longitude, delegatePreference }`, browser cookie | Own persisted participant; retries update the same row |
-| `GET /api/sessions/:id/waiting-room` | member browser cookie | `{ session, me, participants, acceptingJoins }` |
+| `POST /api/auth/sign-up` | `{ displayName, email, password }` | 201 `{ userId, displayName }`, sets session cookie; 409 `email_taken` |
+| `POST /api/auth/sign-in` | `{ email, password }` | `{ userId, displayName }`, sets a fresh session cookie; 401 `invalid_credentials` (same for unknown email and wrong password); 429 when throttled |
+| `POST /api/auth/sign-out` | empty JSON | Deletes the server-side session and clears the cookie |
+| `GET /api/auth/me` | session cookie | `{ userId, displayName }` or `null` |
+| `POST /api/sessions` | `{ eventId }`, session cookie | Existing currently open pool or a new two-hour pool, capacity 3 |
+| `POST /api/sessions/:id/join` | `{ displayName, destinationLabel, latitude, longitude, delegatePreference }`, session cookie | Own persisted participant; retries update the same row |
+| `GET /api/sessions/:id/waiting-room` | member session cookie | `{ session, me, participants, party, acceptingJoins }` |
 
-`delegatePreference`: `delegate` or `passenger`. Names: 1–60 characters; destination label: 3–200 characters. Coordinates must be finite and in valid global ranges. A label and coordinates are user supplied and are not geocoded or independently verified. The current form requires manual coordinates.
+`delegatePreference`: `delegate` or `passenger`. Names: 1–60 characters; destination label: 3–200 characters. Coordinates must be finite and in valid global ranges. A label and coordinates are user supplied and are not geocoded or independently verified. The form resolves an address or selects exact coordinates on a map.
 
-The roster shares participant ID, display name, delegate preference and status only. Exact destinations and user IDs are returned only for the requesting participant (`me`). Public session detail/list endpoints still return summary/counts only. Members retain read access after pool expiry, but cannot join or update a closed pool.
+The roster shares participant ID, display name, delegate preference and status only. While waiting, exact destinations and user IDs are returned only for the requesting participant (`me`). After matching, the saved `party.plan` shares destinations only among that party’s members. Public session detail/list endpoints still return summary/counts only. Members retain read access after pool expiry, but cannot join or update a closed pool.
 
-Cookie: random 256-bit bearer credential, HttpOnly, SameSite=Lax, Secure in production, seven-day expiry. Only its SHA-256 hash is stored in `browser_sessions`. This establishes membership, not verified identity. Separate browser profiles/private sessions represent separate users; tabs in one profile share identity. Clearing cookies loses access. No account recovery is provided yet.
+Accounts: email + password (`users.email`, lowercased and unique; password 8–128 characters, hashed with scrypt N=2^17, r=8, p=1 and a per-user salt as `scrypt$N$r$p$salt$hash`). Joining or opening a session requires being signed in. The email is not verified and there is no password reset yet.
+
+Cookie: random 256-bit bearer credential issued on sign-up/sign-in (a new one each time), HttpOnly, SameSite=Lax, Secure in production, seven-day expiry. Only its SHA-256 hash is stored in `browser_sessions`; sign-out deletes the row. Legacy anonymous guest users (no email) cannot sign in and their old cookies no longer authenticate.
+
+Throttling: sign-in is limited to 10 attempts per email and 30 per client per 15 minutes, sign-up to 10 per client per hour. The limiter is in-memory and per process; use a shared store behind multiple instances. Per-email throttling also lets someone lock out a known email for the window.
 
 Errors: 400 invalid input/JSON, 401 missing or expired identity, 403 nonmember/cross-origin request, 404 missing resource, 409 unavailable session/event or already matched, 415 non-JSON body. Unexpected database errors retain the common logged 500 envelope.
 
@@ -25,10 +32,10 @@ Errors: 400 invalid input/JSON, 401 missing or expired identity, 403 nonmember/c
 
 - Additive migration `0001_unique_the_twelve.sql` adds browser credentials without changing existing records. Apply before deploying the new handlers; the previous app can coexist with this table.
 - Event-row lock serializes open/reuse so simultaneous creates share one currently open pool. Expiry is checked against server time, with no scheduler needed.
-- Session-row lock serializes joins; unique `(session_id, user_id)` prevents duplicate participation. Future matching/closing mutations must acquire the same lock.
+- Session-row lock serializes joins; unique `(session_id, user_id)` prevents duplicate participation. Matching commits acquire the same lock and revalidate the candidate snapshot.
 - A pool holds many waiting participants. Vehicle capacity limits future parties, not the pool size.
-- Existing matched participants cannot rejoin as waiting. Party assignment invariants are deferred until matching exists.
-- No identity-provider or payment credentials are needed. Expired browser credentials and abandoned users currently remain stored; add retention/cleanup before a broader launch.
+- Existing matched participants cannot rejoin as waiting. Matching persists parties and assignments atomically; see the matching contract for its invariants.
+- Migration `0002_whole_young_avengers.sql` adds nullable `email`/`password_hash` to `users` (additive; existing guests are untouched). No identity-provider or payment credentials are needed. Expired browser credentials and abandoned users currently remain stored; add retention/cleanup before a broader launch.
 
 ## Next milestone contracts
 

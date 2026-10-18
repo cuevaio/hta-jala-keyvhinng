@@ -829,6 +829,7 @@ select:focus-visible {
 .form-heading {
   margin-bottom: 27px;
 }
+.form-heading h1,
 .form-heading h2 {
   font-size: 24px;
   font-weight: 700;
@@ -1479,6 +1480,7 @@ select:focus-visible {
     padding: 23px 19px;
     margin-top: 20px;
   }
+  .form-heading h1,
   .form-heading h2 {
     font-size: 22px;
   }
@@ -1564,4 +1566,43 @@ select:focus-visible {
     animation: none !important;
     transition: none !important;
   }
+}
+
+.auth-page {
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 48px 16px 64px;
+}
+.auth-switch {
+  margin-top: 18px;
+  font-size: 13px;
+  text-align: center;
+  color: var(--muted-foreground);
+}
+.auth-switch a {
+  font-weight: 600;
+  color: var(--primary);
+}
+.auth-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 1px;
+}
+.auth-name {
+  font-size: 13px;
+  font-weight: 600;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.auth-signout {
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.auth-cta {
+  padding: 8px 14px;
+  font-size: 13px;
 }

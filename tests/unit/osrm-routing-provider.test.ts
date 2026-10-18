@@ -116,3 +116,51 @@ describe("createOsrmRoutingProvider", () => {
     await expect(provider.estimateRoute([a])).rejects.toThrow(RangeError);
   });
 });
+
+describe("OSRM duration matrix", () => {
+  it("preserves directed travel times and unreachable routes", async () => {
+    const fetchMock = vi.fn(async () =>
+      jsonResponse({
+        code: "Ok",
+        durations: [
+          [0, 90, null],
+          [120, 0, 30],
+          [null, 40, 0],
+        ],
+      }),
+    );
+    const provider = createOsrmRoutingProvider({
+      baseUrl: "https://osrm.test/",
+      fetch: fetchMock as unknown as typeof fetch,
+    });
+    expect(await provider.estimateMatrix!([a, b, c])).toEqual({
+      durationsSeconds: [
+        [0, 90, null],
+        [120, 0, 30],
+        [null, 40, 0],
+      ],
+    });
+    expect((fetchMock.mock.calls[0] as unknown[])[0]).toBe(
+      "https://osrm.test/table/v1/driving/-77.04,-12.05;-77.02,-12.1;-77,-12.12?annotations=duration",
+    );
+  });
+  it.each([
+    { code: "NoTable" },
+    { code: "Ok", durations: [[0]] },
+    {
+      code: "Ok",
+      durations: [
+        [0, -1],
+        [0, 0],
+      ],
+    },
+  ])("rejects unusable tables: %j", async (body) => {
+    const provider = createOsrmRoutingProvider({
+      baseUrl: "https://osrm.test",
+      fetch: (async () => jsonResponse(body)) as typeof fetch,
+    });
+    await expect(provider.estimateMatrix!([a, b])).rejects.toBeInstanceOf(
+      RoutingError,
+    );
+  });
+});
