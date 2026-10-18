@@ -7,6 +7,10 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().min(1).optional(),
   MAIL_FROM: z.string().min(1).default("Jala <jala@jala.oak4.xyz>"),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
+  // Web Push (VAPID). Without both keys, notifications are only logged.
+  VAPID_PUBLIC_KEY: z.string().min(1).optional(),
+  VAPID_PRIVATE_KEY: z.string().min(1).optional(),
+  VAPID_SUBJECT: z.string().min(1).default("mailto:jala@jala.oak4.xyz"),
 });
 
 export type Env = z.infer<typeof envSchema>;

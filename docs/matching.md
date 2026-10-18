@@ -1,7 +1,7 @@
 # Road matching
 
-Implemented slice: signed-in attendee → join a session → **Buscar mi grupo** → saved
-shared-trip proposal. The waiting-room poll shows the same persisted plan to every
+Implemented slice: signed-in attendee → join a session → automatic matching round after
+the join (ADR 0008; **Buscar compañeros ahora** retries by hand) → saved shared-trip proposal. The waiting-room poll shows the same persisted plan to every
 member. Matching does not book a taxi or collect money. Group acceptance, cancellation,
 expiry, verification and completion are separate future slices; assignment currently
 lasts for the session and the existing participant uniqueness constraint is retained.
@@ -96,5 +96,5 @@ checks over deterministic varied road networks.
 
 Browser rehearsal: sign in using separate accounts in independent browser sessions,
 join the same place session with nearby exact destinations, volunteer on one account,
-and select **Buscar mi grupo**. Verify the group/stop/share details appear in every member's
+and wait for the automatic round (or select **Buscar compañeros ahora**). Verify the group/stop/share details appear in every member's
 poll and persist on refresh. A fourth unassigned attendee must not receive that plan.

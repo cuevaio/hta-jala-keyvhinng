@@ -11,11 +11,15 @@ import {
 } from "@/db/schema";
 import { NotFoundError } from "@/lib/errors";
 import { calculatePlatformFee } from "@/modules/payments/domain/fees";
+import { bumpRoomRevision } from "@/modules/sessions/infrastructure/room-revision";
 import {
   decide,
   PartyError,
   type PartyCommand,
+  type PartyEvent,
 } from "../domain/party-lifecycle";
+
+type RidePartyStatus = (typeof rideParties.$inferSelect)["status"];
 
 export function createPartyRepository(db: Database) {
   return {
@@ -23,7 +27,11 @@ export function createPartyRepository(db: Database) {
      * Applies one lifecycle command. Takes the same session row lock as joins and
      * matching, so a leave cannot interleave with a match that reuses those people.
      */
-    async apply(sessionId: string, userId: string, command: PartyCommand) {
+    async apply(
+      sessionId: string,
+      userId: string,
+      command: PartyCommand,
+    ): Promise<{ partyStatus: RidePartyStatus; event: PartyEvent | null }> {
       return db.transaction(async (tx) => {
         const [session] = await tx
           .select({ id: sessions.id })
@@ -68,7 +76,14 @@ export function createPartyRepository(db: Database) {
           userId,
           command,
         );
+        // Every command but a no-op changes what members see.
+        if (decision.kind !== "noop") await bumpRoomRevision(tx, sessionId);
         const now = new Date();
+        const event = (kind: PartyEvent["kind"]): PartyEvent => ({
+          kind,
+          actorUserId: userId,
+          memberUserIds: members.map((m) => m.userId),
+        });
         const setParty = (status: typeof party.status) =>
           tx
             .update(rideParties)
@@ -77,7 +92,7 @@ export function createPartyRepository(db: Database) {
 
         switch (decision.kind) {
           case "noop":
-            return { partyStatus: party.status };
+            return { partyStatus: party.status, event: null };
           case "confirm": {
             await tx
               .update(ridePartyMembers)
@@ -95,7 +110,13 @@ export function createPartyRepository(db: Database) {
                 .values({ partyId: party.id })
                 .onConflictDoNothing();
             }
-            return { partyStatus: decision.partyStatus };
+            return {
+              partyStatus: decision.partyStatus,
+              event:
+                decision.partyStatus === "confirmed"
+                  ? event("confirmed")
+                  : null,
+            };
           }
           case "dissolve": {
             const others = members
@@ -124,7 +145,7 @@ export function createPartyRepository(db: Database) {
                 .update(sessionParticipants)
                 .set({ status: "waiting", updatedAt: now })
                 .where(inArray(sessionParticipants.id, others));
-            return { partyStatus: "cancelled" as const };
+            return { partyStatus: "cancelled", event: event("dissolved") };
           }
           case "start": {
             await setParty("in_progress");
@@ -132,7 +153,7 @@ export function createPartyRepository(db: Database) {
               .update(rides)
               .set({ status: "in_progress", startedAt: now, updatedAt: now })
               .where(eq(rides.partyId, party.id));
-            return { partyStatus: "in_progress" as const };
+            return { partyStatus: "in_progress", event: event("started") };
           }
           case "complete": {
             await setParty("completed");
@@ -171,7 +192,7 @@ export function createPartyRepository(db: Database) {
                   })
                   .where(eq(users.id, member.userId));
             }
-            return { partyStatus: "completed" as const };
+            return { partyStatus: "completed", event: event("completed") };
           }
         }
       });

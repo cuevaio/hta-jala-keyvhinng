@@ -40,6 +40,8 @@ export const sessions = pgTable(
     closesAt: timestamp("closes_at", { withTimezone: true }).notNull(),
     /** Max passengers per vehicle (delegate included). */
     vehicleCapacity: integer("vehicle_capacity").notNull().default(4),
+    /** Bumped by every write a room member can see, so unchanged polls stay cheap. */
+    revision: integer("revision").notNull().default(0),
     ...timestamps,
   },
   (t) => [

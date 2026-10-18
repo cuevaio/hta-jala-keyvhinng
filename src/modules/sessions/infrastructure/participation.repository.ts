@@ -7,9 +7,12 @@ import {
   eq,
   gt,
   inArray,
+  isNotNull,
   lte,
   ne,
+  sql,
 } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import type { Database } from "@/db";
 import {
   meetingPoints,
@@ -41,6 +44,8 @@ import {
   type Affinity,
   type RideIntent,
 } from "../domain/affinity";
+import { selfiePath } from "../domain/selfie";
+import { bumpOtherRoomRevisions, bumpRoomRevision } from "./room-revision";
 import type {
   CreateGroupInput,
   JoinSessionInput,
@@ -135,7 +140,7 @@ async function claimExclusivity(tx: Tx, sessionId: string, userId: string) {
       "already_in_group",
       "Ya estás en un grupo de viaje activo. Termínalo o sal de él antes de entrar a otra sala.",
     );
-  await tx
+  const released = await tx
     .update(sessionParticipants)
     .set({ status: "withdrawn" })
     .where(
@@ -144,7 +149,12 @@ async function claimExclusivity(tx: Tx, sessionId: string, userId: string) {
         eq(sessionParticipants.status, "waiting"),
         ne(sessionParticipants.sessionId, sessionId),
       ),
-    );
+    )
+    .returning({ sessionId: sessionParticipants.sessionId });
+  await bumpOtherRoomRevisions(
+    tx,
+    released.map((r) => r.sessionId),
+  );
 }
 
 /** Caller holds the session row lock. */
@@ -238,6 +248,7 @@ async function joinLocked(
       set: values,
     })
     .returning();
+  await bumpRoomRevision(tx, session.id);
   return participant;
 }
 
@@ -506,12 +517,14 @@ export function createParticipationRepository(db: Database) {
               ),
             );
           // Same for every member, so group members always see an identical party.
-          const members = party
+          // Photos are served by their own cacheable URL so polls stay a few KB.
+          const memberRows = party
             ? await tx
                 .select({
-                  selfieDataUrl: sessionParticipants.selfieDataUrl,
                   participantId: ridePartyMembers.participantId,
                   status: ridePartyMembers.status,
+                  hasSelfie: sql<boolean>`${sessionParticipants.selfieDataUrl} is not null`,
+                  photoVersion: sessionParticipants.updatedAt,
                 })
                 .from(ridePartyMembers)
                 .innerJoin(
@@ -521,11 +534,20 @@ export function createParticipationRepository(db: Database) {
                 .where(eq(ridePartyMembers.partyId, party.id))
                 .orderBy(asc(ridePartyMembers.dropOffOrder))
             : [];
+          const members = memberRows.map(
+            ({ hasSelfie, photoVersion, ...member }) => ({
+              ...member,
+              selfieUrl: hasSelfie
+                ? selfiePath(sessionId, member.participantId, photoVersion)
+                : null,
+            }),
+          );
           const { selfieDataUrl: _selfie, ...meWithoutSelfie } = me;
           void _selfie;
           const now = new Date();
           return {
             session,
+            revision: session.revision,
             serverNow: now.toISOString(),
             me: meWithoutSelfie,
             party: party ? { ...party, members } : null,
@@ -539,6 +561,68 @@ export function createParticipationRepository(db: Database) {
         },
         { isolationLevel: "repeatable read", accessMode: "read only" },
       );
+    },
+    /**
+     * The room's current revision, with the same membership rule as `waitingRoom`.
+     * One indexed read, so polls can skip the full room when nothing changed.
+     */
+    async roomRevision(sessionId: string, userId: string) {
+      const [row] = await db
+        .select({
+          revision: sessions.revision,
+          status: sessionParticipants.status,
+        })
+        .from(sessions)
+        .leftJoin(
+          sessionParticipants,
+          and(
+            eq(sessionParticipants.sessionId, sessions.id),
+            eq(sessionParticipants.userId, userId),
+          ),
+        )
+        .where(eq(sessions.id, sessionId));
+      if (!row) throw new NotFoundError("Session");
+      if (!row.status || row.status === "withdrawn")
+        throw new ApiError(
+          403,
+          "membership_required",
+          "Entra a esta sala para ver quiénes esperan.",
+        );
+      return row.revision;
+    },
+    /**
+     * A party member's photo, only for members of that same party (including the
+     * participant). Null when the requester may not see it or there is no photo.
+     */
+    async selfieFor(
+      sessionId: string,
+      userId: string,
+      participantId: string,
+    ): Promise<string | null> {
+      const requester = alias(ridePartyMembers, "requester");
+      const [row] = await db
+        .select({ selfieDataUrl: sessionParticipants.selfieDataUrl })
+        .from(ridePartyMembers)
+        .innerJoin(
+          requester,
+          and(
+            eq(requester.partyId, ridePartyMembers.partyId),
+            eq(requester.userId, userId),
+          ),
+        )
+        .innerJoin(rideParties, eq(rideParties.id, ridePartyMembers.partyId))
+        .innerJoin(
+          sessionParticipants,
+          eq(sessionParticipants.id, ridePartyMembers.participantId),
+        )
+        .where(
+          and(
+            eq(ridePartyMembers.participantId, participantId),
+            eq(rideParties.sessionId, sessionId),
+            isNotNull(sessionParticipants.selfieDataUrl),
+          ),
+        );
+      return row?.selfieDataUrl ?? null;
     },
   };
 }

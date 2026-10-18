@@ -3,6 +3,13 @@ import { DEPARTURE_CHOICES } from "@/modules/sessions/domain/affinity";
 import { SESSION_STATUSES } from "@/modules/sessions/domain/session";
 
 export const sessionIdParams = z.object({ id: z.uuid() });
+export const roomRevisionQuery = z.object({
+  rev: z.coerce.number().int().nonnegative().optional(),
+});
+export const participantSelfieParams = z.object({
+  id: z.uuid(),
+  participantId: z.uuid(),
+});
 
 export const listSessionsQuery = z.object({
   placeId: z.uuid().optional(),

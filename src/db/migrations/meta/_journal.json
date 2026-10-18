@@ -36,6 +36,20 @@
       "when": 1792314451491,
       "tag": "0004_first_invaders",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792315793657,
+      "tag": "0005_room_revision",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792316319746,
+      "tag": "0006_push_subscriptions",
+      "breakpoints": true
     }
   ]
 }

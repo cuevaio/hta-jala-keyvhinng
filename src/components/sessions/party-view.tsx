@@ -39,10 +39,15 @@ export const PartyView = forwardRef<
     sessionId: string;
     party: NonNullable<Room["party"]>;
     meId: string;
+    /** Room revision; the chat fetches new messages when it changes. */
+    revision: number;
     busy: boolean;
     onAction: (action: PartyCommand) => void;
   }
->(function PartyView({ sessionId, party, meId, busy, onAction }, headingRef) {
+>(function PartyView(
+  { sessionId, party, meId, revision, busy, onAction },
+  headingRef,
+) {
   const plan = party.plan!;
   const [fareInput, setFareInput] = useState("");
   const [confirmingLeave, setConfirmingLeave] = useState(false);
@@ -58,7 +63,7 @@ export const PartyView = forwardRef<
   }, [confirmingLeave]);
 
   const selfies = new Map(
-    party.members.map((member) => [member.participantId, member.selfieDataUrl]),
+    party.members.map((member) => [member.participantId, member.selfieUrl]),
   );
   const mine = party.members.find((m) => m.participantId === meId);
   const me = plan.stops.find((s) => s.participantId === meId);
@@ -145,7 +150,7 @@ export const PartyView = forwardRef<
               <li key={stop.participantId}>
                 <span className="person-avatar" aria-hidden="true">
                   {selfies.get(stop.participantId) ? (
-                    // Private inline photo; bypass the public image optimizer.
+                    // Private, per-viewer photo; bypass the public image optimizer.
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={selfies.get(stop.participantId)!}
@@ -272,7 +277,12 @@ export const PartyView = forwardRef<
             ))}
 
           {party.status !== "cancelled" && (
-            <PartyChat key={party.id} sessionId={sessionId} meId={meId} />
+            <PartyChat
+              key={party.id}
+              sessionId={sessionId}
+              meId={meId}
+              revision={revision}
+            />
           )}
 
           <p className="fine">

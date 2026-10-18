@@ -1,6 +1,13 @@
 import { createLogMailer, createResendMailer } from "@/lib/mailer";
 import { getEnv } from "@/lib/env";
 import { createMatchingApplication } from "@/modules/matching/application/matching.service";
+import { createRoomEvents } from "@/modules/notifications/application/room-events";
+import { createNotificationService } from "@/modules/notifications/application/notification.service";
+import {
+  createLogPushSender,
+  createWebPushSender,
+} from "@/modules/notifications/infrastructure/push-sender";
+import { createPushSubscriptionRepository } from "@/modules/notifications/infrastructure/push-subscription.repository";
 import { createMatchingRepository } from "@/modules/matching/infrastructure/matching.repository";
 import { createRoadMatchingService } from "@/modules/matching/domain/road-matching";
 import { createOsrmRoutingProvider } from "@/modules/routing/infrastructure/osrm-routing-provider";
@@ -18,14 +25,29 @@ import { createSessionRepository } from "@/modules/sessions/infrastructure/sessi
 /** Composition root: wires repositories into application services. */
 export function getServices() {
   const db = getDb();
-  return {
-    matching: createMatchingApplication(
-      createMatchingRepository(db),
-      createRoadMatchingService(
-        createOsrmRoutingProvider({ baseUrl: getEnv().ROUTING_BASE_URL }),
-      ),
-      "osrm",
+  const matching = createMatchingApplication(
+    createMatchingRepository(db),
+    createRoadMatchingService(
+      createOsrmRoutingProvider({ baseUrl: getEnv().ROUTING_BASE_URL }),
     ),
+    "osrm",
+  );
+  const env = getEnv();
+  const pushSubscriptions = createPushSubscriptionRepository(db);
+  const notifications = createNotificationService(
+    pushSubscriptions,
+    env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY
+      ? createWebPushSender({
+          publicKey: env.VAPID_PUBLIC_KEY,
+          privateKey: env.VAPID_PRIVATE_KEY,
+          subject: env.VAPID_SUBJECT,
+        })
+      : createLogPushSender(),
+  );
+  return {
+    matching,
+    pushSubscriptions,
+    roomEvents: createRoomEvents({ matching, notifications }),
     auth: createAuthService(
       createAuthRepository(db),
       getEnv().RESEND_API_KEY

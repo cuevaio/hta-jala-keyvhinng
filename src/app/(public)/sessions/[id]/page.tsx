@@ -7,6 +7,7 @@ import { NotFoundError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import type { Room } from "@/components/sessions/room";
 import { readIdentity } from "@/modules/participants/infrastructure/browser-identity";
+import { getEnv } from "@/lib/env";
 import { getServices } from "@/lib/services";
 import { sessionIdParams } from "@/modules/sessions/schemas/session.schema";
 
@@ -69,6 +70,7 @@ export default async function SessionPage({
         initialRoom={initialRoom}
         initialSignedOut={identity === null}
         accountName={identity?.displayName ?? ""}
+        pushPublicKey={getEnv().VAPID_PUBLIC_KEY ?? null}
         closesAt={session.closesAt.toISOString()}
         initiallyOpen={
           session.status === "open" &&

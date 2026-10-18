@@ -7,6 +7,7 @@ import {
   sessionParticipants,
   users,
 } from "@/db/schema";
+import { bumpRoomRevision } from "@/modules/sessions/infrastructure/room-revision";
 import { PartyError } from "../domain/party-lifecycle";
 import {
   canPostMessages,
@@ -82,7 +83,8 @@ export function createPartyMessageRepository(db: Database) {
 
     /**
      * Locks the party row so concurrent posts commit in `seq` order and a poll with the
-     * last seen seq never skips one. It also orders the post after a concurrent leave.
+     * last seen seq never skips one. It also orders the post after a concurrent leave,
+     * and bumps the room revision so members' room polls pick the message up.
      */
     async post(
       sessionId: string,
@@ -91,6 +93,8 @@ export function createPartyMessageRepository(db: Database) {
     ): Promise<PartyMessage> {
       return db.transaction(async (tx) => {
         const mine = await membership(tx, sessionId, userId);
+        // Session lock before party lock, the order every other writer uses.
+        await bumpRoomRevision(tx, sessionId);
         const [party] = await tx
           .select({ status: rideParties.status })
           .from(rideParties)

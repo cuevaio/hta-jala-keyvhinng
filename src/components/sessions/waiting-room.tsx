@@ -9,11 +9,11 @@ import { roomDeadline } from "./room-clock";
 import { useRoomClock } from "./use-room-clock";
 import { PartyView } from "./party-view";
 import { PoolView } from "./pool-view";
-import type { Room } from "./room";
+import { PushOptIn } from "./push-opt-in";
+import { FULL_REFRESH_MS, nextPollDelay } from "./poll-delay";
+import type { Room, RoomUnchanged } from "./room";
 import { RideForm, type RideValues } from "./ride-form";
 import { sessionApi, SessionRequestError } from "./session-api";
-
-const POLL_MS = 4000;
 
 const limaTime = (iso: string) =>
   new Date(iso).toLocaleTimeString("es-PE", {
@@ -40,6 +40,7 @@ export function WaitingRoom({
   initialRoom,
   initialSignedOut,
   accountName,
+  pushPublicKey,
 }: {
   sessionId: string;
   initialServerNow: string;
@@ -51,6 +52,8 @@ export function WaitingRoom({
   initialRoom: Room | null;
   initialSignedOut: boolean;
   accountName: string;
+  /** VAPID public key; null when the server cannot send notifications. */
+  pushPublicKey: string | null;
 }) {
   const [room, setRoom] = useState<Room | null>(initialRoom);
   const [signedOut, setSignedOut] = useState(initialSignedOut);
@@ -66,6 +69,9 @@ export function WaitingRoom({
   const lastRoomSample = useRef(
     Date.parse(initialRoom?.serverNow ?? initialServerNow),
   );
+  // Last revision applied, and when the last full room arrived (server render counts).
+  const revision = useRef<number | null>(initialRoom?.revision ?? null);
+  const lastFullAt = useRef(0);
   const heading = useRef<HTMLHeadingElement>(null);
   const expired = deadline.phase === "closed";
 
@@ -76,9 +82,11 @@ export function WaitingRoom({
       lastRoomSample.current = sampledAt;
       if (hadParty.current && !result.party)
         setNotice(
-          "Tu grupo de viaje se deshizo porque alguien salió. Sigues en la sala de espera; busca compañeros de nuevo cuando quieras.",
+          "Tu grupo de viaje se deshizo porque alguien salió. Sigues en la sala de espera y te buscamos un grupo nuevo automáticamente.",
         );
       hadParty.current = result.party !== null;
+      revision.current = result.revision;
+      lastFullAt.current = performance.now();
       synchronize(result.serverNow, roundTripMs);
       setRoom(result);
       setSignedOut(false);
@@ -90,6 +98,8 @@ export function WaitingRoom({
     let stopped = false;
     let timer: ReturnType<typeof setTimeout>;
     let active: AbortController | null = null;
+    let failures = 0;
+    if (revision.current !== null) lastFullAt.current = performance.now();
     async function poll() {
       clearTimeout(timer);
       active?.abort();
@@ -97,15 +107,28 @@ export function WaitingRoom({
       active = controller;
       const startedAt = performance.now();
       const timeout = setTimeout(() => controller.abort(), 10_000);
+      const failed = () => {
+        failures += 1;
+        setPollError(
+          "No pudimos actualizar la sala. Reintentaremos automáticamente.",
+        );
+      };
       try {
         if (document.visibilityState !== "visible") return;
-        const result = await sessionApi<Room>(
-          `/api/sessions/${sessionId}/waiting-room`,
+        // Ask only "anything new?" unless a periodic full refresh is due.
+        const known = revision.current;
+        const full =
+          known === null || startedAt - lastFullAt.current >= FULL_REFRESH_MS;
+        const result = await sessionApi<Room | RoomUnchanged>(
+          `/api/sessions/${sessionId}/waiting-room${full ? "" : `?rev=${known}`}`,
           undefined,
           controller.signal,
         );
         if (!stopped && active === controller && !controller.signal.aborted) {
-          apply(result, performance.now() - startedAt);
+          const roundTripMs = performance.now() - startedAt;
+          if ("unchanged" in result) synchronize(result.serverNow, roundTripMs);
+          else apply(result, roundTripMs);
+          failures = 0;
           setPollError("");
         }
       } catch (error) {
@@ -118,6 +141,7 @@ export function WaitingRoom({
           if (error.status === 401) {
             setSignedOut(true);
             setRoom(null);
+            revision.current = null;
           }
           if (error.status === 401 || error.status === 403) {
             // Visitors and people who have not joined still get fresh server time.
@@ -133,6 +157,7 @@ export function WaitingRoom({
                 !controller.signal.aborted
               ) {
                 synchronize(timing.serverNow, performance.now() - startedAt);
+                failures = 0;
                 setPollError("");
               }
             } catch {
@@ -141,14 +166,10 @@ export function WaitingRoom({
                 active === controller &&
                 document.visibilityState === "visible"
               )
-                setPollError(
-                  "No pudimos actualizar la sala. Reintentaremos automáticamente.",
-                );
+                failed();
             }
           } else {
-            setPollError(
-              "No pudimos actualizar la sala. Reintentaremos automáticamente.",
-            );
+            failed();
           }
         }
       } finally {
@@ -158,7 +179,7 @@ export function WaitingRoom({
           active === controller &&
           document.visibilityState === "visible"
         )
-          timer = setTimeout(poll, POLL_MS);
+          timer = setTimeout(poll, nextPollDelay(failures));
       }
     }
     const onVisible = () => {
@@ -168,13 +189,24 @@ export function WaitingRoom({
         active?.abort();
       }
     };
+    // A push for this room means it changed: check now rather than at the next tick.
+    const onPush = (event: MessageEvent) => {
+      if (
+        event.data?.type === "room-changed" &&
+        event.data.url === `/sessions/${sessionId}` &&
+        document.visibilityState === "visible"
+      )
+        void poll();
+    };
     timer = setTimeout(poll, 0);
     document.addEventListener("visibilitychange", onVisible);
+    navigator.serviceWorker?.addEventListener("message", onPush);
     return () => {
       stopped = true;
       clearTimeout(timer);
       active?.abort();
       document.removeEventListener("visibilitychange", onVisible);
+      navigator.serviceWorker?.removeEventListener("message", onPush);
     };
   }, [sessionId, apply, synchronize]);
 
@@ -239,7 +271,7 @@ export function WaitingRoom({
       apply(result);
       if (!result.party)
         setNotice(
-          "Aún no encontramos compañeros de viaje compatibles. Sigues en la sala de espera; intenta de nuevo cuando lleguen más personas.",
+          "Aún no encontramos compañeros de viaje compatibles. Sigues en la sala de espera; te agrupamos automáticamente cuando lleguen más personas.",
         );
     }, "No pudimos buscar compañeros de viaje.");
   }
@@ -336,6 +368,11 @@ export function WaitingRoom({
           {pollError}
         </p>
       )}
+      {room &&
+        !left &&
+        (room.party
+          ? room.party.status === "forming" || room.party.status === "confirmed"
+          : !closed) && <PushOptIn publicKey={pushPublicKey} />}
       {closed && !room?.party && (
         <div role="status" className="session-closed">
           <h2 ref={!room ? heading : undefined} tabIndex={-1}>
@@ -370,6 +407,7 @@ export function WaitingRoom({
           sessionId={sessionId}
           party={room.party}
           meId={room.me.id}
+          revision={room.revision}
           busy={busy}
           onAction={partyAction}
         />

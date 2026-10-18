@@ -1,6 +1,8 @@
 # RFC 0001 – Pilot readiness: contact handoff, stalled-party expiry, and pilot measurement
 
-**Status:** proposed · **Date:** 2026-10-18 · **Scope:** PRD R11, R12 (email only), R13 and §6 (evidence)
+**Status:** proposed · **Date:** 2026-10-18 · **Update:** web push and background matching
+were built after all (ADR 0008, [notifications](../notifications.md)); §4.2 email is now
+an optional fallback for iPhones without the home-screen app. · **Scope:** PRD R11, R12 (email only), R13 and §6 (evidence)
 
 Inputs: [PRD](../prd.md), [status](../status.md), [hackathon guide and rubric](../hackathon-guide.md),
 [party lifecycle](../party-lifecycle.md), ADRs [0005](../decisions/0005-leaving-dissolves-the-party.md)

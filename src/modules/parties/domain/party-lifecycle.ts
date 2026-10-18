@@ -40,6 +40,14 @@ export interface PartyState {
   }[];
 }
 
+/** A committed party transition that members who are not looking should hear about. */
+export interface PartyEvent {
+  kind: "confirmed" | "dissolved" | "started" | "completed";
+  actorUserId: string;
+  /** Everyone in the party before the command, the actor included. */
+  memberUserIds: string[];
+}
+
 export type PartyDecision =
   /** Mark the caller confirmed; the party is confirmed once everyone is. */
   | { kind: "confirm"; partyStatus: RidePartyStatus }
