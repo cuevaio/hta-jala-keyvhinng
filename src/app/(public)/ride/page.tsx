@@ -104,6 +104,7 @@ export default async function RidePage({ searchParams }: PageProps<"/ride">) {
         )}
       </header>
       <RideRequest
+        authenticated={Boolean(identity)}
         initial={draft}
         defaultName={identity?.displayName ?? ""}
         active={

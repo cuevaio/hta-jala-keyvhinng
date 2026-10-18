@@ -1,3 +1,4 @@
+import { AuthPage } from "@/components/auth/auth-page";
 import type { Metadata } from "next";
 import { PasswordResetForm } from "@/components/auth/password-reset-form";
 
@@ -12,11 +13,11 @@ export default async function Page({
 }: PageProps<"/reset-password">) {
   const { token } = await searchParams;
   return (
-    <div className="auth-page">
+    <AuthPage>
       <PasswordResetForm
         mode="confirm"
         token={typeof token === "string" ? token : ""}
       />
-    </div>
+    </AuthPage>
   );
 }
