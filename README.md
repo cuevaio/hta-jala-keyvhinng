@@ -58,6 +58,14 @@ bun dev                        # http://localhost:3000
 
 `.env.local` is git-ignored; never commit real credentials.
 
+### Production deployment
+
+GitHub Actions is the production deployment path: verification must pass, then
+pending database migrations run before the build and deployment. `vercel.json`
+disables automatic Vercel Git deployments from `main` so they cannot bypass that
+ordering. Other branches retain automatic preview deployments. The production
+smoke test also checks that an unknown account gets a 401 from sign-in.
+
 ## Commands
 
 | Command                           | Purpose                                                    |

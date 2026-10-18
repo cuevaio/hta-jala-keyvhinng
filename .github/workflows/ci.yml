@@ -120,7 +120,7 @@ jobs:
           set -a
           . .vercel/.env.production.local
           set +a
-          DATABASE_URL="${POSTGRES_URL_NON_POOLING:-$DATABASE_URL}" bun scripts/migrate.ts
+          DATABASE_URL="${POSTGRES_URL_NON_POOLING:-${DATABASE_URL_UNPOOLED:-$DATABASE_URL}}" bun scripts/migrate.ts
 
       - name: Build
         run: bunx $VERCEL_CLI build --prod --token="$VERCEL_TOKEN"
@@ -143,3 +143,11 @@ jobs:
           check /api/health
           check "/api/groups/search?olat=-12.12&olng=-77.03&dlat=-12.09&dlng=-77.0&depart=0"
           check /ride
+          # A public page and health check can pass while account queries fail.
+          code=$(curl -sS -o /dev/null -w '%{http_code}' "$base/api/auth/sign-in" \
+            -H 'Content-Type: application/json' \
+            --data '{"email":"production-smoke@example.invalid","password":"Smoke-test-only-73!"}')
+          [ "$code" = "401" ] || {
+            echo "::error::Sign-in smoke test expected 401, got $code"
+            exit 1
+          }

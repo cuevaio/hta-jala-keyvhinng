@@ -1,9 +1,12 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DrizzleQueryError } from "drizzle-orm/errors";
-import { describeError, logger } from "@/lib/logger";
-import { routeOf, runWithRequest } from "@/lib/request-context";
+import { describeError } from "@/lib/logger";
+import { routeOf } from "@/lib/request-context";
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllEnvs();
+});
 
 describe("describeError", () => {
   it("keeps the database cause but never the SQL or its parameters", () => {
@@ -44,6 +47,18 @@ describe("describeError", () => {
 });
 
 describe("request logging", () => {
+  let logger: typeof import("@/lib/logger").logger;
+  let runWithRequest: typeof import("@/lib/request-context").runWithRequest;
+
+  beforeEach(async () => {
+    // Exercise real env parsing without depending on the caller's log threshold.
+    vi.stubEnv("DATABASE_URL", "postgres://unused");
+    vi.stubEnv("LOG_LEVEL", "info");
+    vi.resetModules();
+    ({ logger } = await import("@/lib/logger"));
+    ({ runWithRequest } = await import("@/lib/request-context"));
+  });
+
   it("masks ids and drops the query string from routes", () => {
     expect(
       routeOf(
@@ -69,6 +84,16 @@ describe("request logging", () => {
   it("sends warnings to the warning stream", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     logger.warn("http.request", { status: 429 });
+    expect(warn).toHaveBeenCalledOnce();
+  });
+
+  it("suppresses info logs when the threshold is warn", () => {
+    vi.stubEnv("LOG_LEVEL", "warn");
+    const write = vi.spyOn(console, "log").mockImplementation(() => {});
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    logger.info("room.create");
+    logger.warn("http.request", { status: 429 });
+    expect(write).not.toHaveBeenCalled();
     expect(warn).toHaveBeenCalledOnce();
   });
 });
