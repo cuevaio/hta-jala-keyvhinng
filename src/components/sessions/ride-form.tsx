@@ -30,6 +30,8 @@ export interface RideDraft {
   origin: PickedLocation | null;
   destination: PickedLocation | null;
   departInMinutes: DepartureChoice;
+  /** Chosen earlier (on Inicio), so the form starts with it. */
+  delegatePreference?: "delegate" | "passenger";
 }
 
 const WHEN_LABELS: Record<DepartureChoice, string> = {
@@ -251,7 +253,7 @@ export function RideForm({
                     type="radio"
                     name="delegatePreference"
                     value="passenger"
-                    defaultChecked
+                    defaultChecked={initial.delegatePreference !== "delegate"}
                   />
                   <span>
                     <UserRound size={19} aria-hidden="true" />
@@ -264,6 +266,7 @@ export function RideForm({
                     type="radio"
                     name="delegatePreference"
                     value="delegate"
+                    defaultChecked={initial.delegatePreference === "delegate"}
                   />
                   <span>
                     <CarFront size={19} aria-hidden="true" />

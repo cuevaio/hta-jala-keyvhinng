@@ -27,6 +27,7 @@ const draftSchema = z.object({
     .refine((n): n is RideDraft["departInMinutes"] =>
       (DEPARTURE_CHOICES as readonly number[]).includes(n),
     ),
+  delegatePreference: z.enum(["delegate", "passenger"]).optional(),
 });
 
 /** Stores the route only: callers may pass values that also hold a name or selfie. */
@@ -34,6 +35,7 @@ export function saveRideDraft({
   origin,
   destination,
   departInMinutes,
+  delegatePreference,
 }: RideDraft) {
   const place = (p: RideDraft["origin"]) =>
     p && { point: p.point, label: p.label, area: p.area };
@@ -44,6 +46,7 @@ export function saveRideDraft({
         origin: place(origin),
         destination: place(destination),
         departInMinutes,
+        delegatePreference,
       }),
     );
   } catch {

@@ -15,11 +15,9 @@ missing and what comes next.
 See the [product requirements document](docs/prd.md) for the current MVP contract,
 acceptance criteria, validation plan and hackathon rubric alignment.
 
-## Reference passenger flow and validation panel
+## Passenger home and validation panel
 
-The home route (`/`) presents the passenger journey from the supplied mockups as an app: a sticky app bar with Inicio / Mis viajes / Cuenta tabs on desktop, the mockup layout edge to edge on phones (tabs at the bottom). It is a frontend prototype: name entry, home, destination/time/role selection, selfie, group, temporary chat, route, safety sheet, QR code, sample verification, fare split, saved trip, history, and companion ratings. It works without a database. Only sample trip summaries and ratings are stored in this browser; photos and chat stay in memory and clear when the sample trip starts. Refreshing resets an active sample.
-
-The live, database-backed matching and group-chat workflow stays at `/ride` (reached from **Crear sala** and the waiting-room card on Inicio). **Continuar con correo** uses real email/password authentication and returns to `/ride`. SMS delivery, production QR scanning, server-backed history/ratings, live location sharing, and the five-free-trip offer are not connected to production services in the sample flow.
+The home route (`/`) is the signed-in passenger's home, built from the supplied mockups: a sticky app bar with Inicio / Mis viajes / Cuenta on desktop, the mockup layout edge to edge on phones (tabs at the bottom). Without a session it offers only sign-in (Google, email) and sign-up; Jala serves signed-in people only. Inicio plans the trip (origin, destination, time, whether you can book) with the same address pickers and map as `/ride`, then hands the plan to `/ride` through this tab's storage (never the URL). Rooms, matching, the group, chat and the ride itself all happen in the live flow at `/ride` and `/sessions/:id`. Mis viajes stays empty until server-side ride history exists.
 
 `/admin` is a public **synthetic validation simulator**, matching the desktop reference. It is not linked from the passenger app. Departure point, passenger count, vehicle capacity, direction tolerance, and regeneration update the plotted routes, group table, and calculated metrics. It exposes no production user data or privileged administration. Its planar distance model is separate from the live OSRM road-matching service.
 
