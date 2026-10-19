@@ -169,8 +169,6 @@ svg {
 .site-main {
   flex: 1;
 }
-.places-page,
-.place-detail,
 .ride-page,
 .session-page,
 .auth-page,
@@ -309,25 +307,6 @@ svg {
   background: #fdecea;
   color: var(--destructive);
 }
-.chip {
-  display: inline-flex;
-  align-items: center;
-  min-height: 40px;
-  padding: 8px 16px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: #fff;
-  font-size: 14px;
-  font-weight: 600;
-}
-.chip:hover {
-  border-color: var(--ink);
-}
-.chip[aria-current="true"] {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: #fff;
-}
 .panel {
   background: #fff;
   border: 1px solid var(--line);
@@ -374,8 +353,7 @@ svg {
   display: none;
 }
 .input-help a,
-.page-heading a,
-.empty-state a {
+.page-heading a {
   font-weight: 700;
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -445,26 +423,6 @@ fieldset legend {
 }
 .page-heading p {
   color: var(--muted-text);
-}
-.page-note {
-  margin-top: 28px;
-  font-size: 13px;
-  color: var(--muted-text);
-}
-.empty-state {
-  padding: 40px 28px;
-  border: 1px dashed var(--input);
-  border-radius: 16px;
-  text-align: center;
-  color: var(--muted-text);
-}
-.empty-state svg {
-  margin: 0 auto 12px;
-  color: #8da69d;
-}
-.empty-state h2 {
-  font-size: 19px;
-  margin-bottom: 6px;
 }
 .session-closed {
   margin-top: 24px;
@@ -969,114 +927,6 @@ fieldset legend {
   font-size: 14px;
   color: var(--muted-text);
 }
-.place-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 18px;
-}
-.place-card {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: #fff;
-  transition:
-    border-color 0.15s ease,
-    transform 0.2s ease;
-}
-.place-card:hover {
-  border-color: #9fb3ae;
-  transform: translateY(-3px);
-}
-.place-art {
-  position: relative;
-  height: 150px;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--ink);
-  color: #e3b38e;
-}
-.place-art svg {
-  position: relative;
-  z-index: 1;
-  transform: rotate(-10deg);
-}
-.place-art::before,
-.place-art::after {
-  content: "";
-  position: absolute;
-  border-radius: 50%;
-}
-.place-art::before {
-  top: -60px;
-  right: -25px;
-  width: 150px;
-  height: 150px;
-  border: 1px solid rgb(255 255 255 / 0.13);
-  box-shadow:
-    0 0 0 20px rgb(255 255 255 / 0.035),
-    0 0 0 40px rgb(255 255 255 / 0.02);
-}
-.place-art::after {
-  top: 60px;
-  left: -22px;
-  width: 95px;
-  height: 180px;
-  border-radius: 15px;
-  background: rgb(255 255 255 / 0.04);
-  transform: rotate(40deg);
-}
-.place-art-university {
-  background: #b5bfb1;
-  color: #2f453d;
-}
-.place-art-mall {
-  background: #c07451;
-  color: #ffe1b1;
-}
-.place-art-transit {
-  background: #493b46;
-  color: #e9bc9a;
-}
-.place-art-other {
-  background: #5f7f78;
-  color: #e7efe9;
-}
-.place-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 16px;
-}
-.place-kind {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--muted-text);
-}
-.place-info h3 {
-  font-size: 16px;
-  line-height: 1.3;
-}
-.place-info p {
-  margin-top: auto;
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  padding-top: 6px;
-  font-size: 12px;
-  color: var(--muted-text);
-}
-.place-info p svg:first-child {
-  margin-top: 2px;
-}
-.place-info p span {
-  flex: 1;
-}
 .cta {
   position: relative;
   overflow: hidden;
@@ -1114,129 +964,6 @@ fieldset legend {
 .cta h2 {
   margin-top: 10px;
   color: #fff;
-}
-
-/* ---------- Places ---------- */
-.kind-filter {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 26px;
-}
-.place-detail-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
-  align-items: start;
-  gap: 64px;
-  margin-top: 16px;
-}
-.place-heading h1 {
-  margin: 16px 0 18px;
-  font-size: clamp(34px, 4.4vw, 50px);
-  line-height: 1.08;
-}
-.place-fact {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  font-weight: 600;
-}
-.place-fact svg {
-  margin-top: 3px;
-  color: #c2471a;
-}
-.place-description {
-  max-width: 60ch;
-  margin-top: 16px;
-  color: var(--muted-text);
-}
-.meeting-section {
-  margin-top: 36px;
-  padding-top: 28px;
-  border-top: 1px solid var(--line);
-}
-.meeting-section h2 {
-  font-size: 20px;
-}
-.section-help {
-  margin-top: 4px;
-  font-size: 13px;
-  color: var(--muted-text);
-}
-.meeting-list {
-  margin-top: 16px;
-}
-.meeting-list li {
-  display: flex;
-  gap: 14px;
-  padding: 14px 0;
-}
-.meeting-list li + li {
-  border-top: 1px solid var(--line-soft);
-}
-.meeting-list h3 {
-  font-size: 15px;
-}
-.meeting-list p {
-  margin-top: 2px;
-  font-size: 13px;
-  color: var(--muted-text);
-}
-.stop-index {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: var(--orange-tint);
-  color: #8f3d1d;
-  font-size: 12px;
-  font-weight: 800;
-}
-.join-pass {
-  position: sticky;
-  top: 24px;
-  padding: 30px;
-  border-radius: 18px;
-  background: var(--ink);
-  color: #fff;
-}
-.join-pass-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  margin-bottom: 18px;
-  border-radius: 12px;
-  background: var(--ink-soft);
-  color: var(--orange);
-}
-.join-pass h2 {
-  font-size: 30px;
-  color: #fff;
-}
-.join-pass > p {
-  margin-top: 10px;
-  font-size: 14px;
-  color: #b9cdcb;
-}
-.join-pass .action {
-  width: 100%;
-  margin-top: 22px;
-}
-.join-pass .join-pass-footer {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin-top: 18px;
-  padding-top: 16px;
-  border-top: 1px solid rgb(255 255 255 / 0.12);
-  font-size: 13px;
-}
-.join-pass-footer svg {
-  margin-top: 3px;
 }
 
 /* ---------- Ride request: form panels beside one map ---------- */
@@ -2186,18 +1913,11 @@ ol.roster {
   .benefit-grid {
     gap: 40px;
   }
-  .place-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
   .cta {
     margin-inline: 32px;
   }
   .ride-form {
     grid-template-columns: 360px minmax(0, 1fr);
-  }
-  .place-detail-grid {
-    grid-template-columns: minmax(0, 1fr) 300px;
-    gap: 36px;
   }
 }
 @media (max-width: 860px) {
@@ -2254,7 +1974,6 @@ ol.roster {
     height: 340px;
     min-height: 0;
   }
-  .place-detail-grid,
   .room-grid {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -2264,11 +1983,6 @@ ol.roster {
   /* Where the group meets matters more than the split on a phone. */
   .party-room .room-side {
     order: -1;
-  }
-  /* The primary action must not sit below the fold on a phone. */
-  .place-detail-grid > aside {
-    order: -1;
-    position: static;
   }
 }
 @media (max-width: 760px) {
@@ -2281,16 +1995,12 @@ ol.roster {
     grid-row: 1;
   }
   .wrap,
-  .places-page,
-  .place-detail,
   .ride-page,
   .session-page,
   .auth-page,
   .status-page {
     padding-inline: 20px;
   }
-  .places-page,
-  .place-detail,
   .ride-page,
   .session-page,
   .status-page {
@@ -2363,22 +2073,6 @@ ol.roster {
     grid-template-columns: 1fr;
     gap: 16px;
   }
-  .place-grid {
-    gap: 12px;
-  }
-  .place-art {
-    height: 120px;
-  }
-  .place-art svg {
-    width: 44px;
-    height: 44px;
-  }
-  .place-info {
-    padding: 12px;
-  }
-  .place-info h3 {
-    font-size: 14px;
-  }
   .cta {
     display: block;
     margin: 0 20px 40px;
@@ -2429,12 +2123,6 @@ ol.roster {
 @media (max-width: 400px) {
   .delegate-choices {
     grid-template-columns: 1fr;
-  }
-  .place-grid {
-    grid-template-columns: 1fr;
-  }
-  .place-art {
-    height: 96px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

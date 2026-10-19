@@ -10,7 +10,8 @@ which excluded recurring, everyday departures.
   `other`) and a status of `active` or `inactive`. There is no schedule on a place.
 - Time lives on `sessions` (departure rooms): `opens_at`/`closes_at`, created on demand.
 - `meeting_points.event_id` and `sessions.event_id` became `place_id`.
-- Routes are `/places` and `/api/places`; the UI filters by kind.
+- Places have no directory page; the app snaps a ride origin to a nearby place and uses its
+  meeting points.
 - Because nothing is deployed yet, migrations were reset to one baseline (`0000`).
   Local databases need `bun run db:reset`. After launch, schema changes must be new
   additive migrations.

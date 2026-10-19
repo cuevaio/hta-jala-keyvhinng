@@ -48,13 +48,6 @@ export function SiteHeader() {
             <Link href="/" className="nav-link">
               Inicio
             </Link>
-            <Link
-              href="/places"
-              className="nav-link"
-              aria-current={pathname.startsWith("/places") ? "page" : undefined}
-            >
-              Lugares
-            </Link>
           </nav>
           <AuthNav />
         </div>

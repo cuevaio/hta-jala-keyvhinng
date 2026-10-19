@@ -11,7 +11,6 @@ export function SiteFooter() {
         </div>
         <nav aria-label="Pie de página">
           <Link href="/ride">Compartir un taxi</Link>
-          <Link href="/places">Lugares</Link>
           <Link href="/">Inicio</Link>
         </nav>
       </div>

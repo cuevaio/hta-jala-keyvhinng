@@ -116,8 +116,6 @@ All responses are `{ "data": ... }` or `{ "error": { "code", "message", "details
 | `GET /api/sessions/:id/participants/:pid/selfie` | A party member's photo, for that party only                                                   |
 | `POST`/`DELETE /api/push/subscriptions`          | Link or unlink this browser for room notifications                                            |
 | `GET /api/health`                                | Liveness + database check (503 if DB is down)                                                 |
-| `GET /api/places?status=&kind=&limit=`           | List places                                                                                   |
-| `GET /api/places/:id`                            | Place with meeting points                                                                     |
 | `GET /api/sessions?placeId=&status=&limit=`      | List sessions with participant counts                                                         |
 | `GET /api/sessions/:id`                          | Session detail                                                                                |
 

@@ -18,8 +18,6 @@ import { createParticipationRepository } from "@/modules/sessions/infrastructure
 import { getDb } from "@/db";
 import { createAuthService } from "@/modules/auth/application/auth.service";
 import { createAuthRepository } from "@/modules/auth/infrastructure/auth.repository";
-import { createPlaceService } from "@/modules/places/application/place.service";
-import { createPlaceRepository } from "@/modules/places/infrastructure/place.repository";
 import { createSessionService } from "@/modules/sessions/application/session.service";
 import { createSessionRepository } from "@/modules/sessions/infrastructure/session.repository";
 
@@ -60,7 +58,6 @@ export function getServices() {
     participation: createParticipationRepository(db),
     parties: createPartyRepository(db),
     partyMessages: createPartyMessageRepository(db),
-    places: createPlaceService(createPlaceRepository(db)),
     sessions: createSessionService(createSessionRepository(db)),
   };
 }
