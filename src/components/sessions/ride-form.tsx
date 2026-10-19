@@ -294,7 +294,7 @@ export function RideForm({
           {onRouteContinue ? (
             "Elige tu partida y destino. Para continuar necesitas crear una cuenta o iniciar sesión."
           ) : !ready && !busy ? (
-            "Marca tu partida y destino, y sube una selfie para continuar."
+            "Marca tu partida y destino, y tómate una selfie para continuar."
           ) : (
             <>
               <ShieldCheck size={16} aria-hidden="true" />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Camera, ImageUp, RotateCcw } from "lucide-react";
+import { Camera, RotateCcw } from "lucide-react";
 import { prepareSelfie } from "./selfie-photo";
 
 type Stage = "idle" | "starting" | "live" | "checking";
@@ -14,9 +14,8 @@ const ACTION_CLASSES = {
 /**
  * Takes the selfie inside the face oval. Phones open their own front camera
  * (`capture="user"`), which is sharper and needs no camera permission in the page;
- * desktops show a live webcam preview with a shutter. Either way the photo is resized
- * and checked for a face by the server, and "o sube una foto" is always there for
- * anyone without a usable camera.
+ * desktops show a live webcam preview with a shutter. A camera is required — there
+ * is no gallery picker — and the photo is resized and checked for a face by the server.
  */
 export function SelfieCapture({
   value,
@@ -44,7 +43,6 @@ export function SelfieCapture({
   const video = useRef<HTMLVideoElement>(null);
   const stream = useRef<MediaStream | null>(null);
   const cameraInput = useRef<HTMLInputElement>(null);
-  const fileInput = useRef<HTMLInputElement>(null);
   const attempt = useRef(0);
   const busy = disabled || stage === "starting" || stage === "checking";
 
@@ -68,7 +66,7 @@ export function SelfieCapture({
         setError(
           e instanceof Error
             ? e.message
-            : "No pudimos leer tu foto. Intenta con otra.",
+            : "No pudimos leer tu foto. Intenta de nuevo.",
         );
     } finally {
       if (current === attempt.current) setStage("idle");
@@ -77,9 +75,12 @@ export function SelfieCapture({
 
   async function takeSelfie() {
     setError("");
-    const phone = window.matchMedia("(pointer: coarse)").matches;
-    if (phone || !navigator.mediaDevices?.getUserMedia) {
-      (phone ? cameraInput : fileInput).current?.click();
+    if (window.matchMedia("(pointer: coarse)").matches) {
+      cameraInput.current?.click();
+      return;
+    }
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError("Necesitas una cámara para tomarte tu selfie.");
       return;
     }
     setStage("starting");
@@ -93,8 +94,8 @@ export function SelfieCapture({
       setStage("idle");
       setError(
         e instanceof DOMException && e.name === "NotAllowedError"
-          ? "Permite el acceso a la cámara en tu navegador o sube una foto."
-          : "No encontramos una cámara disponible. Sube una foto.",
+          ? "Permite el acceso a la cámara en tu navegador para tomarte tu selfie."
+          : "No encontramos una cámara disponible. Necesitas una cámara para tomarte tu selfie.",
       );
     }
   }
@@ -196,15 +197,6 @@ export function SelfieCapture({
         aria-hidden="true"
         onChange={(e) => pickFile(e.currentTarget)}
       />
-      <input
-        ref={fileInput}
-        type="file"
-        className="sr-only"
-        accept="image/jpeg,image/png,image/webp"
-        tabIndex={-1}
-        aria-hidden="true"
-        onChange={(e) => pickFile(e.currentTarget)}
-      />
       <div className="selfie-actions">
         {value ? (
           <>
@@ -238,24 +230,14 @@ export function SelfieCapture({
             </button>
           </>
         ) : (
-          <>
-            <button
-              type="button"
-              className={buttons.primary}
-              onClick={() => void takeSelfie()}
-              disabled={busy}
-            >
-              <Camera size={21} aria-hidden="true" /> Tomar selfie
-            </button>
-            <button
-              type="button"
-              className="selfie-upload-link"
-              onClick={() => fileInput.current?.click()}
-              disabled={busy}
-            >
-              <ImageUp size={18} aria-hidden="true" /> o sube una foto
-            </button>
-          </>
+          <button
+            type="button"
+            className={buttons.primary}
+            onClick={() => void takeSelfie()}
+            disabled={busy}
+          >
+            <Camera size={21} aria-hidden="true" /> Tomar selfie
+          </button>
         )}
       </div>
     </div>

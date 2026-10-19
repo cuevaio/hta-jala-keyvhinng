@@ -4,22 +4,20 @@ import { MAX_SELFIE_DATA_URL_LENGTH } from "@/modules/sessions/domain/selfie";
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 /**
- * Turns a photo (a picked file or a camera frame) into the small JPEG the server
- * stores, and checks with the server that a face is visible. Throws an Error with a
- * Spanish message the person can act on.
+ * Turns a camera frame into the small JPEG the server stores, and checks with the
+ * server that a face is visible. Throws an Error with a Spanish message the person
+ * can act on.
  */
 export async function prepareSelfie(photo: Blob): Promise<string> {
   if (!ACCEPTED_TYPES.includes(photo.type))
-    throw new Error("Elige una foto JPG, PNG o WebP.");
+    throw new Error("La cámara devolvió un formato que no podemos leer.");
   if (photo.size > 10_000_000)
-    throw new Error("La foto debe pesar menos de 10 MB.");
+    throw new Error("Tu foto pesa demasiado. Intenta de nuevo.");
   let bitmap: ImageBitmap;
   try {
     bitmap = await createImageBitmap(photo, { imageOrientation: "from-image" });
   } catch {
-    throw new Error(
-      "No pudimos leer tu foto. Elige otra foto JPG, PNG o WebP.",
-    );
+    throw new Error("No pudimos leer tu foto. Intenta de nuevo.");
   }
   let dataUrl: string;
   try {
@@ -29,7 +27,7 @@ export async function prepareSelfie(photo: Blob): Promise<string> {
     canvas.height = Math.max(1, Math.round(bitmap.height * scale));
     const context = canvas.getContext("2d");
     if (!context)
-      throw new Error("No pudimos preparar tu foto. Intenta con otra.");
+      throw new Error("No pudimos preparar tu foto. Intenta de nuevo.");
     context.fillStyle = "white";
     context.fillRect(0, 0, canvas.width, canvas.height);
     context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
@@ -38,7 +36,7 @@ export async function prepareSelfie(photo: Blob): Promise<string> {
     bitmap.close();
   }
   if (dataUrl.length > MAX_SELFIE_DATA_URL_LENGTH)
-    throw new Error("Elige una foto más pequeña.");
+    throw new Error("Tu foto quedó demasiado grande. Intenta de nuevo.");
   await sessionApi(
     "/api/selfies/validate",
     { selfieDataUrl: dataUrl },

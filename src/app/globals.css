@@ -2231,31 +2231,6 @@ ol.roster {
   display: grid;
   gap: 8px;
 }
-.selfie-upload-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 8px 12px;
-  border: 0;
-  border-radius: 10px;
-  background: none;
-  color: var(--ink);
-  font: inherit;
-  font-size: 15px;
-  font-weight: 700;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  cursor: pointer;
-}
-.selfie-upload-link:hover:not(:disabled) {
-  background: var(--sage);
-}
-.selfie-upload-link:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
 @media (prefers-reduced-motion: reduce) {
   .selfie-face-guide {
     animation: none !important;
