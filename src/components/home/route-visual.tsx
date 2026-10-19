@@ -71,7 +71,7 @@ export function RouteVisual() {
           <i>L</i>
         </div>
         <div>
-          <strong>Grupos de 2 o 3 personas</strong>
+          <strong>Grupos de 2 a 4 personas</strong>
           <small>Que salen cerca y van hacia tu zona</small>
         </div>
       </div>

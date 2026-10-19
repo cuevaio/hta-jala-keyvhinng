@@ -54,7 +54,7 @@ describe.skipIf(!url)("durable matching", () => {
     longitude: -77.03,
     delegatePreference: "passenger" as "delegate" | "passenger",
   };
-  async function fixture(delegates = true, count = 3) {
+  async function fixture(delegates = true, count = 3, capacity = 3) {
     // Users are reused across tests, and a person may be in only one live group.
     await db
       .delete(schema.sessions)
@@ -65,7 +65,7 @@ describe.skipIf(!url)("durable matching", () => {
         placeId,
         ...groupAnchors,
         departsAt: new Date(),
-        vehicleCapacity: 3,
+        vehicleCapacity: capacity,
         opensAt: new Date(Date.now() - 1000),
         closesAt: new Date(Date.now() + 60000),
       })
@@ -158,6 +158,21 @@ describe.skipIf(!url)("durable matching", () => {
     expect(
       (await participation.waitingRoom(session.id, userIds[0])).party,
     ).toEqual(rooms[0].party);
+  });
+  it("forms and persists a four-passenger party when the vehicle seats four", async () => {
+    const session = await fixture(true, 4, 4);
+    expect(await app.match(session.id, userIds[0])).toMatchObject({
+      createdPartyCount: 1,
+    });
+    const room = await participation.waitingRoom(session.id, userIds[0]);
+    expect(room.party!.members).toHaveLength(4);
+    expect(room.party!.plan!.stops).toHaveLength(4);
+    expect(
+      room.party!.plan!.stops.reduce((n, s) => n + s.fareShareBps, 0),
+    ).toBe(10000);
+    expect(
+      room.party!.plan!.stops.filter((s) => s.role === "delegate"),
+    ).toHaveLength(1);
   });
   it("concurrent rounds cannot assign participants twice", async () => {
     const session = await fixture();

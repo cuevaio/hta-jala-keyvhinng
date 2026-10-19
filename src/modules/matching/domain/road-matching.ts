@@ -7,6 +7,8 @@ import type { CandidateParty, MatchingService } from "./matching";
 
 export const MATCHING_BATCH_SIZE = 12;
 export const MAX_DETOUR_SECONDS = 5 * 60;
+/** Hard ceiling on party size: a taxi seats four passengers, even when the vehicle is larger. */
+export const MAX_PARTY_SIZE = 4;
 
 function validPoint(p: GeoPoint) {
   return (
@@ -18,7 +20,7 @@ function validPoint(p: GeoPoint) {
 }
 
 /** Bounded exhaustive stop-order search, followed by greedy disjoint group selection.
- * Groups are intentionally limited to three, even for a larger vehicle. No global
+ * Groups are intentionally limited to four, even for a larger vehicle. No global
  * optimality is promised. Input order breaks ties, preserving waiting-list fairness.
  */
 export function createRoadMatchingService(
@@ -93,7 +95,10 @@ export function createRoadMatchingService(
         ) {
           options.push({ order, detour, duration: elapsed });
         }
-        if (order.length >= Math.min(3, constraints.vehicleCapacity)) return;
+        if (
+          order.length >= Math.min(MAX_PARTY_SIZE, constraints.vehicleCapacity)
+        )
+          return;
         for (let i = 0; i < candidates.length; i++) {
           if (order.includes(i)) continue;
           const direct = durations[0][i + 1];

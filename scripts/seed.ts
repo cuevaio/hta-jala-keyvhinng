@@ -122,7 +122,7 @@ async function main() {
       status: "open",
       opensAt: new Date(now - hours(1)),
       closesAt: new Date(now + hours(11)),
-      vehicleCapacity: 3,
+      vehicleCapacity: 4,
     })
     .returning();
   const [airportGroup] = await db
@@ -140,7 +140,7 @@ async function main() {
       status: "open",
       opensAt: new Date(now - hours(0.1)),
       closesAt: new Date(now + hours(11)),
-      vehicleCapacity: 3,
+      vehicleCapacity: 4,
     })
     .returning();
 

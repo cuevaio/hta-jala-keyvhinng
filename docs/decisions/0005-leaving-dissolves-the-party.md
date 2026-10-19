@@ -13,5 +13,5 @@ fair for the shorter group. Rewriting a plan in place would also break the "ever
 sees the same immutable plan" guarantee.
 
 **Tradeoff:** one departure forces a re-match and fresh confirmations. Acceptable for
-groups of two or three. The cancelled party row keeps its plan for audit; member rows are
+groups of two to four. The cancelled party row keeps its plan for audit; member rows are
 removed because `ride_party_members.participant_id` is unique.

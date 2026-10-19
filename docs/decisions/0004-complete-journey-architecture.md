@@ -97,7 +97,7 @@ The plan provides one shared explanation for the UI, tests and pitch. Never reco
 fresh plan during a read or acceptance, because that would change what people agreed to.
 
 Use one road-routing provider behind a small function/adapter. Fetch road estimates once
-for the candidate snapshot, use a bounded search for groups of two or three, compare their
+for the candidate snapshot, use a bounded search for groups of two to four, compare their
 stop orders locally and choose a feasible order. Do not promise global optimization.
 No network request runs while a database transaction holds assignment locks.
 A routing failure leaves participants waiting with an actionable reason; it must not

@@ -75,7 +75,7 @@ ride, delegates free; see `docs/domain-model.md`), but there is no top-up or rea
 6. The delegate marks completion. Jala records completion; actual payment remains external.
 
 The UI calls the **pool** (`session`, up to 20 waiting people) a “sala de espera” and the
-**taxi party** (`ride_party`, 2–3 riders) a “grupo de viaje”; see the vocabulary in
+**taxi party** (`ride_party`, 2–4 riders) a “grupo de viaje”; see the vocabulary in
 `domain-model.md`.
 A search result is a candidate pool, not a guaranteed seat in a feasible shared taxi.
 Places are optional pickup anchors; selecting a place is no longer the mandatory entry.
@@ -91,7 +91,7 @@ P2 follows validated demand. Priorities below are proposed product decisions.
 | R2 | P0 / implemented | Discovery accepts pools within 1.5 km of origin, 3 km of the destination anchor and ±30 minutes of requested departure; ranks by normalized fit. Explain that these are straight-line discovery distances. |
 | R3 | P0 / implemented | Creating a pool also joins its creator. Pickup uses an active place's meeting point when its place is within 400 m of origin, otherwise the origin itself. Joining rechecks server-side fit and capacity. |
 | R4 | P0 / implemented | One waiting pool per person. Switching releases the previous waiting participation; an active forming/confirmed/in-progress party blocks switching. Pools close to joins 5 minutes after planned departure. |
-| R5 | P0 / implemented | Matching runs automatically after each join and after a dissolve (ADR 0008; the button remains a manual retry) and proposes 2–3 riders within vehicle capacity, with exactly one volunteer assigned delegate and no rider above a 300-second estimated road detour. No volunteer or feasible partner leaves the rider waiting. |
+| R5 | P0 / implemented | Matching runs automatically after each join and after a dissolve (ADR 0008; the button remains a manual retry) and proposes 2–4 riders within vehicle capacity, with exactly one volunteer assigned delegate and no rider above a 300-second estimated road detour. No volunteer or feasible partner leaves the rider waiting. |
 | R6 | P0 / implemented | Matching processes at most 12 candidates per round and attempts at most eight full-route verifications. Prefer larger parties, then less summed detour, then shorter duration. This bounded heuristic makes no global-optimality promise. |
 | R7 | P0 / implemented | Every member receives the same persisted route plan after refresh. Assigned retries create no duplicate party. Routing failure leaves assignments unchanged and provides a retryable error. |
 | R8 | P0 / implemented | Split road segment distance among riders still aboard; normalize shares to exactly 10,000 basis points. A typed fare is apportioned in integer céntimos with no rounding loss. The fare calculator is display-only and its amount is not saved. |

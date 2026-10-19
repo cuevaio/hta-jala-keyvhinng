@@ -40,7 +40,7 @@ matched group's map and meeting point come first.
 
 Removed as noise: the driver panel, fake prices and passenger counts, the trust strip,
 manual coordinate entry, and repeated per-card "ficticio" labels (one page note remains).
-The hero illustration states real rules (groups of 2–3, fare by distance) and no
+The hero illustration states real rules (groups of 2–4, fare by distance) and no
 invented data.
 
 ## 4. Contract

@@ -155,7 +155,7 @@ export const PoolView = forwardRef<
                 {!busy && <ArrowRight size={18} aria-hidden="true" />}
               </button>
               <p className="fine">
-                Formamos grupos de viaje de 2 o 3, con alguien que pueda
+                Formamos grupos de viaje de 2 a 4, con alguien que pueda
                 reservar y hasta cinco minutos de desvío por persona.
               </p>
             </div>

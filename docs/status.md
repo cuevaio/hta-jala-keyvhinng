@@ -16,7 +16,7 @@ and tracks the group through confirm, start and finish. Jala does not book or ch
 | Find open groups by route affinity, or create one          | Done        | ADR 0007; pickup 1.5 km, destination 3 km, departure ±30 min          |
 | Browse places, filter by kind                              | Done        | Optional pickup anchors; start a request from a place                 |
 | Join with exact destination (map pin or address search)    | Done        | Search as you type via public Photon; pin names via Nominatim         |
-| Match into groups of 2–3 by road time                      | Done        | OSRM, 5-minute detour cap, one booker per group; automatic (ADR 0008) |
+| Match into groups of 2–4 by road time                      | Done        | OSRM, 5-minute detour cap, one booker per group; automatic (ADR 0008) |
 | Saved route plan, route map, fare shares                   | Done        | Basis points; soles view from a fare the group types in               |
 | Confirm, leave, start, complete                            | Done        | Leaving dissolves the group (ADR 0005); only the booker starts/ends   |
 | Ride record and completed-ride counter                     | Done        | `rides` row; `users.completed_rides` incremented                      |

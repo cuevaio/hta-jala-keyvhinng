@@ -8,7 +8,7 @@ lasts for the session and the existing participant uniqueness constraint is reta
 
 ## Policy `road-v1`
 
-- Groups contain two or three people, never more than the session vehicle capacity.
+- Groups contain two to four people, never more than the session vehicle capacity.
 - Exactly one member who explicitly volunteered is assigned delegate. Additional
   volunteers can be passengers. No volunteer or no compatible partner means waiting.
 - Pickup is the group's saved pickup (`sessions.pickup_*`): the earliest meeting point of the
@@ -16,7 +16,7 @@ lasts for the session and the existing participant uniqueness constraint is reta
 - Maximum detour is 300 seconds per person compared with a direct road trip from
   pickup to their exact destination. Arrival times include all preceding stops.
 - Directed road times come from one OSRM table request. Enumerate feasible ordered
-  pairs/triples locally, prefer larger groups, then lower summed detour, then shorter
+  groups of two to four locally, prefer larger groups, then lower summed detour, then shorter
   duration. Input order breaks ties. Greedily take disjoint groups: this is a heuristic,
   not a globally optimal allocation.
 - Each round considers at most 12 waiters: the requester, then oldest participants;

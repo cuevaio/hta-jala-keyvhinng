@@ -14,7 +14,7 @@ All endpoints use `{ data }` or `{ error: { code, message, details? } }`. IDs ar
 | `GET /api/auth/me` | session cookie | `{ userId, displayName }` or `null` |
 | `GET /api/groups/search?olat&olng&dlat&dlng&depart` | none | Open groups that fit the ride, best first (ADR 0007) |
 | `POST /api/groups/assign` | join body + `departInMinutes`, session cookie | Best open group for the ride, joined, or a new one; returns `{ id, created }` (ADR 0010) |
-| `POST /api/groups` | join body + `departInMinutes` (0, 15, 30, 60), session cookie | New group (capacity 3) with the caller joined |
+| `POST /api/groups` | join body + `departInMinutes` (0, 15, 30, 60), session cookie | New group (capacity 4) with the caller joined |
 | `POST /api/sessions/:id/join` | `{ displayName, selfieDataUrl, originLabel, originLatitude, originLongitude, destinationLabel, latitude, longitude, delegatePreference }` (409 `group_mismatch` / `group_full` / `already_in_group`), session cookie | Own persisted participant; retries update the same row |
 | `GET /api/sessions/:id/waiting-room?rev=<n>` | member session cookie; `rev` optional | `{ session, revision, serverNow, me, participants, party, acceptingJoins }`, or `{ unchanged: true, revision, serverNow }` when `rev` is current |
 | `GET /api/sessions/:id/participants/:participantId/selfie` | member of the same party | JPEG bytes, privately cacheable; 404 otherwise |
@@ -47,7 +47,7 @@ Errors: 400 invalid input/JSON, 401 missing or expired identity, 403 nonmember/c
 Preserve existing domain interfaces in `src/modules`. Before parallel implementation, extend these together:
 
 - Routing: ordered exact coordinates → road segments in meters/seconds with provider/source and explicit failure. Label fixture routing separately; never silently report straight-line estimates as live road routing.
-- Matching: eligible snapshot + capacity 2–3 + detour limit → deterministic proposals and unmatched reasons. No willing delegate means waiting. Compare stop permutations locally; do not claim global optimality.
+- Matching: eligible snapshot + capacity 2–4 + detour limit → deterministic proposals and unmatched reasons. No willing delegate means waiting. Compare stop permutations locally; do not claim global optimality.
 - Proposal: members, exactly one willing delegate, meeting point, ordered exact stops, per-member detours, integer fare shares totaling 10,000 basis points, and version.
 - Acceptance: authenticated member accepts a current proposal version; lock assignment and reject stale proposals. One participant can belong to at most one active party.
 - Lifecycle: waiting → proposed → confirmed → ready → completed, with cancellation and expiry. This is a target contract, not a claim about the current database enums or implementation.

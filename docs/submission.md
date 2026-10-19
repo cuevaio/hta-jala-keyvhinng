@@ -14,7 +14,7 @@ Estudiantes y trabajadores en Lima que hacen un viaje próximo desde un punto co
 
 1. Inicias sesión e indicas desde dónde sales, a dónde vas y cuándo: lo antes posible o en 15, 30 o 60 minutos.
 2. Jala te pone en una **sala** con personas que salen cerca (1.5 km), van hacia un destino cercano (3 km) y parten a una hora parecida. Si no hay ninguna, crea una sala nueva.
-3. El emparejamiento es automático. Forma grupos de 2 o 3 personas con **tiempos reales por calle** (OSRM), y nadie se desvía más de **5 minutos** frente a ir solo.
+3. El emparejamiento es automático. Forma grupos de 2 a 4 personas con **tiempos reales por calle** (OSRM), y nadie se desvía más de **5 minutos** frente a ir solo.
 4. El grupo ve el orden de paradas, la ruta en el mapa y cuánto le toca a cada persona: cada tramo se divide entre quienes siguen a bordo. También puede chatear, compartir una selfie validada con detección de rostro para reconocerse y recibir notificaciones push.
 5. Una persona del grupo se ofrece a pedir el taxi en su app de siempre. Todos confirman y luego inician y terminan el viaje. Si nadie confirma a tiempo, el grupo vence y las personas vuelven a buscar.
 
@@ -28,7 +28,7 @@ Jala **no** opera vehículos ni cobra el taxi; solo coordina. El modelo es de cr
 ## Decisiones técnicas
 
 - **Stack:** Next.js 16, React 19, TypeScript y Drizzle sobre Postgres (Neon), en Vercel. Sesiones propias con contraseñas scrypt y tokens hasheados, además de Google OAuth.
-- **Emparejamiento:** prueba todos los órdenes de paradas posibles para grupos de 2 o 3 dentro de lotes de 12 personas, y luego elige los grupos de forma greedy: primero los más grandes y con menos desvío. No promete el óptimo global. Si el servidor de rutas falla, no inventa rutas en línea recta. El reparto usa puntos básicos y siempre suma 100 %.
+- **Emparejamiento:** prueba todos los órdenes de paradas posibles para grupos de 2 a 4 dentro de lotes de 12 personas, y luego elige los grupos de forma greedy: primero los más grandes y con menos desvío. No promete el óptimo global. Si el servidor de rutas falla, no inventa rutas en línea recta. El reparto usa puntos básicos y siempre suma 100 %.
 - **Entrega segura:** CI corre lint, typecheck, 280 pruebas (unitarias y de integración sobre Postgres) y verifica que el esquema coincida con las migraciones. Luego migra la base y despliega **sin promover**. La versión nueva solo recibe tráfico si pasa un smoke test, que incluye un health check de la versión del esquema. Las migraciones solo agregan, así la versión anterior sigue funcionando durante el cambio.
 - **Privacidad:** la dirección y la selfie solo las ve tu grupo. Los logs registran cada request e interacción sin emails, direcciones, coordenadas ni mensajes.
 

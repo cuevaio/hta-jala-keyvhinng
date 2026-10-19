@@ -38,7 +38,7 @@ one term per concept and never calls the pool a "grupo".
 | Person booking the taxi  | `delegate`                  | Quien reserva el taxi  |
 | Entry point (`/ride`)    | ride request                | Compartir un taxi      |
 
-Entering a sala does not guarantee a ride: matching forms grupos de viaje of two or three
+Entering a sala does not guarantee a ride: matching forms grupos de viaje of two to four
 inside it. `/api/groups` and `GroupMatch` keep their names; they mean pools.
 
 ## Numeric conventions

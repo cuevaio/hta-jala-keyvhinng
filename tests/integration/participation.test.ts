@@ -73,7 +73,7 @@ describe.skipIf(!url)("ride groups and shared sessions", () => {
     });
     sessionId = session.id;
     expect(session.placeId).toBe(placeId);
-    expect(session.vehicleCapacity).toBe(3);
+    expect(session.vehicleCapacity).toBe(4);
     // Rooms are public: no area was given, so neither the address nor its name leaks.
     expect(session.name).toMatch(/^Sala /);
     expect(session.createdByUserId).toBe(userIds[0]);

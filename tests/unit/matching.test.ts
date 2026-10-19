@@ -7,7 +7,7 @@ import {
 import type { MatchingCandidate } from "@/modules/matching/domain/matching";
 
 const origin = { latitude: 0, longitude: 0 };
-const constraints = { origin, vehicleCapacity: 3, maxDetourSeconds: 30 };
+const constraints = { origin, vehicleCapacity: 4, maxDetourSeconds: 30 };
 const candidate = (id: number, delegate = false): MatchingCandidate => ({
   participantId: `p${id}`,
   userId: `u${id}`,
@@ -66,6 +66,27 @@ describe("road matching", () => {
       ["p3", "passenger", 3],
     ]);
     expect(result.parties[0].directDurationSeconds).toEqual([100, 200, 300]);
+  });
+  it("fills a four-passenger taxi and keeps the party ceiling for larger vehicles", async () => {
+    const people = [
+      candidate(1, true),
+      candidate(2),
+      candidate(3),
+      candidate(4),
+      candidate(5),
+    ];
+    const result = await createRoadMatchingService(provider(linear)).match(
+      people,
+      { ...constraints, vehicleCapacity: 8 },
+    );
+    expect(result.parties).toHaveLength(1);
+    expect(result.parties[0].members.map((m) => m.participantId)).toEqual([
+      "p1",
+      "p2",
+      "p3",
+      "p4",
+    ]);
+    expect(result.unmatched.map((c) => c.participantId)).toEqual(["p5"]);
   });
   it("leaves passengers and single volunteers waiting without routing", async () => {
     const broken: RoutingProvider = {
@@ -219,7 +240,7 @@ describe("road matching", () => {
       expect(ids.sort()).toEqual(people.map((c) => c.participantId).sort());
       for (const party of result.parties) {
         expect(party.members.length).toBeGreaterThanOrEqual(2);
-        expect(party.members.length).toBeLessThanOrEqual(3);
+        expect(party.members.length).toBeLessThanOrEqual(4);
         expect(party.members.filter((m) => m.role === "delegate")).toHaveLength(
           1,
         );

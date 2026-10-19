@@ -414,7 +414,7 @@ async function createLocked(tx: Tx, userId: string, input: CreateGroupInput) {
       departsAt,
       opensAt: new Date(),
       closesAt: closesAtFor(departsAt),
-      vehicleCapacity: 3,
+      vehicleCapacity: 4,
     })
     .returning();
   await joinLocked(tx, session, userId, input);
