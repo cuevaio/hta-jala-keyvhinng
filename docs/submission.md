@@ -1,6 +1,6 @@
 # Jala — Comparte el taxi al salir
 
-**Track:** Movilidad y Transporte · **App:** https://jala.oak4.xyz · **Pitch:** https://jala.oak4.xyz/pitch
+**Track:** Movilidad y Transporte · **App:** https://jala.oak4.xyz
 
 ## Problema
 

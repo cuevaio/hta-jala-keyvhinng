@@ -15,10 +15,6 @@ const nextConfig: NextConfig = {
       "./src/modules/sessions/infrastructure/face-model/**/*",
     ],
   },
-  // The hackathon pitch deck, a self-contained page in public/.
-  async rewrites() {
-    return [{ source: "/pitch", destination: "/pitch.html" }];
-  },
   async headers() {
     return [
       {
